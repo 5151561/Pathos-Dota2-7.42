@@ -62,8 +62,8 @@ namespace Pathos.DotaHeroes.Heroes
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Teleport);
-        S.Level = 2;
-        S.Mana = 12;
+        S.Level = 1;
+        S.Mana = 6;
 
         void Configure(Qualification Qual, int Range, int PhaseTurns)
         {
@@ -90,8 +90,8 @@ namespace Pathos.DotaHeroes.Heroes
         S.Glyph = Icon;
         S.School = Ctx.Schools.evocation;
         S.Precept = new Precept(Purpose.Blast, Ctx.Elements.water);
-        S.Level = 2;
-        S.Mana = 10;
+        S.Level = 1;
+        S.Mana = 5;
 
         void Configure(Qualification Qual, int Range, Dice Damage, Chance StunChance, Dice StunDuration)
         {
@@ -122,7 +122,7 @@ namespace Pathos.DotaHeroes.Heroes
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Buff);
         S.Level = 1;
-        S.Mana = 5;
+        S.Mana = 2;
 
         void Configure(Qualification Qual, Dice QuickDuration)
         {
@@ -150,7 +150,7 @@ namespace Pathos.DotaHeroes.Heroes
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Healing);
         S.Level = 1;
-        S.Mana = 5;
+        S.Mana = 2;
 
         void Configure(Qualification Qual, Dice HealDice)
         {
@@ -160,11 +160,11 @@ namespace Pathos.DotaHeroes.Heroes
           Adept.Apply.HealEntity(HealDice, Modifier.Zero);
         }
 
-        Configure(Ctx.Qualifications.proficient, 1.d8());
-        Configure(Ctx.Qualifications.specialist, 2.d6());
-        Configure(Ctx.Qualifications.expert, 2.d8());
-        Configure(Ctx.Qualifications.master, 3.d8());
-        Configure(Ctx.Qualifications.champion, 4.d8());
+        Configure(Ctx.Qualifications.proficient, 1.d3());
+        Configure(Ctx.Qualifications.specialist, 1.d4());
+        Configure(Ctx.Qualifications.expert, 1.d6());
+        Configure(Ctx.Qualifications.master, 2.d4());
+        Configure(Ctx.Qualifications.champion, 2.d6());
       });
     }
 
@@ -265,10 +265,10 @@ namespace Pathos.DotaHeroes.Heroes
         Ctx.AddClassAvatars(C, AvatarGlyph);
 
         // 等级专长（Feats）
-        // Lv 1: 变形控制（配合大招变形术，可精准选择目标形态）
-        C.AddFeat(1, Ctx.Properties.polymorph_control);
         // Lv 4: 水系抗性
         C.AddFeat(4, Ctx.Elements.water);
+        // Lv 6: 解锁大招——变形 + 变形控制（与官方变形怪同款机制，6 级起可自由精准变身）
+        C.AddFeat(6, Ctx.Properties.polymorph, Ctx.Properties.polymorph_control);
         // Lv 8: 水雾幻影（闪避位移）
         C.AddFeat(8, Ctx.Properties.displacement);
         // Lv 12: 澄澈心境
@@ -284,12 +284,11 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Skills.light_blade,
           Ctx.Skills.unarmed_combat);
 
-        // 开局掌握全套水人技能（Q 波浪形态 / W 变体攻击 / E1 转敏 / E2 转力 / R 变形术）
+        // 开局掌握水人四大基础技能（Q 波浪形态 / W 变体攻击 / E1 转敏 / E2 转力；R 变形大招于 6 级自动解锁）
         C.Startup.AddGrimoire(Dice.One, WaveformSpell);
         C.Startup.AddGrimoire(Dice.One, AdaptiveStrikeSpell);
         C.Startup.AddGrimoire(Dice.One, MorphAgilitySpell);
         C.Startup.AddGrimoire(Dice.One, MorphStrengthSpell);
-        C.Startup.AddGrimoire(Dice.One, Ctx.Spells.polymorph);
 
         // 开局补给与基础装备
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.robe);
