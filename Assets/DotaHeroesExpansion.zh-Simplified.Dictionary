@@ -7,14 +7,40 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,waterkin,变体水灵
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的远程水弹，可作为弹弓无限弹药发射。
 ItemName,tidal orb,潮汐水弹
+PropertyDescription,Ebb & Flow (Agility I): +10% movement speed and slight dodge chance.,潮涨潮落（潮落 I）：常驻移速 +10%，获得轻微闪避几率（变形期间依然生效）。
+PropertyDescription,Ebb & Flow (Agility II): +20% movement speed and improved dodge chance.,潮涨潮落（潮落 II）：常驻移速 +20%，获得进阶闪避几率（变形期间依然生效）。
+PropertyDescription,Ebb & Flow (Agility III): +30% movement speed and agile dodge chance.,潮涨潮落（潮落 III）：常驻移速 +30%，获得灵动闪避几率（变形期间依然生效）。
+PropertyDescription,Ebb & Flow (Agility IV): +40% movement speed and high dodge chance.,潮涨潮落（潮落 IV）：常驻移速 +40%，获得高额闪避几率（变形期间依然生效）。
+PropertyDescription,Ebb & Flow (Agility V): +50% movement speed (permanent quickness) and peak dodge chance.,潮涨潮落（潮落 V）：常驻移速 +50%（等效常驻迅捷），获得极高闪避几率（变形期间依然生效）。
+PropertyDescription,Ebb & Flow (Strength I): Avoids grappling and mild permanent life recovery.,潮涨潮落（潮涨 I）：常驻抵抗抓取束缚，轻微加快生命恢复（变形期间依然生效）。
+PropertyDescription,Ebb & Flow (Strength II): Avoids grappling and steady permanent life recovery.,潮涨潮落（潮涨 II）：常驻抵抗抓取束缚，稳定加快生命恢复（变形期间依然生效）。
+PropertyDescription,"Ebb & Flow (Strength III): Immune to slowness, avoids grappling, and improved permanent life recovery.",潮涨潮落（潮涨 III）：常驻免疫减速、抵抗抓取束缚，显著加快生命恢复（变形期间依然生效）。
+PropertyDescription,"Ebb & Flow (Strength IV): Immune to slowness, avoids grappling, and strong permanent life recovery.",潮涨潮落（潮涨 IV）：常驻免疫减速、抵抗抓取束缚，大幅加快生命恢复（变形期间依然生效）。
+PropertyDescription,"Ebb & Flow (Strength V): Immune to slowness, avoids grappling, and permanent doubled life recovery.",潮涨潮落（潮涨 V）：常驻免疫减速、抵抗抓取束缚，100% 触发双倍生命恢复且不耗饱食度（变形期间依然生效）。
+PropertyName,ebb I,潮落 I
+PropertyName,ebb II,潮落 II
+PropertyName,ebb III,潮落 III
+PropertyName,ebb IV,潮落 IV
+PropertyName,ebb V,潮落 V
+PropertyName,flow I,潮涨 I
+PropertyName,flow II,潮涨 II
+PropertyName,flow III,潮涨 III
+PropertyName,flow IV,潮涨 IV
+PropertyName,flow V,潮涨 V
 RaceName,waterkin//female,变体水灵
 RaceName,waterkin//male,变体水灵
 RaceName,waterkin//non-binary,变体水灵
-SpellDescription,"Blast a target with a high-pressure surge of water, dealing water damage, knocking them back, and potentially stunning them.",向目标释放高压水波冲击，造成水系伤害并击退敌人，有几率使其眩晕。
-SpellDescription,"Dissolve into a surging wave, blinking rapidly across the battlefield and briefly phasing through obstacles.",化作汹涌波浪向前闪烁位移，并在短时间内获得相位穿梭能力。
-SpellDescription,"Shift your fluid form toward agility, trading Strength for Dexterity and gaining a brief burst of quickness.",将水体形态转向敏捷：消耗 1 点力量转化为 1 点敏捷，并获得短暂迅捷。
-SpellDescription,"Shift your fluid form toward strength, trading Dexterity for Strength while restoring vitality.",将水体形态转向力量：消耗 1 点敏捷转化为 1 点力量，同时立即回复生命值。
-SpellName,adaptive strike,变体攻击
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells.",指向一名生物并化身为对方形态，复制其外形、属性、技能与法术。
+SpellDescription,"Crush foes with a heavy torrent of water focused on strength, dealing light damage while reliably knocking them back and stunning them.",以偏重力量的重水洪流冲击目标，造成少量水系伤害并稳定击退与眩晕敌人。
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",化作汹涌波浪向前闪烁突进，对周围敌人造成水波范围伤害，并短暂获得穿墙与幻影闪避。
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,解除当前变形状态，立即切回变体水灵本体。
+SpellDescription,"Shift toward agility (converting 1 to 5 STR & CON into DEX per cast by mastery), freely repeatable and empowering permanent Ebb speed and dodge.",向敏捷转换属性（随熟练度每次将 1~5 点力量与体质转化为等额敏捷，可自由多次转换），同时叠加常驻「潮落」移速与闪避。
+SpellDescription,"Shift toward strength (converting 1 to 5 DEX into STR & CON per cast by mastery), freely repeatable while empowering permanent Flow slow resistance and life recovery and healing immediately.",向力量转换属性（随熟练度每次将 1~5 点敏捷转化为等额力量与体质，可自由多次转换），同时叠加常驻「潮涨」抗减速与生命恢复并立即回血。
+SpellDescription,"Unleash a razor-sharp surge of water focused on agility, dealing heavy burst water damage to enemies.",以偏重敏捷的锋锐高压水波轰击目标，造成高额爆发水系伤害。
+SpellName,adaptive strike agility,变体攻击·敏捷
+SpellName,adaptive strike strength,变体攻击·力量
+SpellName,morph,变形
 SpellName,morph agility,属性转换·敏捷
+SpellName,morph revert,解除变形
 SpellName,morph strength,属性转换·力量
 SpellName,waveform,波浪形态
