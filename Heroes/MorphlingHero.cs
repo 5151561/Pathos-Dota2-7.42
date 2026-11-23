@@ -381,6 +381,7 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Skills.transmutation,
           Ctx.Skills.swimming,
           Ctx.Skills.disc,
+          Ctx.Skills.spear,
           Ctx.Skills.light_armour,
           Ctx.Skills.unarmed_combat);
 
@@ -390,9 +391,11 @@ namespace Pathos.DotaHeroes.Heroes
         C.Startup.AddGrimoire(Dice.One, MorphAgilitySpell);
         C.Startup.AddGrimoire(Dice.One, MorphStrengthSpell);
 
-        // 开局补给与基础装备（无限远程潮汐水弹 + 长袍 + 2瓶水 + 1瓶魔力药水）
+        // 开局补给与基础装备（主手 +1 三叉戟 + 投掷栏无限远程潮汐水弹 + 防水随身袋 + 长袍 + 2瓶水 + 1瓶魔力药水）
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.robe);
+        C.Startup.Loot.AddKit(Chance.Always, Modifier.Plus1, Ctx.Items.trident);
         C.Startup.Loot.AddKit(Chance.Always, TidalOrbItem);
+        C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.sack);
         C.Startup.Loot.AddKit(Chance.Always, Dice.Two, Ctx.Items.potion_of_water);
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.potion_of_gain_energy);
       });
