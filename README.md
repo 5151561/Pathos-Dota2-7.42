@@ -1,20 +1,32 @@
 # Pathos — DOTA2 Heroes Expansion (`DotaHeroesExpansion`)
 
-面向 **Pathos: NetHack Codex**（Windows / Steam / Android）的可扩展 **DOTA2 英雄扩展包框架**。
+面向 **Pathos: NetHack Codex**（Windows / macOS / Linux 桌面端）的可扩展 **DOTA2 英雄扩展包框架**。
 
-## 首批英雄：变体精灵（Morphling / 水人）
+采用 **「声明式外壳 + Harmony Hook 核心逻辑」混合架构**：
+- **声明式（官方 Codex API）**：负责贴图（Atlas）、多语言词条（Dictionary）、种族/职业/法术/装备与预设英雄注册。
+- **运行时 Hook（单 DLL 内嵌 `Lib.Harmony 2.4.3`）**：通过统一事件总线 `DotaHookBus` 忠实还原原生引擎无法声明式实现的 DOTA2 机制（属性守恒、动态力敏比缩放、先天技能实时加成、伤害/状态/击杀触发等），且打包期自动跳过 `PathosMaker`。
+
+---
+
+## 首批英雄：变体精灵（Morphling / 水人，按 DOTA2 7.42 机制还原）
 
 - **专属种族**：`变体水灵 (waterkin)`
   - 水元素之躯：天生水系与寒冰抗性、湿滑（Slippery）、精通游泳、水上通行；弱点为电系（Shock）。
-  - 力量与敏捷上限均提升至 `24`，为属性转换提供充足空间。
+  - 生态交互：遇水回血回蓝、遇火蒸发少量法力；饮用水药水 / 喷泉汲取可恢复生命与法力。
+  - 力 / 敏 / 体上限调整为 `26 / 30 / 26`，为属性转换留出充足空间；开局配备无限远程弹药 **潮汐水弹 (`tidal orb`)**。
 - **专属职业**：`变体精灵 (morphling)`
-  - Lv 4 水系抗性；**Lv 6 自动解锁大招：变形 + 变形控制（`polymorph` + `polymorph_control`）**；Lv 8 水雾幻影（Displacement）；Lv 12 澄澈心境（Clarity）。
-- **专属技能（开局法术书自带基础 4 技能）**：
-  - **Q — 波浪形态 (`waveform`, 6 蓝)**：闪烁位移 + 短暂相位穿梭（Phasing）。
-  - **W — 变体攻击 (`adaptive strike`, 5 蓝)**：高压水波爆炸，造成水系伤害 + 击退 + 概率眩晕。
-  - **E1 — 属性转换·敏捷 (`morph agility`, 2 蓝)**：将力量转化为敏捷，并获得短暂迅捷（Quickness）。
-  - **E2 — 属性转换·力量 (`morph strength`, 2 蓝)**：将敏捷转化为力量，并立即回复少量生命值。
-  - **R — 变形（Lv 6 自动解锁）**：升至 6 级自动获得可控变形天赋，可精准化身为地牢生物。
+  - **Lv 1 先天技能 — 潮涨潮落 (`ebb and flow`)**（天赋栏常驻显示，变形期间持续保留）：
+    - **敏捷（DEX）**：每高于 10 点敏捷提升 `+2%` 移动速度（上限 `+50%`），每 5 点额外敏捷提供 `+1` 格远程攻击距离。
+    - **力量（STR）**：每 5 点额外力量提供 `+1` 格法术施法距离（含变形后窃取的法术），并提供减速抗性（高力量 `STR ≥ 24` 直接免疫减速）。
+  - **等级专长**：Lv 4 水系抗性；Lv 6 变形控制（`polymorph_control`）；Lv 8 水雾幻影（`displacement`）；Lv 12 澄澈心境（`clarity`）。
+- **专属技能（开局法术书自带全套技能）**：
+  - **Q — 波浪形态 (`waveform`, 6 蓝)**：闪烁突进 + 落地水波 AOE 伤害 + 短暂穿墙与幻影闪避（`phasing` + `displacement`）。
+  - **W — 变体打击 (`adaptive strike`, 5 蓝)**：单技能合一——基础水伤 + 击退 + 眩晕；Hook 按实时力敏比动态结算，敏捷 ≥ 1.5×力量时达最高爆发伤害倍率，力量 ≥ 1.5×敏捷时达最长眩晕时长。
+  - **E1 / E2 — 属性转换·敏捷 / 力量 (`morph agility` / `morph strength`, 2 蓝)**：Hook 全权接管，按变化系熟练度每次转换 `1 ~ 5` 点，同步修改 `CurrentForm` 与 `MaximumForm`（总量守恒、卡住上下限，复活或恢复属性药水不再白嫖）；转力同步提升最大生命与当前生命，转敏仅降低最大生命值而不额外扣血。
+  - **R1 / R2 — 变形 / 解除变形 (`morph`, 10 蓝 / `morph revert`, 2 蓝)**：指向目标直接化身复制其外形、属性、技能与法术，并可随时切回本体，期间「潮涨潮落」持续保留。
+- **预设英雄**：选人界面可直接选择预设英雄 **变体精灵 (Morphling)** 一键开局，也可将 `变体水灵` 种族或 `变体精灵` 职业与其他官方种族/职业自由混搭。
+
+---
 
 ## DOTA2 → Pathos 技能蓝耗映射规范
 
@@ -23,8 +35,7 @@
 | 开关 / 切换类（如水人 E） | **1 ~ 2 蓝** | 随时可切，通过属性代价或克制收益控平衡 |
 | 常规小技能（Q / W） | **4 ~ 7 蓝** | 1 级 15~20 蓝时可流畅打出 2~3 次技能连招 |
 | 高爆发 / 强控小技能 | **8 ~ 10 蓝** | 1 级可用 1~2 次，中后期作为主力输出/控制 |
-| 大招（R） | **Lv 6 专长解锁 / 20~30 蓝** | 还原 DOTA2 6 级学大招的成长节奏 |
-- **预设英雄**：选人界面可直接选择预设英雄 **变体精灵 (Morphling)** 一键开局，也可将 `变体水灵` 种族或 `变体精灵` 职业与其他官方种族/职业自由混搭。
+| 大招（R） | **10 ~ 30 蓝 / Lv 6 专长** | 还原 DOTA2 核心大招节奏 |
 
 ---
 
@@ -32,14 +43,19 @@
 
 ```text
 pathos-mod/
-├── DotaHeroesExpansion.csproj   # .NET 10 工程文件，编译后自动调用 PathosMaker.exe 打包并部署
+├── DotaHeroesExpansion.csproj   # 跨平台 .NET 10 工程文件（内嵌 0Harmony.dll，编译后自动调用 PathosMaker）
 ├── LocalPathos.props.example    # 本地安装路径配置模板（复制为 LocalPathos.props 使用，不入库）
-├── DotaHeroesExpansion.cs       # 扩展包总入口（英雄注册清单）
+├── DotaHeroesExpansion.cs       # 扩展包总入口（初始化 Hook 底座 + 英雄注册清单）
 ├── Framework/
-│   ├── IDotaHeroDefinition.cs   # 英雄定义接口
-│   └── DotaHeroContext.cs       # Campaign/Codex 快捷封装与通用辅助方法
+│   ├── IDotaHeroDefinition.cs   # 英雄定义接口（Register 声明式注册 + 可选 RegisterHooks 运行时钩子）
+│   ├── DotaHeroContext.cs       # Campaign/Codex 快捷封装与通用辅助方法
+│   └── Hooks/
+│       ├── HookBootstrap.cs     # Harmony 引导器（内嵌 DLL 解析、跳过 PathosMaker、统一挂载引擎方法）
+│       ├── DotaHookBus.cs       # 幂等按键事件总线（施法、伤害、击杀、复活、移速、射程、施法距离、状态）
+│       ├── HookEventArgs.cs     # 强类型 Hook 事件上下文定义
+│       └── PathosEngineBridge.cs# PathosEngine 内部成员反射缓存与安全操作封装
 ├── Heroes/
-│   └── MorphlingHero.cs         # 水人完整定义（贴图、技能、种族、职业、预设英雄）
+│   └── MorphlingHero.cs         # 变体精灵完整定义（DOTA2 7.42 声明式配置 + Hook 逻辑）
 ├── Atlases/
 │   ├── absurd/                  # 128x128 高清奇幻像素风贴图
 │   ├── sonyvanda/               # 128x128 柔和像素风贴图
@@ -60,18 +76,20 @@ dotnet build .\DotaHeroesExpansion.csproj -c Release
 ```
 
 `PathosMaker.exe` 会自动完成：
-1. 校验并加载 `DotaHeroesExpansion.dll`
+1. 校验并加载 `DotaHeroesExpansion.dll`（打包期自动跳过 Harmony 补丁）
 2. 打包 `Atlases/` 下的四套 128x128 图集
 3. 打包 `Assets/DotaHeroesExpansion.*.Dictionary` 多语言翻译
-4. 自动部署成品到 `<Pathos安装目录>\Expansions\`
+4. 自动部署单 DLL 成品与资源到 `<Pathos安装目录>\Expansions\`
 
-完成后直接从 Steam 启动 **Pathos**，进入新游戏（如 `NetHack Codex`）即可在选人界面看到 **变体精灵（Morphling）**。
+> 调试诊断：默认静默无日志；如需排查 Hook 加载情况，可在启动游戏前设置环境变量 `DOTA_HEROES_HOOK_DEBUG=1`，日志会输出到系统临时目录的 `DotaHeroesHook.log`。
 
 ---
 
 ## 如何新增下一个 DOTA2 英雄（例如敌法师、卡尔、斧王）
 
 1. **准备贴图**：在 `Atlases/absurd/`、`sonyvanda/`、`classic/`、`geoduck/` 中放入 `128x128` 透明背景 PNG（如 `antimage.png`、`mana break.png`）。
-2. **编写英雄类**：在 `Heroes/` 下新建类（如 `AntiMageHero.cs`）实现 `IDotaHeroDefinition`，参考 `Heroes/MorphlingHero.cs` 注册贴图、技能、种族/职业和预设英雄。
+2. **编写英雄类**：在 `Heroes/` 下新建类（如 `AntiMageHero.cs`）实现 `IDotaHeroDefinition`：
+   - 在 `Register(DotaHeroContext)` 中注册贴图、技能外壳、种族/职业与预设英雄；
+   - 如需复杂机制（法球削蓝、受击反击、动态缩放等），覆写 `RegisterHooks(DotaHeroContext)` 订阅 `DotaHookBus` 事件即可。
 3. **注册英雄**：在 `DotaHeroesExpansion.cs` 的 `HeroRegistry` 列表中追加 `new AntiMageHero()`。
 4. **编译与翻译**：运行一次 `dotnet build -c Release`，在 `Assets/DotaHeroesExpansion.zh-Simplified.Dictionary` 中补全自动生成的新增中文词条，再次 `dotnet build -c Release` 即可生效。
