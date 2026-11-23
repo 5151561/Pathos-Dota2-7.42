@@ -13,14 +13,12 @@ RaceName,waterkin//female,变体水灵
 RaceName,waterkin//male,变体水灵
 RaceName,waterkin//non-binary,变体水灵
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",指向一名生物并化身为对方形态，复制其外形、属性、技能与法术，且先天技能「潮涨潮落」持续保留。
-SpellDescription,Crush foes with a torrent of water that knocks them back and stuns them for a duration scaling dynamically with your Strength-to-Agility ratio (max stun at 1.5x Strength).,以重水洪流击退并眩晕目标，眩晕时长随当前力量/敏捷比值动态缩放（力量 ≥ 1.5 倍敏捷时达到最长眩晕）。
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",化作汹涌波浪向前闪烁突进，对周围敌人造成水波范围伤害，并短暂获得穿墙与幻影闪避。
-SpellDescription,Launch a surge of water dealing base damage plus bonus burst damage scaling dynamically with your Agility-to-Strength ratio (max scaling at 1.5x Agility).,发射高压水波造成基础水系伤害，并按当前敏捷/力量比值动态追加爆发伤害（敏捷 ≥ 1.5 倍力量时达到最高倍率）。
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",发射高压水波造成基础水伤并击退眩晕目标：额外爆发伤害随敏捷/力量比值动态提升，眩晕时长随力量/敏捷比值动态延长。
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,解除当前变形状态，立即切回变体水灵本体。
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",将敏捷转化为力量与体质（随变化系熟练度每次 1~5 点），总量守恒并同步提升最大生命与当前生命。
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",将力量与体质转化为敏捷（随变化系熟练度每次 1~5 点），总量守恒并降低最大生命值，当前生命值仅在超过新上限时截断。
-SpellName,adaptive strike agility,变体打击·敏捷
-SpellName,adaptive strike strength,变体打击·力量
+SpellName,adaptive strike,变体打击
 SpellName,morph,变形
 SpellName,morph agility,属性转换·敏捷
 SpellName,morph revert,解除变形

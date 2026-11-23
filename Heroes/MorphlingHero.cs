@@ -11,8 +11,7 @@ namespace Pathos.DotaHeroes.Heroes
   ///   - 敏捷（DEX）：提供额外移动速度与远程攻击距离
   ///   - 力量（STR）：提供额外施法距离与减速抗性
   /// - Q：波浪形态（waveform）— 闪烁突进 + 落地水波 AOE 伤害 + 短暂穿墙与闪避位移
-  /// - W1：变体打击·敏捷（adaptive strike agility）— 基础水伤 + 按实时 DEX/STR 比值动态缩放爆发伤害（DEX ≥ 1.5×STR 达满额倍率）
-  /// - W2：变体打击·力量（adaptive strike strength）— 击退 + 按实时 STR/DEX 比值动态缩放眩晕时长（STR ≥ 1.5×DEX 达最长眩晕）
+  /// - W：变体打击（adaptive strike）— 单一技能合二为一：基础水伤 + 击退 + 眩晕，同时按实时 DEX/STR 动态缩放爆发伤害与眩晕时长
   /// - E1/E2：属性转换·敏捷 / 力量（morph agility / morph strength）—
   ///   - Hook 全权接管，同步修改 CurrentForm 与 MaximumForm，严格总量守恒且复活/恢复属性不再白嫖
   ///   - 忠实还原 DOTA2 血量联动：转力同步提升最大生命与当前生命；转敏同步降低最大生命与当前生命（最低保底 1 HP）
@@ -43,10 +42,9 @@ namespace Pathos.DotaHeroes.Heroes
       // 3. 注册水人专属无限远程普攻：潮汐水弹（tidal orb）
       var TidalOrbItem = RegisterTidalOrbItem(Ctx, TidalOrbGlyph);
 
-      // 4. 注册水人全套专属技能（Q / W1 / W2 / E1 / E2 / R1 / R2）
+      // 4. 注册水人全套专属技能（Q / W / E1 / E2 / R1 / R2）
       var WaveformSpell = RegisterWaveformSpell(Ctx, WaveformGlyph);
-      var AdaptiveStrikeAgilitySpell = RegisterAdaptiveStrikeAgilitySpell(Ctx, AdaptiveStrikeGlyph);
-      var AdaptiveStrikeStrengthSpell = RegisterAdaptiveStrikeStrengthSpell(Ctx, AdaptiveStrikeGlyph);
+      var AdaptiveStrikeSpell = RegisterAdaptiveStrikeSpell(Ctx, AdaptiveStrikeGlyph);
       var MorphAgilitySpell = RegisterMorphAgilitySpell(Ctx, MorphAgilityGlyph);
       var MorphStrengthSpell = RegisterMorphStrengthSpell(Ctx, MorphStrengthGlyph);
       var MorphSpell = RegisterMorphSpell(Ctx, MorphlingGlyph);
@@ -65,8 +63,7 @@ namespace Pathos.DotaHeroes.Heroes
         EbbAndFlowTalent,
         TidalOrbItem,
         WaveformSpell,
-        AdaptiveStrikeAgilitySpell,
-        AdaptiveStrikeStrengthSpell,
+        AdaptiveStrikeSpell,
         MorphAgilitySpell,
         MorphStrengthSpell,
         MorphSpell,
@@ -161,12 +158,12 @@ namespace Pathos.DotaHeroes.Heroes
           }
         }
 
-        // 2) W2 变体打击·力量：按 STR/DEX 比值动态计算眩晕回合数（STR ≥ 1.5×DEX 达满额重晕）
+        // 2) W 变体打击：按 STR/DEX 比值动态计算眩晕回合数（STR ≥ 1.5×DEX 达满额重晕）
         var ActiveCast = DotaHookBus.ActiveSpellCast;
         if (ActiveCast != null &&
             Args.Property == Ctx.Properties.stunned &&
             Args.Target != ActiveCast.Character &&
-            string.Equals(ActiveCast.Spell?.Name, "adaptive strike strength", StringComparison.OrdinalIgnoreCase))
+            string.Equals(ActiveCast.Spell?.Name, "adaptive strike", StringComparison.OrdinalIgnoreCase))
         {
           int Str = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(ActiveCast.Character, "strength"));
           int Dex = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(ActiveCast.Character, "dexterity"));
@@ -180,14 +177,14 @@ namespace Pathos.DotaHeroes.Heroes
         }
       });
 
-      // W1 变体打击·敏捷：按 DEX/STR 比值动态追加敏捷爆发伤害（DEX ≥ 1.5×STR 达满额倍率）
-      DotaHookBus.RegisterBeforeDamage("morphling.adaptive_strike_agility", Args =>
+      // W 变体打击：按 DEX/STR 比值动态追加敏捷爆发伤害（DEX ≥ 1.5×STR 达满额倍率）
+      DotaHookBus.RegisterBeforeDamage("morphling.adaptive_strike", Args =>
       {
         var ActiveCast = DotaHookBus.ActiveSpellCast;
         if (ActiveCast == null ||
             Args.Attacker != ActiveCast.Character ||
             Args.Defender == ActiveCast.Character ||
-            !string.Equals(ActiveCast.Spell?.Name, "adaptive strike agility", StringComparison.OrdinalIgnoreCase))
+            !string.Equals(ActiveCast.Spell?.Name, "adaptive strike", StringComparison.OrdinalIgnoreCase))
           return;
 
         int Dex = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(ActiveCast.Character, "dexterity"));
@@ -430,12 +427,12 @@ namespace Pathos.DotaHeroes.Heroes
       });
     }
 
-    private static Spell RegisterAdaptiveStrikeAgilitySpell(DotaHeroContext Ctx, Glyph Icon)
+    private static Spell RegisterAdaptiveStrikeSpell(DotaHeroContext Ctx, Glyph Icon)
     {
       return Ctx.Spells.Add(S =>
       {
-        S.Name = "adaptive strike agility";
-        S.Description = "Launch a surge of water dealing base damage plus bonus burst damage scaling dynamically with your Agility-to-Strength ratio (max scaling at 1.5x Agility).";
+        S.Name = "adaptive strike";
+        S.Description = "Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.";
         S.Glyph = Icon;
         S.School = Ctx.Schools.evocation;
         S.Precept = new Precept(Purpose.Blast, Ctx.Elements.water);
@@ -446,8 +443,10 @@ namespace Pathos.DotaHeroes.Heroes
         {
           var Adept = S.SetAdept(Qual);
           Adept.SetCast().Explosion(Ctx.Explosions.watery, Dice.Fixed(Range));
-          // 基础伤害由声明式提供，额外敏捷倍率爆发伤害由 Hook 按实时 DEX/STR 动态追加
+          // 基础伤害 + 击退 + 眩晕占位；额外敏捷爆发伤害与力量眩晕时长由 Hook 按实时力敏比动态结算
           Adept.Apply.HarmEntity(Ctx.Elements.water, BaseDamage);
+          Adept.Apply.Knockback();
+          Adept.Apply.ApplyTransient(Ctx.Properties.stunned, Dice.One);
         }
 
         Configure(Ctx.Qualifications.proficient, 5, 1.d6());
@@ -455,36 +454,6 @@ namespace Pathos.DotaHeroes.Heroes
         Configure(Ctx.Qualifications.expert, 7, 2.d6());
         Configure(Ctx.Qualifications.master, 8, 2.d8());
         Configure(Ctx.Qualifications.champion, 9, 3.d6());
-      });
-    }
-
-    private static Spell RegisterAdaptiveStrikeStrengthSpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
-      {
-        S.Name = "adaptive strike strength";
-        S.Description = "Crush foes with a torrent of water that knocks them back and stuns them for a duration scaling dynamically with your Strength-to-Agility ratio (max stun at 1.5x Strength).";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.evocation;
-        S.Precept = new Precept(Purpose.Blast, Ctx.Elements.water);
-        S.Level = 1;
-        S.Mana = 5;
-
-        void Configure(Qualification Qual, int Range, Dice Damage)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().Explosion(Ctx.Explosions.watery, Dice.Fixed(Range));
-          Adept.Apply.HarmEntity(Ctx.Elements.water, Damage);
-          Adept.Apply.Knockback();
-          // 基础眩晕占位，实际眩晕回合数由 Hook 按实时 STR/DEX 比值动态改写
-          Adept.Apply.ApplyTransient(Ctx.Properties.stunned, Dice.One);
-        }
-
-        Configure(Ctx.Qualifications.proficient, 5, 1.d4());
-        Configure(Ctx.Qualifications.specialist, 6, 1.d6());
-        Configure(Ctx.Qualifications.expert, 7, 2.d4());
-        Configure(Ctx.Qualifications.master, 8, 2.d6());
-        Configure(Ctx.Qualifications.champion, 9, 3.d4());
       });
     }
 
@@ -676,8 +645,7 @@ namespace Pathos.DotaHeroes.Heroes
       Property EbbAndFlowTalent,
       Item TidalOrbItem,
       Spell WaveformSpell,
-      Spell AdaptiveStrikeAgilitySpell,
-      Spell AdaptiveStrikeStrengthSpell,
+      Spell AdaptiveStrikeSpell,
       Spell MorphAgilitySpell,
       Spell MorphStrengthSpell,
       Spell MorphSpell,
@@ -718,8 +686,7 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Skills.unarmed_combat);
 
         C.Startup.AddGrimoire(Dice.One, WaveformSpell);
-        C.Startup.AddGrimoire(Dice.One, AdaptiveStrikeAgilitySpell);
-        C.Startup.AddGrimoire(Dice.One, AdaptiveStrikeStrengthSpell);
+        C.Startup.AddGrimoire(Dice.One, AdaptiveStrikeSpell);
         C.Startup.AddGrimoire(Dice.One, MorphAgilitySpell);
         C.Startup.AddGrimoire(Dice.One, MorphStrengthSpell);
         C.Startup.AddGrimoire(Dice.One, MorphSpell);
