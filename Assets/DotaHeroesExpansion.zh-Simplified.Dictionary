@@ -5,7 +5,7 @@ ClassName,morphling//male,变体精灵
 ClassName,morphling//non-binary,变体精灵
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",由活水潮汐凝聚而成的智慧元素，能随心重塑自身的力量与敏捷形态。
 EntityName,waterkin,变体水灵
-ItemDescription,A condensed sphere of living tidewater hurled at range. Reforms endlessly in a Morphling's grasp without consuming ammunition.,由活水潮汐凝聚的远程水弹，可无限投掷且不消耗弹药。
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的远程水弹，可作为弹弓无限弹药发射。
 ItemName,tidal orb,潮汐水弹
 RaceName,waterkin//female,变体水灵
 RaceName,waterkin//male,变体水灵

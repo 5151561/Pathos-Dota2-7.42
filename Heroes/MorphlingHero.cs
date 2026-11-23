@@ -66,10 +66,10 @@ namespace Pathos.DotaHeroes.Heroes
       return Ctx.Items.Add(I =>
       {
         I.Name = "tidal orb";
-        I.Description = "A condensed sphere of living tidewater hurled at range. Reforms endlessly in a Morphling's grasp without consuming ammunition.";
+        I.Description = "A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.";
         I.Glyph = Icon;
         I.Stock = Ctx.Stocks.weapon;
-        I.Type = ItemType.ThrownWeapon;
+        I.Type = ItemType.RangedMissile;
         I.Grade = Ctx.Grades.standard;
         I.Material = Ctx.Materials.water;
         I.Size = Size.Tiny;
@@ -83,13 +83,14 @@ namespace Pathos.DotaHeroes.Heroes
         I.SetEquip(EquipAction.Ready, Delay.OneSecond, Ctx.Sonics.water_splash, Audibility: 5);
 
         var W = I.SetOneHandedWeapon(
-          Ctx.Skills.disc,
+          Ctx.Skills.sling,
           Ctx.Sonics.water_splash,
           Ctx.Elements.water,
           DamageType.Bludgeon,
           1.d6(),
           _ => { });
-        W.FixedRange = 5;
+        W.Ammunition = Ammunition.Pellet;
+        W.FixedRange = 6;
       });
     }
 
@@ -380,8 +381,7 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Skills.evocation,
           Ctx.Skills.transmutation,
           Ctx.Skills.swimming,
-          Ctx.Skills.disc,
-          Ctx.Skills.spear,
+          Ctx.Skills.sling,
           Ctx.Skills.light_armour,
           Ctx.Skills.unarmed_combat);
 
@@ -391,9 +391,9 @@ namespace Pathos.DotaHeroes.Heroes
         C.Startup.AddGrimoire(Dice.One, MorphAgilitySpell);
         C.Startup.AddGrimoire(Dice.One, MorphStrengthSpell);
 
-        // 开局补给与基础装备（主手 +1 三叉戟 + 投掷栏无限远程潮汐水弹 + 防水随身袋 + 长袍 + 2瓶水 + 1瓶魔力药水）
+        // 开局补给与基础装备（主手 +1 弹弓 + 弹药栏无限潮汐水弹 + 防水随身袋 + 长袍 + 2瓶水 + 1瓶魔力药水）
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.robe);
-        C.Startup.Loot.AddKit(Chance.Always, Modifier.Plus1, Ctx.Items.trident);
+        C.Startup.Loot.AddKit(Chance.Always, Modifier.Plus1, Ctx.Items.sling);
         C.Startup.Loot.AddKit(Chance.Always, TidalOrbItem);
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.sack);
         C.Startup.Loot.AddKit(Chance.Always, Dice.Two, Ctx.Items.potion_of_water);
