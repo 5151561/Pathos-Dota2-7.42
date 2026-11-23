@@ -10,9 +10,13 @@
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
   </PropertyGroup>
 
-  <!-- 本地 Steam 版 Pathos 安装路径 -->
+  <!-- 优先加载本地覆写配置 LocalPathos.props（已加入 .gitignore，不会提交到 Git） -->
+  <Import Project="LocalPathos.props" Condition="Exists('LocalPathos.props')" />
+
+  <!-- Pathos 安装路径：优先 LocalPathos.props，其次环境变量 PATHOS_INSTALL_DIR，默认官方路径 -->
   <PropertyGroup>
-    <PathosInstallation>E:\Steam\steamapps\common\Pathos</PathosInstallation>
+    <PathosInstallation Condition="'$(PathosInstallation)' == '' and '$(PATHOS_INSTALL_DIR)' != ''">$(PATHOS_INSTALL_DIR)</PathosInstallation>
+    <PathosInstallation Condition="'$(PathosInstallation)' == ''">C:\Games\Pathos</PathosInstallation>
     <!-- 调试时默认进入的模块（NetHack Codex 官方主线） -->
     <PathosModule>NetHack</PathosModule>
     <!-- 调试时可选自动开局的英雄名（留空则进入选人界面） -->

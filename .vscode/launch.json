@@ -4,12 +4,12 @@
     {
       "name": "Launch and Debug Pathos (Dota Heroes)",
       "type": "clr",
-      "program": "E:/Steam/steamapps/common/Pathos/PathosGame.exe",
+      "program": "${env:PATHOS_INSTALL_DIR}/PathosGame.exe",
       "args": [
         "disable-update",
         "expansion:DotaHeroesExpansion.dll"
       ],
-      "cwd": "E:/Steam/steamapps/common/Pathos",
+      "cwd": "${env:PATHOS_INSTALL_DIR}",
       "request": "launch"
     }
   ]

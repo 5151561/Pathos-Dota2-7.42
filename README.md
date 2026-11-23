@@ -31,8 +31,9 @@
 ## 目录结构
 
 ```text
-e:\program\pathos-mod\
+pathos-mod/
 ├── DotaHeroesExpansion.csproj   # .NET 10 工程文件，编译后自动调用 PathosMaker.exe 打包并部署
+├── LocalPathos.props.example    # 本地安装路径配置模板（复制为 LocalPathos.props 使用，不入库）
 ├── DotaHeroesExpansion.cs       # 扩展包总入口（英雄注册清单）
 ├── Framework/
 │   ├── IDotaHeroDefinition.cs   # 英雄定义接口
@@ -51,7 +52,8 @@ e:\program\pathos-mod\
 
 ## 编译与运行
 
-在项目根目录执行：
+1. 首次克隆仓库后，复制 `LocalPathos.props.example` 为 `LocalPathos.props`（已被 `.gitignore` 忽略），将其中的 `<PathosInstallation>` 修改为你本机的 Pathos 安装目录（例如 Steam 目录下的 `steamapps\common\Pathos`）；或直接设置环境变量 `PATHOS_INSTALL_DIR`。
+2. 在项目根目录执行：
 
 ```powershell
 dotnet build .\DotaHeroesExpansion.csproj -c Release
@@ -61,7 +63,7 @@ dotnet build .\DotaHeroesExpansion.csproj -c Release
 1. 校验并加载 `DotaHeroesExpansion.dll`
 2. 打包 `Atlases/` 下的四套 128x128 图集
 3. 打包 `Assets/DotaHeroesExpansion.*.Dictionary` 多语言翻译
-4. 自动部署成品到 `E:\Steam\steamapps\common\Pathos\Expansions\`
+4. 自动部署成品到 `<Pathos安装目录>\Expansions\`
 
 完成后直接从 Steam 启动 **Pathos**，进入新游戏（如 `NetHack Codex`）即可在选人界面看到 **变体精灵（Morphling）**。
 

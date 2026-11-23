@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- 复制本文件为 LocalPathos.props 并修改为你本机的 Pathos 安装路径（LocalPathos.props 已被 .gitignore 忽略） -->
+    <PathosInstallation>C:\Games\Pathos</PathosInstallation>
+  </PropertyGroup>
+</Project>
