@@ -178,12 +178,20 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         public Dice OriginalRangeDice;
       }
 
+      private sealed class AttackState
+      {
+        public AttackEventArgs Args;
+        public AttackEventArgs PreviousActive;
+      }
+
       public static void ApplyAll()
       {
         var EngineAsm = typeof(Expansion).Assembly;
         var DirectorType = EngineAsm.GetType("Pathos.Director");
         var EngineType = EngineAsm.GetType("Pathos.Engine");
         var CastSpellCmdType = EngineAsm.GetType("Pathos.CastSpellCommand");
+        var CommandType = EngineAsm.GetType("Pathos.Command");
+        var AttackCmdType = EngineAsm.GetType("Pathos.AttackCommand");
         var CharacterType = EngineAsm.GetType("Pathos.Character");
         var SquareType = EngineAsm.GetType("Pathos.Square");
         var PropertySetType = EngineAsm.GetType("Pathos.PropertySet");
@@ -263,6 +271,23 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           "ApplyTransient",
           new[] { CharacterType, CharacterType, typeof(Property), typeof(Dice) },
           prefix: nameof(ApplyTransientPrefix));
+
+        // 9. 角色行动完成钩子：Director.Execute(Character, Command)
+        PatchMethod(
+          Harmony,
+          DirectorType,
+          "Execute",
+          new[] { CharacterType, CommandType },
+          postfix: nameof(ExecutePostfix));
+
+        // 10. 角色普通攻击钩子：Director.Attack(Character, AttackCommand)
+        PatchMethod(
+          Harmony,
+          DirectorType,
+          "Attack",
+          new[] { CharacterType, AttackCmdType },
+          prefix: nameof(AttackPrefix),
+          postfix: nameof(AttackPostfix));
       }
 
       private static void PatchMethod(
@@ -452,6 +477,57 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         DotaHookBus.DispatchBeforeApplyTransient(Args);
         Duration = Args.Duration;
         return !Args.Cancel;
+      }
+
+      private static void ExecutePostfix(object __instance, Character Character, object Command)
+      {
+        if (Character == null || Command == null)
+          return;
+
+        var Engine = PathosEngineBridge.GetDirectorEngine(__instance);
+        DotaHookBus.DispatchAfterExecuteCommand(new CommandEventArgs(Engine, __instance, Character, Command));
+      }
+
+      private static bool AttackPrefix(object __instance, Character Character, object Command, out AttackState __state)
+      {
+        __state = null;
+        if (Character == null)
+          return true;
+
+        var Args = new AttackEventArgs(
+          Engine: PathosEngineBridge.GetDirectorEngine(__instance),
+          Director: __instance,
+          Character: Character,
+          Direction: PathosEngineBridge.GetAttackCommandDirection(Command));
+
+        var Previous = DotaHookBus.ActiveAttack;
+        DotaHookBus.ActiveAttack = Args;
+        __state = new AttackState { Args = Args, PreviousActive = Previous };
+
+        DotaHookBus.DispatchBeforeAttack(Args);
+        if (Args.Cancel)
+        {
+          DotaHookBus.ActiveAttack = Previous;
+          return false;
+        }
+
+        return true;
+      }
+
+      private static void AttackPostfix(AttackState __state)
+      {
+        if (__state == null)
+          return;
+
+        try
+        {
+          if (!__state.Args.Cancel)
+            DotaHookBus.DispatchAfterAttack(__state.Args);
+        }
+        finally
+        {
+          DotaHookBus.ActiveAttack = __state.PreviousActive;
+        }
       }
     }
   }

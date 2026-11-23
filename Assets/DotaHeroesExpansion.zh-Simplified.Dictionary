@@ -1,26 +1,45 @@
-﻿CharacterName,Morphling,变体精灵
+﻿CharacterName,Juggernaut,主宰
+CharacterName,Morphling,变体精灵
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",来自 DOTA2 的水元素英雄：能化作波浪突进、自由转换力量与敏捷、凭先天技能「潮涨潮落」随属性动态强化移速/射程/施法距离/减速抗性，并可变形为敌人形态。
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",来自 DOTA2 的面具剑客：凭先天技能「剑心犹在」积攒无伤势能强化移速与敏捷、以「剑刃风暴」破法清场、以「治疗守卫」续航，并以「剑舞」暴击与「无敌斩」收割敌阵。
+ClassName,juggernaut//female,主宰
+ClassName,juggernaut//male,主宰
+ClassName,juggernaut//non-binary,主宰
 ClassName,morphling//female,变体精灵
 ClassName,morphling//male,变体精灵
 ClassName,morphling//non-binary,变体精灵
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,主宰召唤的悬浮治疗图腾，每回合为周围友方单位按最大生命值百分比回复生命。
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",由活水潮汐凝聚而成的智慧元素，能随心重塑自身的力量与敏捷形态。
+EntityName,healing ward,治疗守卫
 EntityName,waterkin,变体水灵
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的远程水弹，可作为弹弓无限弹药发射。
 ItemName,tidal orb,潮汐水弹
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 2 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 2 turns after taking damage.,先天技能「剑心犹在」：每连续 2 回合未受伤害叠加 1 层（上限 10 层），每层提供 +1% 移速与 +2.5% 等效敏捷攻速及近战/无敌斩额外伤害；受伤后保留 2 回合粘滞期。
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,先天技能「潮涨潮落」：敏捷提供额外移速与远程攻击距离；力量提供额外施法距离与减速抗性（变形期间持续保留）。
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% to 35% chance (by Medium Blade mastery) to critically strike for 1.8x damage.",被动技能「剑舞」：近战普攻、无敌斩与剑刃风暴有 20% ~ 35% 概率（随中刃熟练度提升）触发 1.8 倍致命一击。
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",剑刃风暴旋转中：免疫负面状态、获得 80% 魔法/元素伤害减免，并每回合对周围敌人造成魔法伤害。
+PropertyName,blade dance,剑舞
+PropertyName,blade fury,剑刃风暴
+PropertyName,bladeform,剑心犹在
 PropertyName,ebb and flow,潮涨潮落
 RaceName,waterkin//female,变体水灵
 RaceName,waterkin//male,变体水灵
 RaceName,waterkin//non-binary,变体水灵
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",指向一名生物并化身为对方形态，复制其外形、属性、技能与法术，且先天技能「潮涨潮落」持续保留。
+SpellDescription,"Dispel debuffs and spin in a bladestorm for 4 to 6 turns, gaining debuff immunity, 80% magical damage reduction, and dealing magical damage to adjacent foes each turn (can crit with Blade Dance).",基础驱散自身负面状态并舞起持续 4~6 回合的剑刃风暴：获得减益免疫与 80% 魔法减伤，每回合对周围敌人造成魔法伤害（可触发剑舞暴击）。
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",化作汹涌波浪向前闪烁突进，对周围敌人造成水波范围伤害，并短暂获得穿墙与幻影闪避。
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",发射高压水波造成基础水伤并击退眩晕目标：额外爆发伤害随敏捷/力量比值动态提升，眩晕时长随力量/敏捷比值动态延长。
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes across nearby foes, triggering Blade Dance critical strikes and Bladeform bonuses.",跃向目标敌人并在周围敌方单位间连续发动 5~12 次无敌武器斩击，全程免疫一切伤害，每次斩击均可触发剑舞暴击与剑心犹在加成。
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,解除当前变形状态，立即切回变体水灵本体。
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",将敏捷转化为力量与体质（随变化系熟练度每次 1~5 点），总量守恒并同步提升最大生命与当前生命。
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",将力量与体质转化为敏捷（随变化系熟练度每次 1~5 点），总量守恒并降低最大生命值，当前生命值仅在超过新上限时截断。
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 8 to 16 turns that heals all allies within 2 tiles for 4% to 8% of their maximum HP each turn.",召唤一个 1 点生命值的可移动治疗守卫（同时上限 1 个，持续 8~16 回合），每回合为周围 2 格友方回复 4%~8% 最大生命值。
 SpellName,adaptive strike,变体打击
+SpellName,blade fury,剑刃风暴
+SpellName,healing ward,治疗守卫
 SpellName,morph,变形
 SpellName,morph agility,属性转换·敏捷
 SpellName,morph revert,解除变形
 SpellName,morph strength,属性转换·力量
+SpellName,omnislash,无敌斩
 SpellName,waveform,波浪形态

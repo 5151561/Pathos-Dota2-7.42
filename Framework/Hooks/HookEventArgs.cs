@@ -181,4 +181,48 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public Dice Duration { get; set; }
     public bool Cancel { get; set; }
   }
+
+  /// <summary>
+  /// 角色指令执行完成事件上下文（对应 Pathos.Director.Execute）。
+  /// 每次角色（含玩家与随从）完成一回合行动后触发，适合驱动每回合光环与叠层逻辑。
+  /// </summary>
+  public sealed class CommandEventArgs
+  {
+    public CommandEventArgs(object Engine, object Director, Character Character, object Command)
+    {
+      this.Engine = Engine;
+      this.Director = Director;
+      this.Character = Character;
+      this.Command = Command;
+    }
+
+    public object Engine { get; }
+    public object Director { get; }
+    public Character Character { get; }
+    public object Command { get; }
+  }
+
+  /// <summary>
+  /// 角色普通攻击事件上下文（对应 Pathos.Director.Attack）。
+  /// </summary>
+  public sealed class AttackEventArgs
+  {
+    public AttackEventArgs(object Engine, object Director, Character Character, Direction Direction)
+    {
+      this.Engine = Engine;
+      this.Director = Director;
+      this.Character = Character;
+      this.Direction = Direction;
+    }
+
+    public object Engine { get; }
+    public object Director { get; }
+    public Character Character { get; }
+    public Direction Direction { get; }
+
+    /// <summary>
+    /// 仅在 BeforeAttack 有效：设为 true 将跳过本次攻击结算。
+    /// </summary>
+    public bool Cancel { get; set; }
+  }
 }

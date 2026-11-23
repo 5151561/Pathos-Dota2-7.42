@@ -22,6 +22,7 @@ namespace Pathos
       var HeroRegistry = new List<IDotaHeroDefinition>
       {
         new MorphlingHero(),
+        new JuggernautHero(),
         // 后续新增 DOTA2 英雄只需在此追加，例如：
         // new AntiMageHero(),
         // new InvokerHero(),

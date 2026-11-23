@@ -15,6 +15,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly Type JournalType = EngineAsm.GetType("Pathos.Journal");
     private static readonly Type LogType = EngineAsm.GetType("Pathos.Log");
     private static readonly Type CastSpellCommandType = EngineAsm.GetType("Pathos.CastSpellCommand");
+    private static readonly Type AttackCommandType = EngineAsm.GetType("Pathos.AttackCommand");
 
     private static readonly FieldInfo DirectorEngineField =
       DirectorType?.GetField("Engine", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -40,6 +41,41 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly PropertyInfo CastCmdDirectionProp =
       CastSpellCommandType?.GetProperty("Direction", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
+    private static readonly PropertyInfo AttackCmdDirectionProp =
+      AttackCommandType?.GetProperty("Direction", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo EngineHarmCharacterMethod =
+      EngineType?.GetMethod("HarmCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Character), typeof(Direction), typeof(Element), typeof(Dice), typeof(Modifier), typeof(string) }, null);
+
+    private static readonly MethodInfo EngineStrikeCharacterMethod =
+      EngineType?.GetMethod("StrikeCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Character), typeof(Direction), typeof(int), typeof(Delay), typeof(string) }, null);
+
+    private static readonly MethodInfo EngineHealCharacterIntMethod =
+      EngineType?.GetMethod("HealCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Character), typeof(Direction), typeof(int) }, null);
+
+    private static readonly MethodInfo EngineTeleportCharacterMethod =
+      EngineType?.GetMethod("TeleportCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Square), typeof(bool) }, null);
+
+    private static readonly MethodInfo EngineRemoveTransientMethod =
+      EngineType?.GetMethod("RemoveTransient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Character), typeof(Property) }, null);
+
+    private static readonly MethodInfo EngineApplyTransientMethod =
+      EngineType?.GetMethod("ApplyTransient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Character), typeof(Property), typeof(Dice) }, null);
+
+    private static readonly MethodInfo EngineDismissAllyMethod =
+      EngineType?.GetMethod("DismissAlly", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character) }, null);
+
+    private static readonly MethodInfo EngineGetMeleeDamageDiceMethod =
+      EngineType?.GetMethod("GetMeleeDamageDice", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Asset) }, null);
+
     private static readonly MethodInfo MeterSetBothMethod =
       typeof(Meter).GetMethod("Set", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(int), typeof(int) }, null);
 
@@ -54,6 +90,15 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     private static readonly MethodInfo CharacterGetQualificationMethod =
       typeof(Character).GetMethod("GetQualification", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Skill) }, null);
+
+    private static readonly MethodInfo CharacterHasTransientMethod =
+      typeof(Character).GetMethod("HasTransient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Property) }, null);
+
+    private static readonly MethodInfo CharacterIsAlliedMethod =
+      typeof(Character).GetMethod("IsAllied", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Character) }, null);
+
+    private static readonly MethodInfo CharacterIsTameAlliedMethod =
+      typeof(Character).GetMethod("IsTameAllied", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Character) }, null);
 
     public static object GetDirectorEngine(object Director)
     {
@@ -76,6 +121,122 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         return default;
       var Val = CastCmdDirectionProp.GetValue(Command);
       return Val is Direction Dir ? Dir : default;
+    }
+
+    public static Direction GetAttackCommandDirection(object Command)
+    {
+      if (Command == null || AttackCmdDirectionProp == null)
+        return default;
+      var Val = AttackCmdDirectionProp.GetValue(Command);
+      return Val is Direction Dir ? Dir : default;
+    }
+
+    public static void HarmCharacter(
+      object Engine,
+      Character Source,
+      Character Target,
+      Direction Direction,
+      Element Element,
+      Dice DamageDice,
+      Modifier DecreaseTotal,
+      string Cause)
+    {
+      if (Engine == null || Target == null || EngineHarmCharacterMethod == null)
+        return;
+
+      EngineHarmCharacterMethod.Invoke(Engine, new object[] { Source, Target, Direction, Element, DamageDice, DecreaseTotal, Cause });
+    }
+
+    public static void StrikeCharacter(
+      object Engine,
+      Character Attacker,
+      Character Defender,
+      Direction Direction,
+      int DamageTotal,
+      Delay DamageDelay,
+      string Cause)
+    {
+      if (Engine == null || Defender == null || EngineStrikeCharacterMethod == null)
+        return;
+
+      EngineStrikeCharacterMethod.Invoke(Engine, new object[] { Attacker, Defender, Direction, DamageTotal, DamageDelay, Cause });
+    }
+
+    public static void HealCharacter(object Engine, Character Source, Character Target, Direction Direction, int LifePoints)
+    {
+      if (Engine == null || Target == null || LifePoints <= 0 || EngineHealCharacterIntMethod == null)
+        return;
+
+      EngineHealCharacterIntMethod.Invoke(Engine, new object[] { Source, Target, Direction, LifePoints });
+    }
+
+    public static void TeleportCharacter(object Engine, Character Character, Square TargetSquare, bool MasterMode = false)
+    {
+      if (Engine == null || Character == null || TargetSquare == null || EngineTeleportCharacterMethod == null)
+        return;
+
+      EngineTeleportCharacterMethod.Invoke(Engine, new object[] { Character, TargetSquare, MasterMode });
+    }
+
+    public static void RemoveTransient(object Engine, Character Remover, Character Target, Property Property)
+    {
+      if (Engine == null || Target == null || Property == null || EngineRemoveTransientMethod == null)
+        return;
+
+      EngineRemoveTransientMethod.Invoke(Engine, new object[] { Remover, Target, Property });
+    }
+
+    public static void ApplyTransient(object Engine, Character Applier, Character Target, Property Property, Dice Duration)
+    {
+      if (Engine == null || Target == null || Property == null || EngineApplyTransientMethod == null)
+        return;
+
+      EngineApplyTransientMethod.Invoke(Engine, new object[] { Applier, Target, Property, Duration });
+    }
+
+    public static void DismissAlly(object Engine, Character Ally)
+    {
+      if (Engine == null || Ally == null || EngineDismissAllyMethod == null)
+        return;
+
+      EngineDismissAllyMethod.Invoke(Engine, new object[] { Ally });
+    }
+
+    public static Dice GetMeleeDamageDice(object Engine, Character Character, Asset WeaponAsset)
+    {
+      if (Engine == null || Character == null || EngineGetMeleeDamageDiceMethod == null)
+        return 1.d8();
+
+      var Result = EngineGetMeleeDamageDiceMethod.Invoke(Engine, new object[] { Character, WeaponAsset });
+      return Result is Dice D && !D.IsZero() ? D : 1.d8();
+    }
+
+    public static bool HasTransient(Character Character, Property Property)
+    {
+      if (Character == null || Property == null || CharacterHasTransientMethod == null)
+        return false;
+
+      return CharacterHasTransientMethod.Invoke(Character, new object[] { Property }) is bool B && B;
+    }
+
+    public static bool IsAllied(Character Source, Character Target)
+    {
+      if (Source == null || Target == null)
+        return false;
+      if (Source == Target)
+        return true;
+
+      if (CharacterIsAlliedMethod != null &&
+          CharacterIsAlliedMethod.Invoke(Source, new object[] { Target }) is bool Allied &&
+          Allied)
+        return true;
+
+      if (CharacterIsTameAlliedMethod != null &&
+          CharacterIsTameAlliedMethod.Invoke(Source, new object[] { Target }) is bool TameAllied &&
+          TameAllied)
+        return true;
+
+      return false;
     }
 
     /// <summary>
