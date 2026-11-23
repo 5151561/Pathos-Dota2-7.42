@@ -100,4 +100,85 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public object Engine { get; }
     public Character Character { get; }
   }
+
+  /// <summary>
+  /// 角色移动/行动速度查询事件上下文（对应 Pathos.Engine.GetBaseSpeed）。
+  /// </summary>
+  public sealed class SpeedQueryEventArgs
+  {
+    public SpeedQueryEventArgs(object Engine, Character Character, bool Attacking, Speed BaseSpeed)
+    {
+      this.Engine = Engine;
+      this.Character = Character;
+      this.Attacking = Attacking;
+      this.Speed = BaseSpeed;
+    }
+
+    public object Engine { get; }
+    public Character Character { get; }
+    public bool Attacking { get; }
+    public Speed Speed { get; set; }
+  }
+
+  /// <summary>
+  /// 远程攻击距离查询事件上下文（对应 Pathos.Engine.GetShootRange / GetThrowRange）。
+  /// </summary>
+  public sealed class AttackRangeQueryEventArgs
+  {
+    public AttackRangeQueryEventArgs(object Engine, Character Character, Asset Asset, bool IsThrow, int Range)
+    {
+      this.Engine = Engine;
+      this.Character = Character;
+      this.Asset = Asset;
+      this.IsThrow = IsThrow;
+      this.Range = Range;
+    }
+
+    public object Engine { get; }
+    public Character Character { get; }
+    public Asset Asset { get; }
+    public bool IsThrow { get; }
+    public int Range { get; set; }
+  }
+
+  /// <summary>
+  /// 法术施法距离修正事件上下文（对应 Pathos.Engine.CastEffects）。
+  /// </summary>
+  public sealed class CastRangeEventArgs
+  {
+    public CastRangeEventArgs(object Engine, Character Character, Cast Cast)
+    {
+      this.Engine = Engine;
+      this.Character = Character;
+      this.Cast = Cast;
+    }
+
+    public object Engine { get; }
+    public Character Character { get; }
+    public Cast Cast { get; }
+    public int BonusRange { get; set; }
+  }
+
+  /// <summary>
+  /// 状态施加事件上下文（对应 Pathos.Engine.ApplyTransient）。
+  /// 可修改 Duration 或将 Cancel 设为 true 以免疫该状态。
+  /// </summary>
+  public sealed class TransientEventArgs
+  {
+    public TransientEventArgs(object Engine, Character Applier, Character Target, Property Property, Dice Duration)
+    {
+      this.Engine = Engine;
+      this.Applier = Applier;
+      this.Target = Target;
+      this.Property = Property;
+      this.Duration = Duration;
+    }
+
+    public object Engine { get; }
+    public Character Applier { get; }
+    public Character Target { get; }
+    public Property Property { get; }
+    public Dice Duration { get; set; }
+    public bool Cancel { get; set; }
+  }
 }

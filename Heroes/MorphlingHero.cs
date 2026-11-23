@@ -5,22 +5,26 @@ using Pathos.DotaHeroes.Framework.Hooks;
 namespace Pathos.DotaHeroes.Heroes
 {
   /// <summary>
-  /// DOTA2 英雄：变体精灵（Morphling / 水人）
-  /// 包含：
-  /// - 专属种族：变体水灵（waterkin，遇水回血回蓝、遇火蒸发、宽裕力/体/敏转换上限）
-  /// - 专属职业：变体精灵（morphling）
-  /// - 专属技能（还原 DOTA2 现行版本核心机制）：
-  ///   - Q：波浪形态（waveform）— 闪烁突进 + 落地水波 AOE 伤害 + 短暂穿墙与闪避位移
-  ///   - W1：变体攻击·敏捷（adaptive strike agility）— 高额水系爆发伤害
-  ///   - W2：变体攻击·力量（adaptive strike strength）— 必中击退 + 稳定长眩晕控制
-  ///   - E1：属性转换·敏捷（morph agility）— 大幅将 STR + CON 转为 DEX（总量守恒 + 迅捷）
-  ///   - E2：属性转换·力量（morph strength）— 大幅将 DEX 转为 STR + CON（总量守恒 + 强力回血与生命恢复）
-  ///   - R1：变形（morph）— 指向敌人直接化身目标（复制外形、属性、技能与法术）
-  ///   - R2：解除变形（morph revert）— 随时切回水人本体
-  /// - 预设英雄：Morphling（选人界面一键开局）
+  /// DOTA2 7.42 英雄：变体精灵（Morphling / 水人）
+  /// 基于「声明式外壳 + Harmony Hook 核心逻辑」忠实还原 DOTA2 7.42 百科机制：
+  /// - 先天技能「潮涨潮落（Ebb and Flow）」（实时随属性生效，变形期间持续保留）：
+  ///   - 敏捷（DEX）：提供额外移动速度与远程攻击距离
+  ///   - 力量（STR）：提供额外施法距离与减速抗性
+  /// - Q：波浪形态（waveform）— 闪烁突进 + 落地水波 AOE 伤害 + 短暂穿墙与闪避位移
+  /// - W1：变体打击·敏捷（adaptive strike agility）— 基础水伤 + 按实时 DEX/STR 比值动态缩放爆发伤害（DEX ≥ 1.5×STR 达满额倍率）
+  /// - W2：变体打击·力量（adaptive strike strength）— 击退 + 按实时 STR/DEX 比值动态缩放眩晕时长（STR ≥ 1.5×DEX 达最长眩晕）
+  /// - E1/E2：属性转换·敏捷 / 力量（morph agility / morph strength）—
+  ///   - Hook 全权接管，同步修改 CurrentForm 与 MaximumForm，严格总量守恒且复活/恢复属性不再白嫖
+  ///   - 忠实还原 DOTA2 血量联动：转力同步提升最大生命与当前生命；转敏同步降低最大生命与当前生命（最低保底 1 HP）
+  /// - R1/R2：变形（morph）与解除变形（morph revert）— 化身敌人复制外形与技能，先天技能持续保留
   /// </summary>
   public sealed class MorphlingHero : IDotaHeroDefinition
   {
+    private const string MorphlingClassName = "morphling";
+    private const int MinAttributeScore = 3;
+    private const int MinMaxLifePoints = 10;
+    private const int HpPerShiftedPoint = 6;
+
     public string Id => "morphling";
 
     public void Register(DotaHeroContext Ctx)
@@ -33,43 +37,8 @@ namespace Pathos.DotaHeroes.Heroes
       var MorphStrengthGlyph = Ctx.RegisterGlyph("morph strength");
       var TidalOrbGlyph = Ctx.RegisterGlyph("tidal orb");
 
-      // 2. 注册水人「潮涨潮落」五级双向刻度特质（随变化系熟练度解锁 ±1 ~ ±5 档，防溢出且变形期间持续生效）
-      // 状态轴（共 11 态，索引 0..10，索引 5 为 0 档均衡态）：
-      // [0] flow V (-5) .. [4] flow I (-1) .. [5] null (0) .. [6] ebb I (+1) .. [10] ebb V (+5)
-      var EbbAndFlowAxis = new Property[]
-      {
-        RegisterEbbAndFlowProperty(Ctx, "flow V",
-          "Ebb & Flow (Strength V): Immune to slowness, avoids grappling, and permanent doubled life recovery.",
-          MorphStrengthGlyph, AvoidGrappling: true, SlowImmune: true, LifeRecoveryChance: Chance.Always, LifeRecoveryDoubling: true),
-        RegisterEbbAndFlowProperty(Ctx, "flow IV",
-          "Ebb & Flow (Strength IV): Immune to slowness, avoids grappling, and strong permanent life recovery.",
-          MorphStrengthGlyph, AvoidGrappling: true, SlowImmune: true, LifeRecoveryChance: Chance.OneIn2),
-        RegisterEbbAndFlowProperty(Ctx, "flow III",
-          "Ebb & Flow (Strength III): Immune to slowness, avoids grappling, and improved permanent life recovery.",
-          MorphStrengthGlyph, AvoidGrappling: true, SlowImmune: true, LifeRecoveryChance: Chance.OneIn3),
-        RegisterEbbAndFlowProperty(Ctx, "flow II",
-          "Ebb & Flow (Strength II): Avoids grappling and steady permanent life recovery.",
-          MorphStrengthGlyph, AvoidGrappling: true, LifeRecoveryChance: Chance.OneIn4),
-        RegisterEbbAndFlowProperty(Ctx, "flow I",
-          "Ebb & Flow (Strength I): Avoids grappling and mild permanent life recovery.",
-          MorphStrengthGlyph, AvoidGrappling: true, LifeRecoveryChance: Chance.OneIn5),
-        null, // 0 档：均衡态，不挂多余特质
-        RegisterEbbAndFlowProperty(Ctx, "ebb I",
-          "Ebb & Flow (Agility I): +10% movement speed and slight dodge chance.",
-          MorphAgilityGlyph, SpeedMultiplier: 1.10f, DodgeChance: Chance.OneIn12),
-        RegisterEbbAndFlowProperty(Ctx, "ebb II",
-          "Ebb & Flow (Agility II): +20% movement speed and improved dodge chance.",
-          MorphAgilityGlyph, SpeedMultiplier: 1.20f, DodgeChance: Chance.OneIn10),
-        RegisterEbbAndFlowProperty(Ctx, "ebb III",
-          "Ebb & Flow (Agility III): +30% movement speed and agile dodge chance.",
-          MorphAgilityGlyph, SpeedMultiplier: 1.30f, DodgeChance: Chance.OneIn8),
-        RegisterEbbAndFlowProperty(Ctx, "ebb IV",
-          "Ebb & Flow (Agility IV): +40% movement speed and high dodge chance.",
-          MorphAgilityGlyph, SpeedMultiplier: 1.40f, DodgeChance: Chance.OneIn6),
-        RegisterEbbAndFlowProperty(Ctx, "ebb V",
-          "Ebb & Flow (Agility V): +50% movement speed (permanent quickness) and peak dodge chance.",
-          MorphAgilityGlyph, SpeedMultiplier: 1.50f, DodgeChance: Chance.OneIn5),
-      };
+      // 2. 注册水人先天技能天赋：潮涨潮落（显示在角色天赋栏，实际动态效果由 Hook 实时驱动）
+      var EbbAndFlowTalent = RegisterEbbAndFlowTalent(Ctx, MorphlingGlyph);
 
       // 3. 注册水人专属无限远程普攻：潮汐水弹（tidal orb）
       var TidalOrbItem = RegisterTidalOrbItem(Ctx, TidalOrbGlyph);
@@ -78,21 +47,22 @@ namespace Pathos.DotaHeroes.Heroes
       var WaveformSpell = RegisterWaveformSpell(Ctx, WaveformGlyph);
       var AdaptiveStrikeAgilitySpell = RegisterAdaptiveStrikeAgilitySpell(Ctx, AdaptiveStrikeGlyph);
       var AdaptiveStrikeStrengthSpell = RegisterAdaptiveStrikeStrengthSpell(Ctx, AdaptiveStrikeGlyph);
-      var MorphAgilitySpell = RegisterMorphAgilitySpell(Ctx, MorphAgilityGlyph, EbbAndFlowAxis);
-      var MorphStrengthSpell = RegisterMorphStrengthSpell(Ctx, MorphStrengthGlyph, EbbAndFlowAxis);
+      var MorphAgilitySpell = RegisterMorphAgilitySpell(Ctx, MorphAgilityGlyph);
+      var MorphStrengthSpell = RegisterMorphStrengthSpell(Ctx, MorphStrengthGlyph);
       var MorphSpell = RegisterMorphSpell(Ctx, MorphlingGlyph);
       var MorphRevertSpell = RegisterMorphRevertSpell(Ctx, MorphlingGlyph);
 
-      // 4. 注册专属种族：变体水灵（waterkin，含遇水回血回蓝与遇火蒸发反应）
+      // 5. 注册专属种族：变体水灵（waterkin，含遇水回血回蓝与遇火蒸发反应）
       var WaterkinRace = RegisterWaterkinRace(Ctx, MorphlingGlyph);
 
-      // 5. 注册水系环境专属交互（水药水吸收 + 喷泉汲取）
+      // 6. 注册水系环境专属交互（水药水吸收 + 喷泉汲取）
       RegisterWaterInteractions(Ctx);
 
-      // 6. 注册专属职业：变体精灵（morphling）
+      // 7. 注册专属职业：变体精灵（morphling）
       var MorphlingClass = RegisterMorphlingClass(
         Ctx,
         MorphlingGlyph,
+        EbbAndFlowTalent,
         TidalOrbItem,
         WaveformSpell,
         AdaptiveStrikeAgilitySpell,
@@ -102,7 +72,7 @@ namespace Pathos.DotaHeroes.Heroes
         MorphSpell,
         MorphRevertSpell);
 
-      // 7. 注册预设英雄：Morphling（可在选人界面一键选中）
+      // 8. 注册预设英雄：Morphling（可在选人界面一键选中）
       Ctx.Heroes.Add(H =>
       {
         H.Name = "Morphling";
@@ -115,15 +85,239 @@ namespace Pathos.DotaHeroes.Heroes
 
     public void RegisterHooks(DotaHeroContext Ctx)
     {
-      // 水人属性转换后同步 MaximumForm，防止复活或恢复属性药水把已转走的属性回满
-      DotaHookBus.RegisterAfterCastSpell("morphling.sync_max_form", Args =>
+      // E1/E2：属性转换（总量守恒 + CurrentForm/MaximumForm 同步 + DOTA2 血量联动）
+      DotaHookBus.RegisterAfterCastSpell("morphling.attribute_shift", Args =>
       {
         var SpellName = Args.Spell?.Name;
-        if (!string.Equals(SpellName, "morph agility", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(SpellName, "morph strength", StringComparison.OrdinalIgnoreCase))
+        bool IsAgilityShift = string.Equals(SpellName, "morph agility", StringComparison.OrdinalIgnoreCase);
+        bool IsStrengthShift = string.Equals(SpellName, "morph strength", StringComparison.OrdinalIgnoreCase);
+        if (!IsAgilityShift && !IsStrengthShift)
           return;
 
-        PathosEngineBridge.SyncMaximumFormScores(Args.Character, "strength", "dexterity", "constitution");
+        ExecuteAttributeShift(Ctx, Args, ToAgility: IsAgilityShift);
+      });
+
+      // 先天技能「潮涨潮落」— 敏捷提升移动速度（变形期间持续保留）
+      DotaHookBus.RegisterSpeedQuery("morphling.ebb_flow.speed", Args =>
+      {
+        if (!IsMorphling(Args.Character))
+          return;
+
+        int Dex = PathosEngineBridge.GetCurrentAbilityScore(Args.Character, "dexterity");
+        if (Dex <= 10)
+          return;
+
+        float BonusMultiplier = 1.0f + Math.Min(0.50f, (Dex - 10) * 0.02f);
+        Args.Speed = Speed.FromRate(Args.Speed.GetRate() * BonusMultiplier);
+      });
+
+      // 先天技能「潮涨潮落」— 敏捷提升远程攻击距离（变形为远程生物同样保留）
+      DotaHookBus.RegisterAttackRangeQuery("morphling.ebb_flow.attack_range", Args =>
+      {
+        if (!IsMorphling(Args.Character))
+          return;
+
+        int Dex = PathosEngineBridge.GetCurrentAbilityScore(Args.Character, "dexterity");
+        int BonusRange = Math.Max(0, (Dex - 10) / 5);
+        if (BonusRange > 0)
+          Args.Range += BonusRange;
+      });
+
+      // 先天技能「潮涨潮落」— 力量提升施法距离（含变形后窃取的技能）
+      DotaHookBus.RegisterCastRange("morphling.ebb_flow.cast_range", Args =>
+      {
+        if (!IsMorphling(Args.Character))
+          return;
+
+        int Str = PathosEngineBridge.GetCurrentAbilityScore(Args.Character, "strength");
+        int BonusRange = Math.Max(0, (Str - 10) / 5);
+        if (BonusRange > 0)
+          Args.BonusRange += BonusRange;
+      });
+
+      // 先天技能「潮涨潮落」— 力量提供减速抗性；以及 W2 变体打击·力量按 STR/DEX 动态缩放眩晕时长
+      DotaHookBus.RegisterBeforeApplyTransient("morphling.transient_hooks", Args =>
+      {
+        // 1) 潮涨潮落：力量 → 减速抗性（高力直接免疫，中力大幅缩短减速时间）
+        if (Args.Property == Ctx.Properties.slowness && IsMorphling(Args.Target))
+        {
+          int Str = PathosEngineBridge.GetCurrentAbilityScore(Args.Target, "strength");
+          if (Str >= 24)
+          {
+            Args.Cancel = true;
+            return;
+          }
+
+          if (Str > 10)
+          {
+            float Resist = Math.Min(0.75f, (Str - 10) * 0.045f);
+            int AvgTurns = (int)MathF.Round(Args.Duration.Average() * (1.0f - Resist));
+            if (AvgTurns <= 0)
+            {
+              Args.Cancel = true;
+              return;
+            }
+            Args.Duration = Dice.Fixed(AvgTurns);
+          }
+        }
+
+        // 2) W2 变体打击·力量：按 STR/DEX 比值动态计算眩晕回合数（STR ≥ 1.5×DEX 达满额重晕）
+        var ActiveCast = DotaHookBus.ActiveSpellCast;
+        if (ActiveCast != null &&
+            Args.Property == Ctx.Properties.stunned &&
+            Args.Target != ActiveCast.Character &&
+            string.Equals(ActiveCast.Spell?.Name, "adaptive strike strength", StringComparison.OrdinalIgnoreCase))
+        {
+          int Str = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(ActiveCast.Character, "strength"));
+          int Dex = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(ActiveCast.Character, "dexterity"));
+          float Ratio = Str / (float)Dex;
+          float Scale = Math.Clamp((Ratio - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
+
+          int MasteryTier = GetSkillTier(Ctx, ActiveCast.Character, Ctx.Skills.evocation);
+          int MaxStun = 2 + MasteryTier; // 3 ~ 7 回合
+          int FinalStun = Math.Max(1, (int)MathF.Round(1.0f + (MaxStun - 1.0f) * Scale));
+          Args.Duration = Dice.Fixed(FinalStun);
+        }
+      });
+
+      // W1 变体打击·敏捷：按 DEX/STR 比值动态追加敏捷爆发伤害（DEX ≥ 1.5×STR 达满额倍率）
+      DotaHookBus.RegisterBeforeDamage("morphling.adaptive_strike_agility", Args =>
+      {
+        var ActiveCast = DotaHookBus.ActiveSpellCast;
+        if (ActiveCast == null ||
+            Args.Attacker != ActiveCast.Character ||
+            Args.Defender == ActiveCast.Character ||
+            !string.Equals(ActiveCast.Spell?.Name, "adaptive strike agility", StringComparison.OrdinalIgnoreCase))
+          return;
+
+        int Dex = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(ActiveCast.Character, "dexterity"));
+        int Str = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(ActiveCast.Character, "strength"));
+        float Ratio = Dex / (float)Str;
+        float Scale = Math.Clamp((Ratio - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
+
+        int BonusDamage = (int)MathF.Round(Dex * (0.35f + 1.15f * Scale));
+        if (BonusDamage > 0)
+          Args.DamagePoints += BonusDamage;
+      });
+    }
+
+    private static void ExecuteAttributeShift(DotaHeroContext Ctx, SpellCastEventArgs Args, bool ToAgility)
+    {
+      var Character = Args.Character;
+      if (Character?.CurrentForm == null || Character.MaximumForm == null)
+        return;
+
+      int Step = GetSkillTier(Ctx, Character, Ctx.Skills.transmutation);
+
+      int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Character, "strength");
+      int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Character, "constitution");
+      int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Character, "dexterity");
+
+      int MaxStr = PathosEngineBridge.GetLimitAbilityScore(Character, "strength");
+      int MaxCon = PathosEngineBridge.GetLimitAbilityScore(Character, "constitution");
+      int MaxDex = PathosEngineBridge.GetLimitAbilityScore(Character, "dexterity");
+
+      int Shift;
+      if (ToAgility)
+      {
+        int SourceAvail = Math.Min(CurStr - MinAttributeScore, CurCon - MinAttributeScore);
+        int TargetRoom = MaxDex - CurDex;
+        Shift = Math.Min(Step, Math.Min(SourceAvail, TargetRoom));
+
+        if (Shift <= 0)
+        {
+          PathosEngineBridge.WriteInternalLog(
+            Args.Engine,
+            Character,
+            Args.Spell.Glyph,
+            "Attribute Shift (Agility): already at agility cap or minimum strength.");
+          return;
+        }
+
+        PathosEngineBridge.SetPermanentAbilityScore(Character, "dexterity", CurDex + Shift);
+        PathosEngineBridge.SetPermanentAbilityScore(Character, "strength", CurStr - Shift);
+        PathosEngineBridge.SetPermanentAbilityScore(Character, "constitution", CurCon - Shift);
+
+        // 血量联动：转敏仅降低最大生命值，当前生命值保持不变（仅在超过新上限时截断）
+        int HpDelta = Shift * HpPerShiftedPoint;
+        var Life = Character.Life;
+        if (Life != null)
+        {
+          int NewTotal = Math.Max(MinMaxLifePoints, Life.Total - HpDelta);
+          int NewPoints = Math.Clamp(Life.Points, 1, NewTotal);
+          PathosEngineBridge.SetMeter(Life, NewPoints, NewTotal);
+        }
+
+        PathosEngineBridge.WriteInternalLog(
+          Args.Engine,
+          Character,
+          Args.Spell.Glyph,
+          $"Attribute Shift (Agility): DEX +{Shift}, STR/CON -{Shift} (Max HP -{HpDelta}).");
+      }
+      else
+      {
+        int SourceAvail = CurDex - MinAttributeScore;
+        int TargetRoom = Math.Min(MaxStr - CurStr, MaxCon - CurCon);
+        Shift = Math.Min(Step, Math.Min(SourceAvail, TargetRoom));
+
+        if (Shift <= 0)
+        {
+          PathosEngineBridge.WriteInternalLog(
+            Args.Engine,
+            Character,
+            Args.Spell.Glyph,
+            "Attribute Shift (Strength): already at strength cap or minimum agility.");
+          return;
+        }
+
+        PathosEngineBridge.SetPermanentAbilityScore(Character, "strength", CurStr + Shift);
+        PathosEngineBridge.SetPermanentAbilityScore(Character, "constitution", CurCon + Shift);
+        PathosEngineBridge.SetPermanentAbilityScore(Character, "dexterity", CurDex - Shift);
+
+        // DOTA2 血量联动：转力同步提升最大生命与当前生命（1 血极限转力反杀）
+        int HpDelta = Shift * HpPerShiftedPoint;
+        var Life = Character.Life;
+        if (Life != null)
+        {
+          int NewTotal = Life.Total + HpDelta;
+          int NewPoints = Math.Min(NewTotal, Life.Points + HpDelta);
+          PathosEngineBridge.SetMeter(Life, NewPoints, NewTotal);
+        }
+
+        PathosEngineBridge.WriteInternalLog(
+          Args.Engine,
+          Character,
+          Args.Spell.Glyph,
+          $"Attribute Shift (Strength): STR/CON +{Shift}, DEX -{Shift} (HP +{HpDelta}).");
+      }
+    }
+
+    private static bool IsMorphling(Character Character)
+    {
+      return Character?.Class != null &&
+             string.Equals(Character.Class.Name, MorphlingClassName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static int GetSkillTier(DotaHeroContext Ctx, Character Character, Skill Skill)
+    {
+      if (Character == null || Skill == null)
+        return 1;
+
+      var Qual = PathosEngineBridge.GetQualification(Character, Skill);
+      if (Qual == Ctx.Qualifications.champion) return 5;
+      if (Qual == Ctx.Qualifications.master) return 4;
+      if (Qual == Ctx.Qualifications.expert) return 3;
+      if (Qual == Ctx.Qualifications.specialist) return 2;
+      return 1;
+    }
+
+    private static Property RegisterEbbAndFlowTalent(DotaHeroContext Ctx, Glyph Icon)
+    {
+      return Ctx.Properties.Add(P =>
+      {
+        P.Name = "ebb and flow";
+        P.Description = "Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.";
+        P.Glyph = Icon;
       });
     }
 
@@ -162,7 +356,7 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static void RegisterWaterInteractions(DotaHeroContext Ctx)
     {
-      // 水药水（potion_of_water）：水元素饮用（drink）直接吸收水分，回复生命与法力（水人的大药+小蓝）
+      // 水药水（potion_of_water）：水元素饮用（drink）直接吸收水分，回复生命与法力
       Ctx.Items.Edit(Ctx.Items.potion_of_water).AddObviousUse(
         Ctx.Motions.drink,
         Delay.OneSecond,
@@ -223,9 +417,7 @@ namespace Pathos.DotaHeroes.Heroes
           var Adept = S.SetAdept(Qual);
           Adept.SetCast().Plain(Dice.Fixed(Range));
           Adept.Apply.BlinkEntity();
-          // 落地周围释放水波 AOE 伤害（变体水灵自身水抗且遇水回血，不会伤到自己）
           Adept.Apply.Shout(Dice.Fixed(WaveRadius), Wave => Wave.HarmEntity(Ctx.Elements.water, WaveDamage));
-          // 短暂穿墙 + 幻影闪避，模拟波浪形态的无敌突进与逃生手感
           Adept.Apply.ApplyTransient(Ctx.Properties.phasing, Dice.Fixed(EvasionTurns));
           Adept.Apply.ApplyTransient(Ctx.Properties.displacement, Dice.Fixed(EvasionTurns));
         }
@@ -243,7 +435,35 @@ namespace Pathos.DotaHeroes.Heroes
       return Ctx.Spells.Add(S =>
       {
         S.Name = "adaptive strike agility";
-        S.Description = "Unleash a razor-sharp surge of water focused on agility, dealing heavy burst water damage to enemies.";
+        S.Description = "Launch a surge of water dealing base damage plus bonus burst damage scaling dynamically with your Agility-to-Strength ratio (max scaling at 1.5x Agility).";
+        S.Glyph = Icon;
+        S.School = Ctx.Schools.evocation;
+        S.Precept = new Precept(Purpose.Blast, Ctx.Elements.water);
+        S.Level = 1;
+        S.Mana = 5;
+
+        void Configure(Qualification Qual, int Range, Dice BaseDamage)
+        {
+          var Adept = S.SetAdept(Qual);
+          Adept.SetCast().Explosion(Ctx.Explosions.watery, Dice.Fixed(Range));
+          // 基础伤害由声明式提供，额外敏捷倍率爆发伤害由 Hook 按实时 DEX/STR 动态追加
+          Adept.Apply.HarmEntity(Ctx.Elements.water, BaseDamage);
+        }
+
+        Configure(Ctx.Qualifications.proficient, 5, 1.d6());
+        Configure(Ctx.Qualifications.specialist, 6, 1.d8());
+        Configure(Ctx.Qualifications.expert, 7, 2.d6());
+        Configure(Ctx.Qualifications.master, 8, 2.d8());
+        Configure(Ctx.Qualifications.champion, 9, 3.d6());
+      });
+    }
+
+    private static Spell RegisterAdaptiveStrikeStrengthSpell(DotaHeroContext Ctx, Glyph Icon)
+    {
+      return Ctx.Spells.Add(S =>
+      {
+        S.Name = "adaptive strike strength";
+        S.Description = "Crush foes with a torrent of water that knocks them back and stuns them for a duration scaling dynamically with your Strength-to-Agility ratio (max stun at 1.5x Strength).";
         S.Glyph = Icon;
         S.School = Ctx.Schools.evocation;
         S.Precept = new Precept(Purpose.Blast, Ctx.Elements.water);
@@ -255,206 +475,72 @@ namespace Pathos.DotaHeroes.Heroes
           var Adept = S.SetAdept(Qual);
           Adept.SetCast().Explosion(Ctx.Explosions.watery, Dice.Fixed(Range));
           Adept.Apply.HarmEntity(Ctx.Elements.water, Damage);
-        }
-
-        Configure(Ctx.Qualifications.proficient, 5, 3.d6());
-        Configure(Ctx.Qualifications.specialist, 6, 4.d6());
-        Configure(Ctx.Qualifications.expert, 7, 5.d6());
-        Configure(Ctx.Qualifications.master, 8, 6.d6());
-        Configure(Ctx.Qualifications.champion, 9, 8.d6());
-      });
-    }
-
-    private static Spell RegisterAdaptiveStrikeStrengthSpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
-      {
-        S.Name = "adaptive strike strength";
-        S.Description = "Crush foes with a heavy torrent of water focused on strength, dealing light damage while reliably knocking them back and stunning them.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.evocation;
-        S.Precept = new Precept(Purpose.Blast, Ctx.Elements.water);
-        S.Level = 1;
-        S.Mana = 5;
-
-        void Configure(Qualification Qual, int Range, Dice Damage, Dice StunDuration)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().Explosion(Ctx.Explosions.watery, Dice.Fixed(Range));
-          Adept.Apply.HarmEntity(Ctx.Elements.water, Damage);
           Adept.Apply.Knockback();
-          Adept.Apply.ApplyTransient(Ctx.Properties.stunned, StunDuration);
+          // 基础眩晕占位，实际眩晕回合数由 Hook 按实时 STR/DEX 比值动态改写
+          Adept.Apply.ApplyTransient(Ctx.Properties.stunned, Dice.One);
         }
 
-        Configure(Ctx.Qualifications.proficient, 5, 1.d4(), 1.d3());
-        Configure(Ctx.Qualifications.specialist, 6, 1.d6(), 1.d4());
-        Configure(Ctx.Qualifications.expert, 7, 2.d4(), 2.d3());
-        Configure(Ctx.Qualifications.master, 8, 2.d6(), 2.d4());
-        Configure(Ctx.Qualifications.champion, 9, 3.d6(), 3.d4());
+        Configure(Ctx.Qualifications.proficient, 5, 1.d4());
+        Configure(Ctx.Qualifications.specialist, 6, 1.d6());
+        Configure(Ctx.Qualifications.expert, 7, 2.d4());
+        Configure(Ctx.Qualifications.master, 8, 2.d6());
+        Configure(Ctx.Qualifications.champion, 9, 3.d4());
       });
     }
 
-    private static Property RegisterEbbAndFlowProperty(
-      DotaHeroContext Ctx,
-      string Name,
-      string Description,
-      Glyph Icon,
-      float SpeedMultiplier = 1.0f,
-      Chance? DodgeChance = null,
-      bool AvoidGrappling = false,
-      bool SlowImmune = false,
-      Chance? LifeRecoveryChance = null,
-      bool LifeRecoveryDoubling = false)
-    {
-      return Ctx.Properties.Add(P =>
-      {
-        P.Name = Name;
-        P.Description = Description;
-        P.Glyph = Icon;
-        if (SpeedMultiplier != 1.0f)
-          P.SpeedMultiplier = SpeedMultiplier;
-        if (DodgeChance.HasValue)
-          P.DodgeChance = DodgeChance.Value;
-        if (AvoidGrappling)
-          P.AvoidGrappling = true;
-        if (SlowImmune)
-          P.SetImmunityProperty(Ctx.Properties.slowness);
-        if (LifeRecoveryChance.HasValue)
-          P.LifeRecoveryChance = LifeRecoveryChance.Value;
-        if (LifeRecoveryDoubling)
-          P.LifeRecoveryDoubling = true;
-      });
-    }
-
-    /// <summary>
-    /// 在 11 态「潮涨潮落」刻度轴（索引 0..10，中心 5 为均衡态）上推进被动档位，同时始终执行属性转换与附加效果。
-    /// - 不再锁死施法次数：到达 潮落 V / 潮涨 V 后被动保持满档，玩家仍可继续自由转换属性，风险与收益全由玩家自行掌控。
-    /// </summary>
-    private static void BuildShiftChain(
-      ApplyEditor Apply,
-      Property[] Axis,
-      int Direction, // +1 = 转敏, -1 = 转力
-      int CheckPos,
-      Action<ApplyEditor> ApplyAttributeShift,
-      Action<ApplyEditor> ApplyBonus)
-    {
-      // 依次跳过均衡态（Axis[5] == null），遍历所有 10 个非空刻度特质
-      while (CheckPos < Axis.Length && Axis[CheckPos] == null)
-        CheckPos++;
-
-      if (CheckPos >= Axis.Length)
-      {
-        // 所有刻度特质均未命中 -> 当前处于中心均衡态（索引 5）
-        const int Center = 5;
-        int NextIndex = Center + Direction;
-        if (Axis[NextIndex] != null)
-          Apply.GainTalent(Axis[NextIndex]);
-        ApplyAttributeShift(Apply);
-        ApplyBonus(Apply);
-        return;
-      }
-
-      var CurrentProp = Axis[CheckPos];
-      int CurrentIndex = CheckPos;
-      int LimitIndex = Direction > 0 ? Axis.Length - 1 : 0;
-      bool AtEdge = Direction > 0 ? CurrentIndex >= LimitIndex : CurrentIndex <= LimitIndex;
-
-      Apply.WhenTargetHasProperty(
-        CurrentProp,
-        Then =>
-        {
-          if (!AtEdge)
-          {
-            Then.LoseTalent(CurrentProp);
-            int NextIndex = CurrentIndex + Direction;
-            if (Axis[NextIndex] != null)
-              Then.GainTalent(Axis[NextIndex]);
-          }
-          // 无论被动是否已满 V 档，均允许继续自由转换属性
-          ApplyAttributeShift(Then);
-          ApplyBonus(Then);
-        },
-        Else =>
-        {
-          BuildShiftChain(Else, Axis, Direction, CheckPos + 1, ApplyAttributeShift, ApplyBonus);
-        });
-    }
-
-    private static Spell RegisterMorphAgilitySpell(DotaHeroContext Ctx, Glyph Icon, Property[] EbbAndFlowAxis)
+    private static Spell RegisterMorphAgilitySpell(DotaHeroContext Ctx, Glyph Icon)
     {
       return Ctx.Spells.Add(S =>
       {
         S.Name = "morph agility";
-        S.Description = "Shift toward agility (converting 1 to 5 STR & CON into DEX per cast by mastery), freely repeatable and empowering permanent Ebb speed and dodge.";
+        S.Description = "Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.";
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Buff);
         S.Level = 1;
         S.Mana = 2;
 
-        // 熟练度决定每次转换的「量」（1 / 2 / 3 / 4 / 5），可自由多次转换
-        void Configure(Qualification Qual, int Amount)
+        // 声明式仅保留施法外壳，真实属性转换与血量联动由 Hook 全权执行
+        void Configure(Qualification Qual)
         {
           var Adept = S.SetAdept(Qual);
           Adept.SetCast().SetTargetSelf(true);
-          BuildShiftChain(
-            Adept.Apply,
-            EbbAndFlowAxis,
-            Direction: +1,
-            CheckPos: 0,
-            A =>
-            {
-              A.IncreaseAbility(Ctx.Attributes.dexterity, Dice.Fixed(Amount));
-              A.DecreaseAbility(Ctx.Attributes.strength, Dice.Fixed(Amount));
-              A.DecreaseAbility(Ctx.Attributes.constitution, Dice.Fixed(Amount));
-            },
-            Bonus => Bonus.Nothing());
+          Adept.Apply.Nothing();
         }
 
-        Configure(Ctx.Qualifications.proficient, Amount: 1);
-        Configure(Ctx.Qualifications.specialist, Amount: 2);
-        Configure(Ctx.Qualifications.expert, Amount: 3);
-        Configure(Ctx.Qualifications.master, Amount: 4);
-        Configure(Ctx.Qualifications.champion, Amount: 5);
+        Configure(Ctx.Qualifications.proficient);
+        Configure(Ctx.Qualifications.specialist);
+        Configure(Ctx.Qualifications.expert);
+        Configure(Ctx.Qualifications.master);
+        Configure(Ctx.Qualifications.champion);
       });
     }
 
-    private static Spell RegisterMorphStrengthSpell(DotaHeroContext Ctx, Glyph Icon, Property[] EbbAndFlowAxis)
+    private static Spell RegisterMorphStrengthSpell(DotaHeroContext Ctx, Glyph Icon)
     {
       return Ctx.Spells.Add(S =>
       {
         S.Name = "morph strength";
-        S.Description = "Shift toward strength (converting 1 to 5 DEX into STR & CON per cast by mastery), freely repeatable while empowering permanent Flow slow resistance and life recovery and healing immediately.";
+        S.Description = "Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.";
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Healing);
         S.Level = 1;
         S.Mana = 2;
 
-        // 熟练度决定每次转换的「量」（1 / 2 / 3 / 4 / 5）与回血量，可自由多次转换
-        void Configure(Qualification Qual, int Amount, Dice HealDice)
+        // 声明式仅保留施法外壳，真实属性转换与血量联动由 Hook 全权执行
+        void Configure(Qualification Qual)
         {
           var Adept = S.SetAdept(Qual);
           Adept.SetCast().SetTargetSelf(true);
-          BuildShiftChain(
-            Adept.Apply,
-            EbbAndFlowAxis,
-            Direction: -1,
-            CheckPos: 0,
-            A =>
-            {
-              A.IncreaseAbility(Ctx.Attributes.strength, Dice.Fixed(Amount));
-              A.IncreaseAbility(Ctx.Attributes.constitution, Dice.Fixed(Amount));
-              A.DecreaseAbility(Ctx.Attributes.dexterity, Dice.Fixed(Amount));
-            },
-            Bonus => Bonus.HealEntity(HealDice, Modifier.Zero));
+          Adept.Apply.Nothing();
         }
 
-        Configure(Ctx.Qualifications.proficient, Amount: 1, HealDice: 2.d4());
-        Configure(Ctx.Qualifications.specialist, Amount: 2, HealDice: 2.d6());
-        Configure(Ctx.Qualifications.expert, Amount: 3, HealDice: 3.d6());
-        Configure(Ctx.Qualifications.master, Amount: 4, HealDice: 4.d6());
-        Configure(Ctx.Qualifications.champion, Amount: 5, HealDice: 5.d6());
+        Configure(Ctx.Qualifications.proficient);
+        Configure(Ctx.Qualifications.specialist);
+        Configure(Ctx.Qualifications.expert);
+        Configure(Ctx.Qualifications.master);
+        Configure(Ctx.Qualifications.champion);
       });
     }
 
@@ -463,7 +549,7 @@ namespace Pathos.DotaHeroes.Heroes
       return Ctx.Spells.Add(S =>
       {
         S.Name = "morph";
-        S.Description = "Assume the form of a targeted creature, copying its body, attributes, skills, and spells.";
+        S.Description = "Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.";
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Buff);
@@ -474,7 +560,6 @@ namespace Pathos.DotaHeroes.Heroes
         {
           var Adept = S.SetAdept(Qual);
           Adept.SetCast().Plain(Dice.Fixed(Range));
-          // Pathos 引擎原生指向性模仿变形：直接复制目标形态、血蓝、六维、技能与法术
           Adept.Apply.ImpersonateEntity();
         }
 
@@ -515,7 +600,6 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static Race RegisterWaterkinRace(DotaHeroContext Ctx, Glyph AvatarGlyph)
     {
-      // 先创建种族对应的基础实体（BaseEntity）
       var WaterkinEntity = Ctx.Entities.Add(E =>
       {
         E.Name = "waterkin";
@@ -540,7 +624,6 @@ namespace Pathos.DotaHeroes.Heroes
         E.SetGender(Ctx.Genders.male, Ctx.Genders.female, Ctx.Genders.nonbinary);
         E.SetTerrain(Ctx.Materials.air, Ctx.Materials.water);
 
-        // 水元素形态但保留手脚与思维，以便正常穿戴武器装备和施法
         E.Figure.Material = Ctx.Materials.water;
         E.Figure.CombatSkill = Ctx.Skills.unarmed_combat;
         E.Figure.Set(Ctx.Anatomies.amorphous);
@@ -550,32 +633,25 @@ namespace Pathos.DotaHeroes.Heroes
         E.Figure.Set(Ctx.Anatomies.mind);
         E.Figure.Set(Ctx.Anatomies.voice);
 
-        // 初始六维与上限（贴合官方种族 16~24 的常规上限，略微压缩智/感/魅，为力/体/敏转换留出 26/30/26 的合理空间）
         Ctx.SetFormScores(E.DefaultForm, Str: 10, Dex: 14, Con: 10, Int: 11, Wis: 10, Cha: 9);
         Ctx.SetFormScores(E.LimitForm, Str: 26, Dex: 30, Con: 26, Int: 18, Wis: 16, Cha: 14);
 
         E.LifeAdvancement.Set(0, Dice.Zero);
         E.ManaAdvancement.Set(2, Dice.Fixed(2));
 
-        // 弱点：电系（符合水元素设定与平衡性）
         E.Chemistry.SetWeakness(Ctx.Elements.shock);
 
-        // 天生抗性与特质
         E.Startup.SetResistance(Ctx.Elements.water, Ctx.Elements.cold);
         E.Startup.SetTalent(Ctx.Properties.slippery);
         E.Startup.SetSkill(Ctx.Qualifications.proficient, Ctx.Skills.swimming, Ctx.Skills.unarmed_combat);
 
-        // 徒手攻击：水流拍击
         E.AddAttack(Ctx.AttackTypes.splash, Ctx.Elements.water, 1.d6(), _ => { });
 
-        // 元素生态反应：
-        // - 遇水（喷水陷阱 / 水系敌人 / 水系法术）：吸收水分回血 + 回蓝
         E.AddReaction(Chance.Always, Ctx.Elements.water, A =>
         {
           A.HealEntity(1.d6(), Modifier.Zero);
           A.EnergiseEntity(1.d6(), Modifier.Zero);
         });
-        // - 遇火：50% 几率蒸发少量法力
         E.AddReaction(Chance.OneIn2, Ctx.Elements.fire, A =>
         {
           A.DrainMana(Ctx.Elements.fire, 1.d4());
@@ -589,7 +665,6 @@ namespace Pathos.DotaHeroes.Heroes
         Ctx.AddRaceAvatars(R, AvatarGlyph);
       });
 
-      // 双向绑定：玩家种族的 BaseEntity.Race 必须回指该 Race
       Ctx.Entities.Edit(WaterkinEntity).Race = WaterkinRace;
 
       return WaterkinRace;
@@ -598,6 +673,7 @@ namespace Pathos.DotaHeroes.Heroes
     private static Class RegisterMorphlingClass(
       DotaHeroContext Ctx,
       Glyph AvatarGlyph,
+      Property EbbAndFlowTalent,
       Item TidalOrbItem,
       Spell WaveformSpell,
       Spell AdaptiveStrikeAgilitySpell,
@@ -609,13 +685,12 @@ namespace Pathos.DotaHeroes.Heroes
     {
       return Ctx.Classes.Add(C =>
       {
-        C.Name = "morphling";
-        C.Description = "A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, and morphs into foes.";
+        C.Name = MorphlingClassName;
+        C.Description = "A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.";
         C.Backpack = Ctx.Items.Backpack;
         C.LifeAdvancement.Set(12, 1.d8());
         C.ManaAdvancement.Set(14, 1.d6());
 
-        // 属性分配优先级：敏捷 > 智力 > 力量 > 体质 > 感知 > 魅力
         C.SetDistribution(
           Ctx.Attributes.dexterity,
           Ctx.Attributes.intelligence,
@@ -626,17 +701,13 @@ namespace Pathos.DotaHeroes.Heroes
 
         Ctx.AddClassAvatars(C, AvatarGlyph);
 
-        // 等级专长（Feats）
-        // Lv 4: 水系抗性
+        // Lv 1 先天技能天赋：在角色天赋栏与选人职业专长中直观显示（且变形期间依然保留）
+        C.AddFeat(1, EbbAndFlowTalent);
         C.AddFeat(4, Ctx.Elements.water);
-        // Lv 6: 变形控制（与大招变形配合，强化变形稳定性）
         C.AddFeat(6, Ctx.Properties.polymorph_control);
-        // Lv 8: 水雾幻影（常驻闪避位移）
         C.AddFeat(8, Ctx.Properties.displacement);
-        // Lv 12: 澄澈心境
         C.AddFeat(12, Ctx.Properties.clarity);
 
-        // 开局熟练技能
         C.Startup.SetSkill(Ctx.Qualifications.proficient,
           Ctx.Skills.literacy,
           Ctx.Skills.evocation,
@@ -646,7 +717,6 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Skills.light_armour,
           Ctx.Skills.unarmed_combat);
 
-        // 开局掌握水人全套技能（Q 波浪形态 / W1 变体攻击·敏捷 / W2 变体攻击·力量 / E1 转敏 / E2 转力 / R1 变形 / R2 解除变形）
         C.Startup.AddGrimoire(Dice.One, WaveformSpell);
         C.Startup.AddGrimoire(Dice.One, AdaptiveStrikeAgilitySpell);
         C.Startup.AddGrimoire(Dice.One, AdaptiveStrikeStrengthSpell);
@@ -655,7 +725,6 @@ namespace Pathos.DotaHeroes.Heroes
         C.Startup.AddGrimoire(Dice.One, MorphSpell);
         C.Startup.AddGrimoire(Dice.One, MorphRevertSpell);
 
-        // 开局补给与基础装备（主手 +1 弹弓 + 弹药栏无限潮汐水弹 + 防水随身袋 + 长袍 + 2瓶水 + 1瓶魔力药水）
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.robe);
         C.Startup.Loot.AddKit(Chance.Always, Modifier.Plus1, Ctx.Items.sling);
         C.Startup.Loot.AddKit(Chance.Always, TidalOrbItem);

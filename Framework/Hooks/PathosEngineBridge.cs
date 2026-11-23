@@ -46,6 +46,15 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly MethodInfo MeterSetPointsMethod =
       typeof(Meter).GetMethod("Set", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(int) }, null);
 
+    private static readonly FieldInfo CastRangeDiceBackingField =
+      typeof(Cast).GetField("<RangeDice>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo CharacterGetLimitFormMethod =
+      typeof(Character).GetMethod("GetLimitForm", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+
+    private static readonly MethodInfo CharacterGetQualificationMethod =
+      typeof(Character).GetMethod("GetQualification", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Skill) }, null);
+
     public static object GetDirectorEngine(object Director)
     {
       return Director != null && DirectorEngineField != null ? DirectorEngineField.GetValue(Director) : null;
@@ -70,6 +79,71 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     }
 
     /// <summary>
+    /// 临时设置 Cast.RangeDice（配合 Postfix 恢复，用于实现动态施法距离加成）。
+    /// </summary>
+    public static bool SetCastRangeDice(Cast Target, Dice RangeDice)
+    {
+      if (Target == null || CastRangeDiceBackingField == null)
+        return false;
+
+      CastRangeDiceBackingField.SetValue(Target, RangeDice);
+      return true;
+    }
+
+    /// <summary>
+    /// 按名称获取角色 CurrentForm 中的某项属性分值（未找到返回 0）。
+    /// </summary>
+    public static int GetCurrentAbilityScore(Character Character, string AttributeName)
+    {
+      var Ability = FindAbility(Character?.CurrentForm, AttributeName);
+      return Ability?.Score ?? 0;
+    }
+
+    /// <summary>
+    /// 按名称获取角色 LimitForm 中的某项属性上限值（未找到返回 25）。
+    /// </summary>
+    public static int GetLimitAbilityScore(Character Character, string AttributeName)
+    {
+      if (Character == null || CharacterGetLimitFormMethod == null)
+        return 25;
+
+      var LimitForm = CharacterGetLimitFormMethod.Invoke(Character, null) as Form;
+      var Ability = FindAbility(LimitForm, AttributeName);
+      return Ability?.Score ?? 25;
+    }
+
+    /// <summary>
+    /// 获取角色在指定技能上的熟练度等级（Qualification）。
+    /// </summary>
+    public static Qualification GetQualification(Character Character, Skill Skill)
+    {
+      if (Character == null || Skill == null || CharacterGetQualificationMethod == null)
+        return null;
+
+      return CharacterGetQualificationMethod.Invoke(Character, new object[] { Skill }) as Qualification;
+    }
+
+    /// <summary>
+    /// 同步设置角色某项属性在 CurrentForm 与 MaximumForm 中的分值，
+    /// 确保总量守恒且复活/恢复属性药水不会白嫖回满。
+    /// </summary>
+    public static bool SetPermanentAbilityScore(Character Character, string AttributeName, int NewScore)
+    {
+      if (Character?.CurrentForm == null || Character.MaximumForm == null)
+        return false;
+
+      var CurAbility = FindAbility(Character.CurrentForm, AttributeName);
+      if (CurAbility == null)
+        return false;
+
+      var MaxAbility = Character.MaximumForm[CurAbility.Attribute];
+      bool Ok = SetAbilityScore(CurAbility, NewScore);
+      if (MaxAbility != null)
+        Ok &= SetAbilityScore(MaxAbility, NewScore);
+      return Ok;
+    }
+
+    /// <summary>
     /// 直接设置某项 Ability 的分值（可同时用于 CurrentForm 与 MaximumForm）。
     /// </summary>
     public static bool SetAbilityScore(Ability Target, int Score)
@@ -82,34 +156,20 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     }
 
     /// <summary>
-    /// 将指定属性在 MaximumForm 中的基准值同步为 CurrentForm 当前值，
-    /// 防止复活或恢复属性药水把主动转走的属性白嫖回满。
+    /// 将指定属性在 MaximumForm 中的基准值同步为 CurrentForm 当前值。
     /// </summary>
     public static void SyncMaximumFormScores(Character Character, params string[] AttributeNames)
     {
       if (Character?.CurrentForm == null || Character.MaximumForm == null || AttributeNames == null || AttributeNames.Length == 0)
         return;
 
-      foreach (var CurAbility in Character.CurrentForm.Abilities)
+      foreach (var Name in AttributeNames)
       {
-        var Attr = CurAbility.Attribute;
-        if (Attr == null)
+        var CurAbility = FindAbility(Character.CurrentForm, Name);
+        if (CurAbility == null)
           continue;
 
-        bool Matched = false;
-        for (int I = 0; I < AttributeNames.Length; I++)
-        {
-          if (string.Equals(Attr.Name, AttributeNames[I], StringComparison.OrdinalIgnoreCase))
-          {
-            Matched = true;
-            break;
-          }
-        }
-
-        if (!Matched)
-          continue;
-
-        var MaxAbility = Character.MaximumForm[Attr];
+        var MaxAbility = Character.MaximumForm[CurAbility.Attribute];
         if (MaxAbility != null && MaxAbility.Score != CurAbility.Score)
           SetAbilityScore(MaxAbility, CurAbility.Score);
       }
@@ -160,6 +220,21 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       };
 
       JournalWriteInternalEventMethod.Invoke(Journal, new object[] { Character, WriteAction });
+    }
+
+    private static Ability FindAbility(Form Form, string AttributeName)
+    {
+      if (Form == null || string.IsNullOrEmpty(AttributeName))
+        return null;
+
+      foreach (var Ability in Form.Abilities)
+      {
+        if (Ability.Attribute != null &&
+            string.Equals(Ability.Attribute.Name, AttributeName, StringComparison.OrdinalIgnoreCase))
+          return Ability;
+      }
+
+      return null;
     }
   }
 }

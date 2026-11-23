@@ -10,12 +10,29 @@ namespace Pathos.DotaHeroes.Framework.Hooks
   /// </summary>
   public static class DotaHookBus
   {
+    [ThreadStatic]
+    private static SpellCastEventArgs CurrentSpellCast;
+
+    /// <summary>
+    /// 当前线程正在结算的施法上下文（仅在 Director.CastSpell 执行期间非空），
+    /// 便于 BeforeDamage / BeforeApplyTransient 精准识别触发来源法术。
+    /// </summary>
+    public static SpellCastEventArgs ActiveSpellCast
+    {
+      get => CurrentSpellCast;
+      internal set => CurrentSpellCast = value;
+    }
+
     private static readonly ConcurrentDictionary<string, Action<SpellCastEventArgs>> BeforeCastSpellHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<SpellCastEventArgs>> AfterCastSpellHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<DamageEventArgs>> BeforeDamageHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<DamageEventArgs>> AfterDamageHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<KillEventArgs>> AfterKillHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<ResurrectEventArgs>> AfterResurrectHandlers = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Action<SpeedQueryEventArgs>> SpeedQueryHandlers = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Action<AttackRangeQueryEventArgs>> AttackRangeQueryHandlers = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Action<CastRangeEventArgs>> CastRangeHandlers = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Action<TransientEventArgs>> BeforeApplyTransientHandlers = new(StringComparer.Ordinal);
 
     public static void RegisterBeforeCastSpell(string Key, Action<SpellCastEventArgs> Handler)
       => Register(BeforeCastSpellHandlers, Key, Handler);
@@ -35,6 +52,18 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public static void RegisterAfterResurrect(string Key, Action<ResurrectEventArgs> Handler)
       => Register(AfterResurrectHandlers, Key, Handler);
 
+    public static void RegisterSpeedQuery(string Key, Action<SpeedQueryEventArgs> Handler)
+      => Register(SpeedQueryHandlers, Key, Handler);
+
+    public static void RegisterAttackRangeQuery(string Key, Action<AttackRangeQueryEventArgs> Handler)
+      => Register(AttackRangeQueryHandlers, Key, Handler);
+
+    public static void RegisterCastRange(string Key, Action<CastRangeEventArgs> Handler)
+      => Register(CastRangeHandlers, Key, Handler);
+
+    public static void RegisterBeforeApplyTransient(string Key, Action<TransientEventArgs> Handler)
+      => Register(BeforeApplyTransientHandlers, Key, Handler);
+
     internal static void DispatchBeforeCastSpell(SpellCastEventArgs Args)
       => Dispatch(BeforeCastSpellHandlers, Args, nameof(BeforeCastSpellHandlers));
 
@@ -52,6 +81,18 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     internal static void DispatchAfterResurrect(ResurrectEventArgs Args)
       => Dispatch(AfterResurrectHandlers, Args, nameof(AfterResurrectHandlers));
+
+    internal static void DispatchSpeedQuery(SpeedQueryEventArgs Args)
+      => Dispatch(SpeedQueryHandlers, Args, nameof(SpeedQueryHandlers));
+
+    internal static void DispatchAttackRangeQuery(AttackRangeQueryEventArgs Args)
+      => Dispatch(AttackRangeQueryHandlers, Args, nameof(AttackRangeQueryHandlers));
+
+    internal static void DispatchCastRange(CastRangeEventArgs Args)
+      => Dispatch(CastRangeHandlers, Args, nameof(CastRangeHandlers));
+
+    internal static void DispatchBeforeApplyTransient(TransientEventArgs Args)
+      => Dispatch(BeforeApplyTransientHandlers, Args, nameof(BeforeApplyTransientHandlers));
 
     private static void Register<TArgs>(ConcurrentDictionary<string, Action<TArgs>> Map, string Key, Action<TArgs> Handler)
     {

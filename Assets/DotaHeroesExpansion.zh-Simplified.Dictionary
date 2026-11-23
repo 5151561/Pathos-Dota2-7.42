@@ -1,5 +1,5 @@
 ﻿CharacterName,Morphling,变体精灵
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, and morphs into foes.",来自 DOTA2 的水元素英雄，能化作波浪穿梭战场、在力量与敏捷之间自由转换，并变形为敌人形态。
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",来自 DOTA2 的水元素英雄：能化作波浪突进、自由转换力量与敏捷、凭先天技能「潮涨潮落」随属性动态强化移速/射程/施法距离/减速抗性，并可变形为敌人形态。
 ClassName,morphling//female,变体精灵
 ClassName,morphling//male,变体精灵
 ClassName,morphling//non-binary,变体精灵
@@ -7,38 +7,20 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,waterkin,变体水灵
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的远程水弹，可作为弹弓无限弹药发射。
 ItemName,tidal orb,潮汐水弹
-PropertyDescription,Ebb & Flow (Agility I): +10% movement speed and slight dodge chance.,潮涨潮落（潮落 I）：常驻移速 +10%，获得轻微闪避几率（变形期间依然生效）。
-PropertyDescription,Ebb & Flow (Agility II): +20% movement speed and improved dodge chance.,潮涨潮落（潮落 II）：常驻移速 +20%，获得进阶闪避几率（变形期间依然生效）。
-PropertyDescription,Ebb & Flow (Agility III): +30% movement speed and agile dodge chance.,潮涨潮落（潮落 III）：常驻移速 +30%，获得灵动闪避几率（变形期间依然生效）。
-PropertyDescription,Ebb & Flow (Agility IV): +40% movement speed and high dodge chance.,潮涨潮落（潮落 IV）：常驻移速 +40%，获得高额闪避几率（变形期间依然生效）。
-PropertyDescription,Ebb & Flow (Agility V): +50% movement speed (permanent quickness) and peak dodge chance.,潮涨潮落（潮落 V）：常驻移速 +50%（等效常驻迅捷），获得极高闪避几率（变形期间依然生效）。
-PropertyDescription,Ebb & Flow (Strength I): Avoids grappling and mild permanent life recovery.,潮涨潮落（潮涨 I）：常驻抵抗抓取束缚，轻微加快生命恢复（变形期间依然生效）。
-PropertyDescription,Ebb & Flow (Strength II): Avoids grappling and steady permanent life recovery.,潮涨潮落（潮涨 II）：常驻抵抗抓取束缚，稳定加快生命恢复（变形期间依然生效）。
-PropertyDescription,"Ebb & Flow (Strength III): Immune to slowness, avoids grappling, and improved permanent life recovery.",潮涨潮落（潮涨 III）：常驻免疫减速、抵抗抓取束缚，显著加快生命恢复（变形期间依然生效）。
-PropertyDescription,"Ebb & Flow (Strength IV): Immune to slowness, avoids grappling, and strong permanent life recovery.",潮涨潮落（潮涨 IV）：常驻免疫减速、抵抗抓取束缚，大幅加快生命恢复（变形期间依然生效）。
-PropertyDescription,"Ebb & Flow (Strength V): Immune to slowness, avoids grappling, and permanent doubled life recovery.",潮涨潮落（潮涨 V）：常驻免疫减速、抵抗抓取束缚，100% 触发双倍生命恢复且不耗饱食度（变形期间依然生效）。
-PropertyName,ebb I,潮落 I
-PropertyName,ebb II,潮落 II
-PropertyName,ebb III,潮落 III
-PropertyName,ebb IV,潮落 IV
-PropertyName,ebb V,潮落 V
-PropertyName,flow I,潮涨 I
-PropertyName,flow II,潮涨 II
-PropertyName,flow III,潮涨 III
-PropertyName,flow IV,潮涨 IV
-PropertyName,flow V,潮涨 V
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,先天技能「潮涨潮落」：敏捷提供额外移速与远程攻击距离；力量提供额外施法距离与减速抗性（变形期间持续保留）。
+PropertyName,ebb and flow,潮涨潮落
 RaceName,waterkin//female,变体水灵
 RaceName,waterkin//male,变体水灵
 RaceName,waterkin//non-binary,变体水灵
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells.",指向一名生物并化身为对方形态，复制其外形、属性、技能与法术。
-SpellDescription,"Crush foes with a heavy torrent of water focused on strength, dealing light damage while reliably knocking them back and stunning them.",以偏重力量的重水洪流冲击目标，造成少量水系伤害并稳定击退与眩晕敌人。
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",指向一名生物并化身为对方形态，复制其外形、属性、技能与法术，且先天技能「潮涨潮落」持续保留。
+SpellDescription,Crush foes with a torrent of water that knocks them back and stuns them for a duration scaling dynamically with your Strength-to-Agility ratio (max stun at 1.5x Strength).,以重水洪流击退并眩晕目标，眩晕时长随当前力量/敏捷比值动态缩放（力量 ≥ 1.5 倍敏捷时达到最长眩晕）。
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",化作汹涌波浪向前闪烁突进，对周围敌人造成水波范围伤害，并短暂获得穿墙与幻影闪避。
+SpellDescription,Launch a surge of water dealing base damage plus bonus burst damage scaling dynamically with your Agility-to-Strength ratio (max scaling at 1.5x Agility).,发射高压水波造成基础水系伤害，并按当前敏捷/力量比值动态追加爆发伤害（敏捷 ≥ 1.5 倍力量时达到最高倍率）。
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,解除当前变形状态，立即切回变体水灵本体。
-SpellDescription,"Shift toward agility (converting 1 to 5 STR & CON into DEX per cast by mastery), freely repeatable and empowering permanent Ebb speed and dodge.",向敏捷转换属性（随熟练度每次将 1~5 点力量与体质转化为等额敏捷，可自由多次转换），同时叠加常驻「潮落」移速与闪避。
-SpellDescription,"Shift toward strength (converting 1 to 5 DEX into STR & CON per cast by mastery), freely repeatable while empowering permanent Flow slow resistance and life recovery and healing immediately.",向力量转换属性（随熟练度每次将 1~5 点敏捷转化为等额力量与体质，可自由多次转换），同时叠加常驻「潮涨」抗减速与生命恢复并立即回血。
-SpellDescription,"Unleash a razor-sharp surge of water focused on agility, dealing heavy burst water damage to enemies.",以偏重敏捷的锋锐高压水波轰击目标，造成高额爆发水系伤害。
-SpellName,adaptive strike agility,变体攻击·敏捷
-SpellName,adaptive strike strength,变体攻击·力量
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",将敏捷转化为力量与体质（随变化系熟练度每次 1~5 点），总量守恒并同步提升最大生命与当前生命。
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",将力量与体质转化为敏捷（随变化系熟练度每次 1~5 点），总量守恒并降低最大生命值，当前生命值仅在超过新上限时截断。
+SpellName,adaptive strike agility,变体打击·敏捷
+SpellName,adaptive strike strength,变体打击·力量
 SpellName,morph,变形
 SpellName,morph agility,属性转换·敏捷
 SpellName,morph revert,解除变形

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -165,6 +166,18 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     /// </summary>
     private static class HarmonyDispatcher
     {
+      private sealed class CastSpellState
+      {
+        public SpellCastEventArgs Args;
+        public SpellCastEventArgs PreviousActive;
+      }
+
+      private sealed class CastRangeState
+      {
+        public Cast Cast;
+        public Dice OriginalRangeDice;
+      }
+
       public static void ApplyAll()
       {
         var EngineAsm = typeof(Expansion).Assembly;
@@ -173,6 +186,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var CastSpellCmdType = EngineAsm.GetType("Pathos.CastSpellCommand");
         var CharacterType = EngineAsm.GetType("Pathos.Character");
         var SquareType = EngineAsm.GetType("Pathos.Square");
+        var PropertySetType = EngineAsm.GetType("Pathos.PropertySet");
 
         var Harmony = new Harmony(HarmonyId);
 
@@ -209,6 +223,46 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           "ResurrectCharacter",
           new[] { CharacterType, SquareType },
           postfix: nameof(ResurrectCharacterPostfix));
+
+        // 5. 移动/行动速度钩子：Engine.GetBaseSpeed(Character, bool, PropertySet)
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "GetBaseSpeed",
+          new[] { CharacterType, typeof(bool), PropertySetType },
+          postfix: nameof(GetBaseSpeedPostfix));
+
+        // 6. 远程射击/投掷距离钩子：Engine.GetShootRange / GetThrowRange
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "GetShootRange",
+          new[] { CharacterType, typeof(Asset) },
+          postfix: nameof(GetShootRangePostfix));
+
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "GetThrowRange",
+          new[] { CharacterType, typeof(Asset) },
+          postfix: nameof(GetThrowRangePostfix));
+
+        // 7. 施法距离修正钩子：Engine.CastEffects(...)
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "CastEffects",
+          new[] { CharacterType, typeof(Asset), typeof(Fixture), typeof(Asset), typeof(Cast), typeof(Delay), typeof(Direction), typeof(IEnumerable<Effect>) },
+          prefix: nameof(CastEffectsPrefix),
+          postfix: nameof(CastEffectsPostfix));
+
+        // 8. 临时状态施加钩子：Engine.ApplyTransient(Character, Character, Property, Dice)
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "ApplyTransient",
+          new[] { CharacterType, CharacterType, typeof(Property), typeof(Dice) },
+          prefix: nameof(ApplyTransientPrefix));
       }
 
       private static void PatchMethod(
@@ -239,7 +293,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         WriteDebug($"Patched {TargetType.FullName}.{MethodName}");
       }
 
-      private static bool CastSpellPrefix(object __instance, Character Character, object Command, out SpellCastEventArgs __state)
+      private static bool CastSpellPrefix(object __instance, Character Character, object Command, out CastSpellState __state)
       {
         __state = null;
         var Spell = PathosEngineBridge.GetCastCommandSpell(Command);
@@ -254,17 +308,34 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           Asset: PathosEngineBridge.GetCastCommandAsset(Command),
           Direction: PathosEngineBridge.GetCastCommandDirection(Command));
 
-        __state = Args;
+        var Previous = DotaHookBus.ActiveSpellCast;
+        DotaHookBus.ActiveSpellCast = Args;
+        __state = new CastSpellState { Args = Args, PreviousActive = Previous };
+
         DotaHookBus.DispatchBeforeCastSpell(Args);
-        return !Args.Cancel;
+        if (Args.Cancel)
+        {
+          DotaHookBus.ActiveSpellCast = Previous;
+          return false;
+        }
+
+        return true;
       }
 
-      private static void CastSpellPostfix(SpellCastEventArgs __state)
+      private static void CastSpellPostfix(CastSpellState __state)
       {
-        if (__state == null || __state.Cancel)
+        if (__state == null)
           return;
 
-        DotaHookBus.DispatchAfterCastSpell(__state);
+        try
+        {
+          if (!__state.Args.Cancel)
+            DotaHookBus.DispatchAfterCastSpell(__state.Args);
+        }
+        finally
+        {
+          DotaHookBus.ActiveSpellCast = __state.PreviousActive;
+        }
       }
 
       private static bool DamageCharacterPrefix(
@@ -308,6 +379,79 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           return;
 
         DotaHookBus.DispatchAfterResurrect(new ResurrectEventArgs(__instance, Character));
+      }
+
+      private static void GetBaseSpeedPostfix(object __instance, Character Character, bool Attacking, ref Speed __result)
+      {
+        if (Character == null)
+          return;
+
+        var Args = new SpeedQueryEventArgs(__instance, Character, Attacking, __result);
+        DotaHookBus.DispatchSpeedQuery(Args);
+        __result = Args.Speed;
+      }
+
+      private static void GetShootRangePostfix(object __instance, Character Character, Asset Asset, ref int __result)
+      {
+        if (Character == null)
+          return;
+
+        var Args = new AttackRangeQueryEventArgs(__instance, Character, Asset, IsThrow: false, Range: __result);
+        DotaHookBus.DispatchAttackRangeQuery(Args);
+        __result = Args.Range;
+      }
+
+      private static void GetThrowRangePostfix(object __instance, Character Character, Asset Asset, ref int __result)
+      {
+        if (Character == null)
+          return;
+
+        var Args = new AttackRangeQueryEventArgs(__instance, Character, Asset, IsThrow: true, Range: __result);
+        DotaHookBus.DispatchAttackRangeQuery(Args);
+        __result = Args.Range;
+      }
+
+      private static void CastEffectsPrefix(object __instance, Character Character, Cast Cast, out CastRangeState __state)
+      {
+        __state = null;
+        if (Character == null || Cast == null || Cast.TargetSelf)
+          return;
+
+        var RangeDice = Cast.RangeDice;
+        if (RangeDice.IsZero())
+          return;
+
+        var Args = new CastRangeEventArgs(__instance, Character, Cast);
+        DotaHookBus.DispatchCastRange(Args);
+
+        if (Args.BonusRange != 0)
+        {
+          var Boosted = new Dice(RangeDice.Number, RangeDice.Base, RangeDice.Bonus + Args.BonusRange);
+          if (PathosEngineBridge.SetCastRangeDice(Cast, Boosted))
+            __state = new CastRangeState { Cast = Cast, OriginalRangeDice = RangeDice };
+        }
+      }
+
+      private static void CastEffectsPostfix(CastRangeState __state)
+      {
+        if (__state?.Cast != null)
+          PathosEngineBridge.SetCastRangeDice(__state.Cast, __state.OriginalRangeDice);
+      }
+
+      private static bool ApplyTransientPrefix(
+        object __instance,
+        Character Applier,
+        Character Character,
+        Property Property,
+        ref Dice Duration)
+      {
+        if (Character == null || Property == null)
+          return true;
+
+        var Args = new TransientEventArgs(__instance, Applier, Character, Property, Duration);
+        DotaHookBus.DispatchBeforeApplyTransient(Args);
+        Duration = Args.Duration;
+        return !Args.Cancel;
       }
     }
   }
