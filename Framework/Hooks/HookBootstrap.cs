@@ -197,6 +197,8 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var ElectType = EngineAsm.GetType("Pathos.Elect");
         var SquareType = EngineAsm.GetType("Pathos.Square");
         var PropertySetType = EngineAsm.GetType("Pathos.PropertySet");
+        var MasteryType = EngineAsm.GetType("Pathos.Mastery");
+        var GeneratorType = EngineAsm.GetType("Pathos.Generator");
 
         var Harmony = new Harmony(HarmonyId);
 
@@ -313,6 +315,26 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           "GetDefenceClass",
           new[] { CharacterType, typeof(DamageType?) },
           postfix: nameof(GetDefenceClassPostfix));
+
+        // 13. 法术蓝耗查询钩子：Character.SpellCost(Mastery, Qualification)（用于减冷却转减蓝耗，施法与 UI 自动同步）
+        PatchMethod(
+          Harmony,
+          CharacterType,
+          "SpellCost",
+          new[] { MasteryType, typeof(Qualification) },
+          postfix: nameof(SpellCostPostfix));
+
+        // 14. 角色升级钩子：Generator.AdvanceLevel(Character, bool)（用于天赋解锁提示与升级联动）
+        PatchMethod(
+          Harmony,
+          GeneratorType,
+          "AdvanceLevel",
+          new[] { CharacterType, typeof(bool) },
+          prefix: nameof(AdvanceLevelPrefix),
+          postfix: nameof(AdvanceLevelPostfix));
+
+        // 15. 天赋树独立面板 UI 补丁（仅在游戏客户端存在 Pathos.dll 时挂载）
+        Talents.TalentTreeUiBridge.ApplyUiPatches(Harmony);
       }
 
       private static void PatchMethod(
@@ -579,6 +601,34 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var Args = new DefenceQueryEventArgs(__instance, Character, DamageType, __result);
         DotaHookBus.DispatchDefenceQuery(Args);
         __result = Args.Defence;
+      }
+
+      private static void SpellCostPostfix(Character __instance, object Mastery, Qualification Qualification, ref int __result)
+      {
+        if (__instance == null || Mastery == null)
+          return;
+
+        var Spell = PathosEngineBridge.GetMasterySpell(Mastery);
+        if (Spell == null)
+          return;
+
+        var Args = new SpellCostQueryEventArgs(__instance, Spell, Mastery, Qualification, __result);
+        DotaHookBus.DispatchSpellCostQuery(Args);
+        __result = Math.Max(0, Args.ManaCost);
+      }
+
+      private static void AdvanceLevelPrefix(Character Character, out int __state)
+      {
+        __state = Character?.Level ?? 0;
+      }
+
+      private static void AdvanceLevelPostfix(object __instance, Character Character, int __state)
+      {
+        if (Character == null || Character.Level <= __state)
+          return;
+
+        var Engine = PathosEngineBridge.GetGeneratorEngine(__instance);
+        DotaHookBus.DispatchAfterLevelUp(new LevelUpEventArgs(Engine, Character, __state, Character.Level));
       }
     }
   }

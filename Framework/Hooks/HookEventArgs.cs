@@ -265,4 +265,53 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public DamageType? DamageType { get; }
     public int Defence { get; set; }
   }
+
+  /// <summary>
+  /// 法术蓝耗查询事件上下文（对应 Pathos.Character.SpellCost）。
+  /// 用于实现减冷却转减蓝耗等天赋/被动，施法扣蓝与 UI 面板蓝耗显示自动同步。
+  /// </summary>
+  public sealed class SpellCostQueryEventArgs
+  {
+    public SpellCostQueryEventArgs(
+      Character Character,
+      Spell Spell,
+      object Mastery,
+      Qualification Qualification,
+      int BaseManaCost)
+    {
+      this.Character = Character;
+      this.Spell = Spell;
+      this.Mastery = Mastery;
+      this.Qualification = Qualification;
+      this.BaseManaCost = BaseManaCost;
+      this.ManaCost = BaseManaCost;
+    }
+
+    public Character Character { get; }
+    public Spell Spell { get; }
+    public object Mastery { get; }
+    public Qualification Qualification { get; }
+    public int BaseManaCost { get; }
+    public int ManaCost { get; set; }
+  }
+
+  /// <summary>
+  /// 角色升级事件上下文（对应 Pathos.Generator.AdvanceLevel）。
+  /// 用于解锁天赋点提示、升级成长联动等。
+  /// </summary>
+  public sealed class LevelUpEventArgs
+  {
+    public LevelUpEventArgs(object Engine, Character Character, int PreviousLevel, int NewLevel)
+    {
+      this.Engine = Engine;
+      this.Character = Character;
+      this.PreviousLevel = PreviousLevel;
+      this.NewLevel = NewLevel;
+    }
+
+    public object Engine { get; }
+    public Character Character { get; }
+    public int PreviousLevel { get; }
+    public int NewLevel { get; }
+  }
 }

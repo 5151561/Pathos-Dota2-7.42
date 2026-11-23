@@ -31,11 +31,13 @@ namespace Pathos.DotaHeroes.Framework
   /// DOTA2 → Pathos 核心数值与机制统一换算工具：
   /// 1. 初始六维属性：线性锚定公式（12 + (x - 20) * 0.45，裁剪至 [6, 18]），开局/重摇自动锁定，告别 4d6 摇骰子。
   /// 2. 蓝量池与技能蓝耗：统一标尺 K_mana = 20（20 点 DOTA2 魔法 = 1 点 Pathos 法力），0 蓝耗技能忠实保留 0 蓝耗。
-  /// 3. 护甲（被动加甲 / 减甲）：统一映射为 Pathos Defence（分段换算，防挨打吃解离/撤销/附带特效），敏捷护甲直接复用原生 DEX 机制。
+  /// 3. 技能伤害：统一标尺 K_dmg = 15（15 点 DOTA2 伤害 = 1 点 Pathos 伤害），持续伤害（DPS）按 1 秒 = 2 回合（每回合 0.5 秒）折算。
+  /// 4. 护甲（被动加甲 / 减甲）：统一映射为 Pathos Defence（分段换算，防挨打吃解离/撤销/附带特效），敏捷护甲直接复用原生 DEX 机制。
   /// </summary>
   public static class DotaMechanicsMapper
   {
     public const float ManaScale = 20.0f;
+    public const float DamageScale = 15.0f;   // 15 点 DOTA2 技能伤害 = 1 点 Pathos 技能伤害
     public const float TurnsPerSecond = 2.0f; // 1 秒 DOTA2 时间 = 2 回合 Pathos
     public const int DotaBaseMana = 75;
     public const int DotaManaPerInt = 12;
@@ -129,6 +131,91 @@ namespace Pathos.DotaHeroes.Framework
     public static int MapSpellLevel(int PathosManaCost)
     {
       return Math.Clamp((int)MathF.Round(PathosManaCost / 5.0f), 1, 7);
+    }
+
+    /// <summary>
+    /// 将 DOTA2 技能单次伤害映射为 Pathos 伤害期望（统一标尺 K_dmg = 15）。
+    /// </summary>
+    public static int MapSkillDamage(float DotaDamage, int MinDamage = 1)
+    {
+      if (DotaDamage <= 0.0f)
+        return 0;
+
+      return Math.Max(MinDamage, (int)MathF.Round(DotaDamage / DamageScale, MidpointRounding.AwayFromZero));
+    }
+
+    /// <summary>
+    /// 将 DOTA2 持续伤害（每秒 DPS）按「1 秒 = 2 回合（每回合 0.5 秒）」与 K_dmg = 15 折算为 Pathos 每回合伤害期望。
+    /// </summary>
+    public static int MapDotDamagePerTurn(float DotaDamagePerSecond, int MinDamage = 1)
+    {
+      if (DotaDamagePerSecond <= 0.0f)
+        return 0;
+
+      return MapSkillDamage(DotaDamagePerSecond / TurnsPerSecond, MinDamage);
+    }
+
+    /// <summary>
+    /// 将 DOTA2 技能伤害映射为期望贴合「DotaDamage / K_dmg」的 Pathos 伤害骰（NdF + Bonus，Bonus >= 0）。
+    /// </summary>
+    public static Dice MapSkillDamageDice(float DotaDamage, int DieFaces = 6, int MinDamage = 1)
+    {
+      if (DotaDamage <= 0.0f)
+        return Dice.Zero;
+
+      int Faces = Math.Max(2, DieFaces);
+      float TargetAvg = Math.Max(MinDamage, DotaDamage / DamageScale);
+      float AvgPerDie = (Faces + 1) * 0.5f;
+
+      int Number = Math.Max(1, (int)MathF.Floor(TargetAvg / AvgPerDie));
+      int Bonus = Math.Max(0, (int)MathF.Round(TargetAvg - Number * AvgPerDie, MidpointRounding.AwayFromZero));
+      return new Dice(Number, Faces, Bonus);
+    }
+
+    /// <summary>
+    /// 将 DOTA2 持续伤害（每秒 DPS）按每回合 0.5 秒折算并生成对应 Pathos 伤害骰。
+    /// </summary>
+    public static Dice MapDotDamageDicePerTurn(float DotaDamagePerSecond, int DieFaces = 4, int MinDamage = 1)
+    {
+      if (DotaDamagePerSecond <= 0.0f)
+        return Dice.Zero;
+
+      return MapSkillDamageDice(DotaDamagePerSecond / TurnsPerSecond, DieFaces, MinDamage);
+    }
+
+    /// <summary>
+    /// 根据 DOTA2 技能减冷却秒数与基准冷却（通常取满级冷却）推导减冷却百分比（0.0 ~ 1.0）。
+    /// </summary>
+    public static float ComputeCooldownReductionRatio(float ReducedSeconds, float ReferenceCooldownSeconds)
+    {
+      if (ReducedSeconds <= 0.0f || ReferenceCooldownSeconds <= 0.0f)
+        return 0.0f;
+
+      return Math.Clamp(ReducedSeconds / ReferenceCooldownSeconds, 0.0f, 1.0f);
+    }
+
+    /// <summary>
+    /// DOTA2 减冷却（CDR）→ Pathos 减蓝耗统一换算：
+    /// - 0 蓝耗技能保持 0 蓝耗。
+    /// - 正蓝耗技能按 (1 - CDR%) 缩减并四舍五入，保底为 1。
+    /// - 小蓝耗保底生效：只要 CDR% > 0 且原蓝耗 > 1，至少减少 1 点蓝耗，确保天赋收益肉眼可见。
+    /// - 多来源叠加默认封顶减耗 60%，防止蓝耗趋零破坏平衡。
+    /// </summary>
+    public static int MapCooldownReductionToManaCost(int BaseManaCost, float CdrRatio, float MaxReductionCap = 0.60f)
+    {
+      if (BaseManaCost <= 0)
+        return 0;
+
+      if (CdrRatio <= 0.0001f)
+        return BaseManaCost;
+
+      float EffectiveRatio = Math.Clamp(CdrRatio, 0.0f, Math.Clamp(MaxReductionCap, 0.0f, 0.95f));
+      int Reduced = Math.Max(1, (int)MathF.Round(BaseManaCost * (1.0f - EffectiveRatio)));
+
+      if (BaseManaCost > 1 && Reduced >= BaseManaCost)
+        Reduced = BaseManaCost - 1;
+
+      return Reduced;
     }
 
     /// <summary>

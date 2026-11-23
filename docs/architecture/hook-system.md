@@ -34,6 +34,8 @@
 | `RegisterAfterAttack` | `Director.Attack` (Postfix) | 只读上下文 | 普攻后触发特效 |
 | `RegisterAfterCreateActor` | `Engine.CreateActor` / `RerollActor` (Postfix) | 只读上下文 | 锁定 DOTA2 英雄固定初始六维与初始 HP/Mana |
 | `RegisterDefenceQuery` | `Engine.GetDefenceClass` (Postfix) | `Defence` | 被动加甲、光环护甲与减甲 Debuff（实时反映在面板 Defence） |
+| `RegisterSpellCostQuery` | `Character.SpellCost` (Postfix) | `ManaCost` | 减冷却转减蓝耗等法术蓝耗修正（施法扣蓝与 UI 显示自动同步） |
+| `RegisterAfterLevelUp` | `Generator.AdvanceLevel` (Postfix) | 只读上下文 | 角色升级解锁天赋点提示与成长联动 |
 
 ### 线程级上下文追踪
 

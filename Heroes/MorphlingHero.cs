@@ -436,11 +436,12 @@ namespace Pathos.DotaHeroes.Heroes
           Adept.Apply.ApplyTransient(Ctx.Properties.displacement, Dice.Fixed(EvasionTurns));
         }
 
-        Configure(Ctx.Qualifications.proficient, Range: 5, WaveDamage: 2.d4(), WaveRadius: 2, EvasionTurns: 3);
-        Configure(Ctx.Qualifications.specialist, Range: 6, WaveDamage: 2.d6(), WaveRadius: 2, EvasionTurns: 4);
-        Configure(Ctx.Qualifications.expert, Range: 7, WaveDamage: 3.d6(), WaveRadius: 2, EvasionTurns: 4);
-        Configure(Ctx.Qualifications.master, Range: 9, WaveDamage: 4.d6(), WaveRadius: 3, EvasionTurns: 5);
-        Configure(Ctx.Qualifications.champion, Range: 11, WaveDamage: 5.d6(), WaveRadius: 3, EvasionTurns: 6);
+        // DOTA2 7.42 波浪形态基础伤害：75 / 150 / 225 / 300（Champion 360）经 K_dmg = 15 自动生成伤害骰
+        Configure(Ctx.Qualifications.proficient, Range: 5, WaveDamage: DotaMechanicsMapper.MapSkillDamageDice(75), WaveRadius: 2, EvasionTurns: 3);
+        Configure(Ctx.Qualifications.specialist, Range: 6, WaveDamage: DotaMechanicsMapper.MapSkillDamageDice(150), WaveRadius: 2, EvasionTurns: 4);
+        Configure(Ctx.Qualifications.expert, Range: 7, WaveDamage: DotaMechanicsMapper.MapSkillDamageDice(225), WaveRadius: 2, EvasionTurns: 4);
+        Configure(Ctx.Qualifications.master, Range: 9, WaveDamage: DotaMechanicsMapper.MapSkillDamageDice(300), WaveRadius: 3, EvasionTurns: 5);
+        Configure(Ctx.Qualifications.champion, Range: 11, WaveDamage: DotaMechanicsMapper.MapSkillDamageDice(360), WaveRadius: 3, EvasionTurns: 6);
       });
     }
 
@@ -466,11 +467,12 @@ namespace Pathos.DotaHeroes.Heroes
           Adept.Apply.ApplyTransient(Ctx.Properties.stunned, Dice.One);
         }
 
-        Configure(Ctx.Qualifications.proficient, 5, 1.d6());
-        Configure(Ctx.Qualifications.specialist, 6, 1.d8());
-        Configure(Ctx.Qualifications.expert, 7, 2.d6());
-        Configure(Ctx.Qualifications.master, 8, 2.d8());
-        Configure(Ctx.Qualifications.champion, 9, 3.d6());
+        // DOTA2 7.42 变体打击基础伤害：50 / 70 / 90 / 110（Champion 130）经 K_dmg = 15 自动生成伤害骰
+        Configure(Ctx.Qualifications.proficient, 5, DotaMechanicsMapper.MapSkillDamageDice(50));
+        Configure(Ctx.Qualifications.specialist, 6, DotaMechanicsMapper.MapSkillDamageDice(70));
+        Configure(Ctx.Qualifications.expert, 7, DotaMechanicsMapper.MapSkillDamageDice(90));
+        Configure(Ctx.Qualifications.master, 8, DotaMechanicsMapper.MapSkillDamageDice(110));
+        Configure(Ctx.Qualifications.champion, 9, DotaMechanicsMapper.MapSkillDamageDice(130));
       });
     }
 

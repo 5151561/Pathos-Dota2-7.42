@@ -49,7 +49,24 @@ DotaMechanicsMapper.RegisterFixedStartingStats(ClassName, StartingStats);
 
 ---
 
-## 3. 持续时间与召唤物生命周期规范
+## 3. 技能伤害映射（统一标尺 $K_{\text{dmg}} = 15$）
+
+以 **15 点 DOTA2 技能伤害 = 1 点 Pathos 技能伤害** 作为全局统一标尺，所有主动/持续/附加伤害均通过 `DotaMechanicsMapper` 推导，不再拍脑袋手填骰子：
+
+1. **单发爆发 / 附加伤害**（`MapSkillDamage` / `MapSkillDamageDice`）：
+   $$\text{TargetDmg} = \frac{\text{DotaDamage}}{15}$$
+   - 需要骰子波动时调用 `MapSkillDamageDice(dotaDamage, dieFaces)` 自动生成期望贴合 $\text{TargetDmg}$ 的 `NdF + Bonus` 伤害骰（默认 `d6`）。
+   - 例：水人波浪形态 `75 / 150 / 225 / 300` → 期望 `5 / 10 / 15 / 20`（`1d6+2 / 2d6+3 / 4d6+1 / 5d6+3`）；主宰无敌斩附加攻击力 `25 / 30 / 35` → `+2 / +2 / +2`（满熟练 `+3`）。
+2. **持续伤害 / 高频跳伤（DPS）**（`MapDotDamagePerTurn` / `MapDotDamageDicePerTurn`）：
+   - 按 **1 秒 = 2 回合（每回合 0.5 秒）** 合并为**每回合结算 1 次**，避免高频 0.2s 跳伤刷屏与小数截断：
+     $$\text{BaseDmg}_{\text{turn}} = \frac{\text{DotaDPS} \times 0.5}{15}$$
+   - 若 DOTA2 原版机制支持**攻速缩放跳伤频率**（如 7.36+/7.42 剑刃风暴），则将每回合基准伤害再乘以角色敏捷/攻速倍率，兼顾还原度与中后期输出节奏。
+3. **游戏内与文档双可见**：
+   - 凡通过 Hook 结算伤害（声明式壳子无 `HarmEntity`）的技能，**必须在法术 `Description` 中明确写出每级/每回合伤害骰与倍率**，并在 `docs/heroes/<hero_id>.md` 的溯源表中列出原版与映射后的伤害数值。
+
+---
+
+## 4. 持续时间与召唤物生命周期规范
 
 1. **时间换算标尺：1 秒 DOTA2 时间 = 2 回合 Pathos**（`DotaMechanicsMapper.MapDurationTurns(seconds)`）：
    - Pathos 走位与回合流逝极快，1 秒 = 1 回合会导致 4~5 秒的技能走两步就结束；按 **1 秒 = 2 回合** 换算后，5 秒剑刃风暴为 `10` 回合，18~24 秒治疗守卫为 `36~48` 回合，1.5~3 秒控制为 `3~6` 回合；同时每秒持续伤害/治疗按每回合 `0.5 秒` 折算（保持总伤/总奶量与原版一致）。
@@ -59,7 +76,7 @@ DotaMechanicsMapper.RegisterFixedStartingStats(ClassName, StartingStats);
 
 ---
 
-## 4. 护甲与被动加甲 / 减甲映射（统一走 `Defence`）
+## 5. 护甲与被动加甲 / 减甲映射（统一走 `Defence`）
 
 Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等命中即触发的惩罚效果——在 Pathos 中**「不被打中（Defence）」远比「挨打后纯减伤」重要**。因此：
 
@@ -71,7 +88,24 @@ Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等
 
 ---
 
-## 5. 常见 DOTA2 机制在 Pathos 中的实现套路
+## 6. 天赋树系统与「减冷却 → 减蓝耗」映射规范
+
+所有 DOTA2 英雄共享 `Framework/Talents/` 通用天赋框架与独立 `Inv` 天赋树面板（HUD 顶部「天赋」按钮或快捷键 `F2` 打开，原生 `TalentPanel` 自动隐藏内部持久化标记）：
+
+1. **Pathos 节奏解锁阶梯（选定不可重置）**：
+   - **四层二选一**：`Lv 5 / 10 / 15 / 20` 依次解锁 T1 ~ T4。
+   - **双修补点**：`Lv 22 / 23 / 24 / 25` 依次解锁 T1 ~ T4 另一侧分支。
+2. **减冷却（CDR）→ 减蓝耗统一换算**（`DotaMechanicsMapper.ComputeCooldownReductionRatio` + `MapCooldownReductionToManaCost`）：
+   - Pathos 无技能冷却机制，凡 DOTA2 原版为**减冷却**的天赋，统一按减冷却百分比折算为**减蓝耗**：
+     $$\text{CDR\%} = \frac{\Delta T}{T_{\text{ref}}},\qquad \text{FinalMana} = \max\Big(1,\ \text{Round}\big(\text{BaseMana} \times (1 - \text{CDR\%})\big)\Big)$$
+   - **保护规则**：0 蓝耗技能保持 `0`；正蓝耗技能保底为 `1`；若原蓝耗 $> 1$ 且 $\text{CDR\%} > 0$，保证**至少减少 `1` 点蓝耗**；多来源乘算叠加封顶 `60%`。
+   - 英雄只需在 `TalentNode.ManaReductions` 上声明 `SpellManaReductionRule`，`TalentService` 会通过 `DotaHookBus.RegisterSpellCostQuery` 自动接管 `Character.SpellCost`，施法扣蓝与 UI 显示蓝耗自动同步。
+3. **存档持久化**：
+   - 每个天赋节点注册为 `dota_talent_*` 内部 `Property`，学习时调用 `Engine.GainTalent` 写入 `Character.AcquiredTalentSet`，100% 跟随 Pathos 原生存档保存与加载。
+
+---
+
+## 7. 常见 DOTA2 机制在 Pathos 中的实现套路
 
 | DOTA2 机制类型 | 推荐实现方式 | 现有参考 |
 | :--- | :--- | :--- |
@@ -87,7 +121,7 @@ Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等
 
 ---
 
-## 6. 贴图与标识符命名规范
+## 8. 贴图与标识符命名规范
 
 1. **按英雄分目录存放**：所有贴图放在 `Resources/Heroes/<hero_id>/<tileset>/<glyph_name>.png`，必须同时补齐四套图集：`absurd`、`classic`、`geoduck`、`sonyvanda`（尺寸 `128x128`，透明背景 PNG）。
 2. **避免与官方内置 Glyph 重名**：
@@ -98,7 +132,7 @@ Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等
 
 ---
 
-## 7. 英雄文档溯源规范
+## 9. 英雄文档溯源规范
 
 每新增或调整一名 DOTA2 英雄时，必须在对应的 `docs/heroes/<hero_id>.md` 中强制包含：
 1. **参考版本标识**：在文档顶部明确标明所参照的刀塔百科版本号（如 **`DOTA2 7.42`**）。

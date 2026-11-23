@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Talents;
 
 namespace Pathos.DotaHeroes.Heroes
 {
@@ -26,6 +27,19 @@ namespace Pathos.DotaHeroes.Heroes
     private const string HealingWardSpellName = "healing ward";
     private const string OmnislashSpellName = "omnislash";
 
+    // 主宰天赋节点 ID（Lv 5 / 10 / 15 / 20 解锁，Lv 22 / 23 / 24 / 25 双修补点）
+    private const string TalentT1BladeformInterval = "jugg.t1.bladeform_interval";
+    private const string TalentT1HealingWardMana = "jugg.t1.healing_ward_mana";
+    private const string TalentT2BladeFurySpeed = "jugg.t2.blade_fury_speed";
+    private const string TalentT2OmnislashMana = "jugg.t2.omnislash_mana";
+    private const string TalentT3BladeFuryDamage = "jugg.t3.blade_fury_damage";
+    private const string TalentT3BladeDanceCrit = "jugg.t3.blade_dance_crit";
+    private const string TalentT4BladeDanceLifesteal = "jugg.t4.blade_dance_lifesteal";
+    private const string TalentT4OmnislashSlashes = "jugg.t4.omnislash_slashes";
+
+    private static readonly float HealingWardTalentCdr = DotaMechanicsMapper.ComputeCooldownReductionRatio(12.0f, 60.0f); // -12s / 60s = 20%
+    private static readonly float OmnislashTalentCdr = DotaMechanicsMapper.ComputeCooldownReductionRatio(15.0f, 120.0f);  // -15s / 120s = 12.5%
+
     private const int BladeformMaxStacks = 10;
     private static readonly int BladeformIntervalTurns = DotaMechanicsMapper.MapDurationTurns(2.0f); // 2 秒 = 4 回合
     private static readonly int BladeformLingerTurns = DotaMechanicsMapper.MapDurationTurns(2.0f);   // 2 秒 = 4 回合
@@ -40,6 +54,13 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly int BladeFuryManaCost = DotaMechanicsMapper.MapSkillManaCost(110);
     private static readonly int HealingWardManaCost = DotaMechanicsMapper.MapSkillManaCost(140);
     private static readonly int OmnislashManaCost = DotaMechanicsMapper.MapSkillManaCost(250); // 200/250/300 取中值
+
+    // DOTA2 7.42 技能伤害基准（统一经 DotaMechanicsMapper K_dmg = 15 与 1s = 2 回合折算）
+    // 剑刃风暴 7.41b/7.42 每秒伤害：85 / 115 / 145 / 175（Champion 延展至 205），每回合合并结算 1 次并受敏捷/剑心犹在攻速频率缩放
+    private static readonly float[] BladeFuryDotaDps = { 85.0f, 115.0f, 145.0f, 175.0f, 205.0f };
+    private const float BladeFuryTalentBonusDotaDps = 120.0f; // T3 左天赋：原 +120 每秒伤害
+    // 无敌斩 7.42 额外攻击力：25 / 30 / 35（5 阶熟练度对应 25 / 30 / 35 / 40 / 45 → Pathos +2 / +2 / +2 / +3 / +3）
+    private static readonly float[] OmnislashBonusDotaDamage = { 25.0f, 30.0f, 35.0f, 40.0f, 45.0f };
 
     private sealed class BladeformState
     {
@@ -113,6 +134,56 @@ namespace Pathos.DotaHeroes.Heroes
         H.Gender = Ctx.Genders.male;
         H.CustomGlyph = JuggernautGlyph;
       });
+
+      // 7. 注册主宰 4 层天赋树（含减冷却 → 减蓝耗声明式映射）
+      RegisterTalentTree(Ctx, JuggernautGlyph);
+    }
+
+    private static void RegisterTalentTree(DotaHeroContext Ctx, Glyph IconGlyph)
+    {
+      int ReducedWardMana = DotaMechanicsMapper.MapCooldownReductionToManaCost(HealingWardManaCost, HealingWardTalentCdr);
+      int ReducedOmniMana = DotaMechanicsMapper.MapCooldownReductionToManaCost(OmnislashManaCost, OmnislashTalentCdr);
+
+      var Tree = HeroTalentTree.CreateStandard(
+        ClassName: JuggernautClassName,
+        HeroDisplayName: "主宰 · 尤涅若",
+        IconGlyph: IconGlyph,
+        T1Left: new TalentNode(
+          Id: TalentT1BladeformInterval,
+          Title: "剑心犹在叠层加速",
+          Description: "每 2 回合未受伤害叠加 1 层剑心犹在（默认 4 回合）。"),
+        T1Right: new TalentNode(
+          Id: TalentT1HealingWardMana,
+          Title: "治疗守卫蓝耗 -20%",
+          Description: $"治疗守卫法力消耗降低（{HealingWardManaCost} → {ReducedWardMana}）。",
+          ManaReductions: new[] { new SpellManaReductionRule(HealingWardSpellName, HealingWardTalentCdr) }),
+        T2Left: new TalentNode(
+          Id: TalentT2BladeFurySpeed,
+          Title: "剑刃风暴移速 +15%",
+          Description: "剑刃风暴持续期间移动速度提升 15%。"),
+        T2Right: new TalentNode(
+          Id: TalentT2OmnislashMana,
+          Title: "无敌斩蓝耗 -12.5%",
+          Description: $"无敌斩法力消耗降低（{OmnislashManaCost} → {ReducedOmniMana}）。",
+          ManaReductions: new[] { new SpellManaReductionRule(OmnislashSpellName, OmnislashTalentCdr) }),
+        T3Left: new TalentNode(
+          Id: TalentT3BladeFuryDamage,
+          Title: "剑刃风暴每回合基础伤害 +4",
+          Description: "原 +120 每秒伤害：剑刃风暴每回合基础伤害 +4（受敏捷与剑心犹在攻速频率缩放）。"),
+        T3Right: new TalentNode(
+          Id: TalentT3BladeDanceCrit,
+          Title: "剑舞暴击倍率 +15%",
+          Description: "剑舞暴击倍率由 1.8× 提升至 1.95×。"),
+        T4Left: new TalentNode(
+          Id: TalentT4BladeDanceLifesteal,
+          Title: "剑舞暴击吸血 +40%",
+          Description: "触发剑舞暴击时，回复本次伤害 40% 的生命值。"),
+        T4Right: new TalentNode(
+          Id: TalentT4OmnislashSlashes,
+          Title: "无敌斩斩击 +3",
+          Description: "无敌斩总斩击次数 +3（最高 15 斩）。"));
+
+      TalentRegistry.Register(Ctx, Tree);
     }
 
     public void RegisterHooks(DotaHeroContext Ctx)
@@ -177,18 +248,27 @@ namespace Pathos.DotaHeroes.Heroes
           Args.Cancel = true;
       });
 
-      // 4. 速度钩子：先天技能「剑心犹在」提供移动速度（每层 +1%）与攻击速度（每层额外 +1.5%）
+      // 4. 速度钩子：先天技能「剑心犹在」提供移动速度（每层 +1%）与攻击速度（每层 +2.5%），以及 T2 剑刃风暴移速天赋（+15%）
       DotaHookBus.RegisterSpeedQuery("juggernaut.bladeform_speed", Args =>
       {
         if (!IsJuggernaut(Args.Character))
           return;
 
+        float Bonus = 0.0f;
         var State = GetBladeformState(Args.Character);
-        if (State.Stacks <= 0)
-          return;
+        if (State.Stacks > 0)
+          Bonus += State.Stacks * (Args.Attacking ? 0.025f : 0.01f);
 
-        float Bonus = State.Stacks * (Args.Attacking ? 0.025f : 0.01f);
-        Args.Speed = Speed.FromRate(Args.Speed.GetRate() * (1.0f + Bonus));
+        if (!Args.Attacking &&
+            BladeFuryStatusProperty != null &&
+            PathosEngineBridge.HasTransient(Args.Character, BladeFuryStatusProperty) &&
+            TalentService.HasTalent(Args.Character, TalentT2BladeFurySpeed))
+        {
+          Bonus += 0.15f;
+        }
+
+        if (Bonus > 0.0f)
+          Args.Speed = Speed.FromRate(Args.Speed.GetRate() * (1.0f + Bonus));
       });
 
       // 5. 伤害前置钩子：无敌斩绝对无敌、剑刃风暴 80% 魔法/元素减伤与普攻置零、剑心犹在敏捷增伤、剑舞暴击
@@ -252,19 +332,32 @@ namespace Pathos.DotaHeroes.Heroes
           }
         }
 
-        // (e) 被动「剑舞」：近战普攻、无敌斩与剑刃风暴均可触发 1.8x 致命一击
+        // (e) 被动「剑舞」：近战普攻、无敌斩与剑刃风暴均可触发 1.8x（T3 右天赋 1.95x）致命一击，T4 左天赋附带 40% 暴击吸血
         if (IsBasicAttack || IsOmnislash || IsBladeFurySpin)
         {
           int MasteryTier = GetSkillTier(Ctx, Attacker, Ctx.Skills.medium_blade);
           float CritChance = MasteryTier >= 5 ? 0.35f : 0.20f + (MasteryTier - 1) * 0.04f;
           if (Random.Shared.NextSingle() < CritChance)
           {
-            Args.DamagePoints = Math.Max(Args.DamagePoints + 1, (int)MathF.Round(Args.DamagePoints * 1.8f));
+            float CritMultiplier = TalentService.HasTalent(Attacker, TalentT3BladeDanceCrit) ? 1.95f : 1.80f;
+            Args.DamagePoints = Math.Max(Args.DamagePoints + 1, (int)MathF.Round(Args.DamagePoints * CritMultiplier));
+
+            string LifestealNote = string.Empty;
+            if (TalentService.HasTalent(Attacker, TalentT4BladeDanceLifesteal) &&
+                Attacker.Life != null &&
+                Attacker.Life.Points < Attacker.Life.Total)
+            {
+              int HealAmt = Math.Max(1, (int)MathF.Round(Args.DamagePoints * 0.40f));
+              var SelfDir = Attacker.Square != null ? Attacker.Square.AsDirection(Attacker.Square) : default;
+              PathosEngineBridge.HealCharacter(Args.Engine, Attacker, Attacker, SelfDir, HealAmt);
+              LifestealNote = $" (+{HealAmt} HP lifesteal)";
+            }
+
             PathosEngineBridge.WriteInternalLog(
               Args.Engine,
               Attacker,
               BladeDanceGlyph,
-              $"Blade Dance! Critical strike for {Args.DamagePoints} damage!");
+              $"Blade Dance! Critical strike for {Args.DamagePoints} damage{LifestealNote}!");
           }
         }
       });
@@ -302,8 +395,12 @@ namespace Pathos.DotaHeroes.Heroes
         return;
       }
 
+      int EffectiveInterval = TalentService.HasTalent(Juggernaut, TalentT1BladeformInterval)
+        ? Math.Max(1, BladeformIntervalTurns / 2)
+        : BladeformIntervalTurns;
+
       State.CleanTurns++;
-      if (State.CleanTurns >= BladeformIntervalTurns)
+      if (State.CleanTurns >= EffectiveInterval)
       {
         State.CleanTurns = 0;
         if (State.Stacks < BladeformMaxStacks)
@@ -364,16 +461,16 @@ namespace Pathos.DotaHeroes.Heroes
 
       int Tier = GetSkillTier(Ctx, Caster, Ctx.Skills.evocation);
       int Dex = PathosEngineBridge.GetCurrentAbilityScore(Caster, "dexterity");
-      int DexBonus = Math.Max(0, (Dex - 10) / 3);
+      int BladeformStacks = IsJuggernaut(Caster) ? GetBladeformState(Caster).Stacks : 0;
 
-      Dice SpinDice = Tier switch
-      {
-        1 => new Dice(1, 6, DexBonus),
-        2 => new Dice(2, 4, DexBonus),
-        3 => new Dice(2, 6, DexBonus),
-        4 => new Dice(3, 6, DexBonus),
-        _ => new Dice(4, 6, DexBonus)
-      };
+      // DOTA2 7.42 剑刃风暴：基础 DPS 85/115/145/175（Champion 205，T3 左天赋 +120 DPS）
+      // 合并为每回合 1 次结算（0.5s），并按敏捷与剑心犹在攻速频率缩放（还原 7.36+/7.42 攻速缩短跳伤间隔）
+      float BaseDps = BladeFuryDotaDps[Math.Clamp(Tier - 1, 0, BladeFuryDotaDps.Length - 1)];
+      if (TalentService.HasTalent(Caster, TalentT3BladeFuryDamage))
+        BaseDps += BladeFuryTalentBonusDotaDps;
+
+      float CadenceMultiplier = 1.0f + Math.Max(0, Dex - 10) * 0.05f + BladeformStacks * 0.025f;
+      Dice SpinDice = DotaMechanicsMapper.MapDotDamageDicePerTurn(BaseDps * CadenceMultiplier, DieFaces: 4);
 
       var Targets = new List<Character>();
       foreach (var Sq in Caster.Square.GetAroundSquares(1))
@@ -534,10 +631,13 @@ namespace Pathos.DotaHeroes.Heroes
       var InitialTarget = FindInitialOmnislashTarget(Caster, Args.Direction, CastRange);
       if (InitialTarget == null)
       {
-        // 空大保护：未找到目标时返还法力值
+        // 空大保护：未找到目标时按实际折后蓝耗返还法力值
         if (Caster.Mana != null)
         {
-          int Refunded = Math.Min(Caster.Mana.Total, Caster.Mana.Points + OmnislashManaCost);
+          int ActualMana = TalentService.HasTalent(Caster, TalentT2OmnislashMana)
+            ? DotaMechanicsMapper.MapCooldownReductionToManaCost(OmnislashManaCost, OmnislashTalentCdr)
+            : OmnislashManaCost;
+          int Refunded = Math.Min(Caster.Mana.Total, Caster.Mana.Points + ActualMana);
           PathosEngineBridge.SetMeterPoints(Caster.Mana, Refunded);
         }
 
@@ -551,11 +651,16 @@ namespace Pathos.DotaHeroes.Heroes
 
       int Dex = PathosEngineBridge.GetCurrentAbilityScore(Caster, "dexterity");
       int Str = PathosEngineBridge.GetCurrentAbilityScore(Caster, "strength");
-      int TotalSlashes = Math.Clamp(4 + Tier + Math.Max(0, (Dex - 14) / 6), 5, 12);
+      int BaseSlashes = Math.Clamp(4 + Tier + Math.Max(0, (Dex - 14) / 6), 5, 12);
+      int TotalSlashes = TalentService.HasTalent(Caster, TalentT4OmnislashSlashes)
+        ? BaseSlashes + 3
+        : BaseSlashes;
 
       var WeaponAsset = GetEquippedWeapon(Ctx, Caster);
       var WeaponDice = PathosEngineBridge.GetMeleeDamageDice(Args.Engine, Caster, WeaponAsset);
       int StatBonus = Math.Max(0, (Math.Max(Str, Dex) - 10) / 2);
+      int OmniBonusDamage = DotaMechanicsMapper.MapSkillDamage(
+        OmnislashBonusDotaDamage[Math.Clamp(Tier - 1, 0, OmnislashBonusDotaDamage.Length - 1)]);
 
       int SlashesDone = 0;
       ActiveOmnislashCasters.Add(Caster);
@@ -578,7 +683,7 @@ namespace Pathos.DotaHeroes.Heroes
           if (DestSquare != null && DestSquare != Caster.Square)
             PathosEngineBridge.TeleportCharacter(Args.Engine, Caster, DestSquare, MasterMode: false);
 
-          int SlashDamage = RollDice(WeaponDice) + StatBonus + Tier;
+          int SlashDamage = RollDice(WeaponDice) + StatBonus + OmniBonusDamage;
           var Dir = Caster.Square.AsDirection(CurrentTarget.Square);
           PathosEngineBridge.StrikeCharacter(
             Args.Engine,
@@ -862,7 +967,7 @@ namespace Pathos.DotaHeroes.Heroes
       return Ctx.Spells.Add(S =>
       {
         S.Name = BladeFurySpellName;
-        S.Description = "Dispel debuffs and spin in a bladestorm for 10 to 12 turns, gaining debuff immunity, 80% magical damage reduction, and dealing magical damage to adjacent foes each turn (can crit with Blade Dance).";
+        S.Description = "Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.";
         S.Glyph = Icon;
         S.School = Ctx.Schools.evocation;
         S.Precept = new Precept(Purpose.Buff);
@@ -917,7 +1022,7 @@ namespace Pathos.DotaHeroes.Heroes
       return Ctx.Spells.Add(S =>
       {
         S.Name = OmnislashSpellName;
-        S.Description = "Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes across nearby foes, triggering Blade Dance critical strikes and Bladeform bonuses.";
+        S.Description = "Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.";
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Teleport);

@@ -51,6 +51,8 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly ConcurrentDictionary<string, Action<AttackEventArgs>> AfterAttackHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<ActorCreateEventArgs>> AfterCreateActorHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<DefenceQueryEventArgs>> DefenceQueryHandlers = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Action<SpellCostQueryEventArgs>> SpellCostQueryHandlers = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Action<LevelUpEventArgs>> AfterLevelUpHandlers = new(StringComparer.Ordinal);
 
     public static void RegisterBeforeCastSpell(string Key, Action<SpellCastEventArgs> Handler)
       => Register(BeforeCastSpellHandlers, Key, Handler);
@@ -97,6 +99,12 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public static void RegisterDefenceQuery(string Key, Action<DefenceQueryEventArgs> Handler)
       => Register(DefenceQueryHandlers, Key, Handler);
 
+    public static void RegisterSpellCostQuery(string Key, Action<SpellCostQueryEventArgs> Handler)
+      => Register(SpellCostQueryHandlers, Key, Handler);
+
+    public static void RegisterAfterLevelUp(string Key, Action<LevelUpEventArgs> Handler)
+      => Register(AfterLevelUpHandlers, Key, Handler);
+
     internal static void DispatchBeforeCastSpell(SpellCastEventArgs Args)
       => Dispatch(BeforeCastSpellHandlers, Args, nameof(BeforeCastSpellHandlers));
 
@@ -141,6 +149,12 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     internal static void DispatchDefenceQuery(DefenceQueryEventArgs Args)
       => Dispatch(DefenceQueryHandlers, Args, nameof(DefenceQueryHandlers));
+
+    internal static void DispatchSpellCostQuery(SpellCostQueryEventArgs Args)
+      => Dispatch(SpellCostQueryHandlers, Args, nameof(SpellCostQueryHandlers));
+
+    internal static void DispatchAfterLevelUp(LevelUpEventArgs Args)
+      => Dispatch(AfterLevelUpHandlers, Args, nameof(AfterLevelUpHandlers));
 
     private static void Register<TArgs>(ConcurrentDictionary<string, Action<TArgs>> Map, string Key, Action<TArgs> Handler)
     {

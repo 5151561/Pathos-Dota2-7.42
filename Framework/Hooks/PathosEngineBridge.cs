@@ -16,9 +16,25 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly Type LogType = EngineAsm.GetType("Pathos.Log");
     private static readonly Type CastSpellCommandType = EngineAsm.GetType("Pathos.CastSpellCommand");
     private static readonly Type AttackCommandType = EngineAsm.GetType("Pathos.AttackCommand");
+    private static readonly Type GeneratorType = EngineAsm.GetType("Pathos.Generator");
+    private static readonly Type MasteryType = EngineAsm.GetType("Pathos.Mastery");
 
     private static readonly FieldInfo DirectorEngineField =
       DirectorType?.GetField("Engine", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly FieldInfo GeneratorEngineField =
+      GeneratorType?.GetField("Engine", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo MasterySpellProp =
+      MasteryType?.GetProperty("Spell", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo EngineGainTalentMethod =
+      EngineType?.GetMethod("GainTalent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Character), typeof(Property) }, null);
+
+    private static readonly MethodInfo CharacterHasAcquiredTalentMethod =
+      typeof(Character).GetMethod("HasAcquiredTalent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Property) }, null);
 
     private static readonly PropertyInfo EngineJournalProp =
       EngineType?.GetProperty("Journal", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -115,6 +131,54 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public static object GetDirectorEngine(object Director)
     {
       return Director != null && DirectorEngineField != null ? DirectorEngineField.GetValue(Director) : null;
+    }
+
+    public static object GetGeneratorEngine(object Generator)
+    {
+      return Generator != null && GeneratorEngineField != null ? GeneratorEngineField.GetValue(Generator) : null;
+    }
+
+    public static Spell GetMasterySpell(object Mastery)
+    {
+      return Mastery != null && MasterySpellProp != null ? MasterySpellProp.GetValue(Mastery) as Spell : null;
+    }
+
+    /// <summary>
+    /// 通过 Pathos 原生 Engine.GainTalent 为角色授予永久专长标记（自动随存档保存与加载）。
+    /// </summary>
+    public static bool GainTalent(object Engine, Character Character, Property Property)
+    {
+      if (Engine == null || Character == null || Property == null || EngineGainTalentMethod == null)
+        return false;
+
+      try
+      {
+        EngineGainTalentMethod.Invoke(Engine, new object[] { Character, Character, Property });
+        return true;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"GainTalent failed: {Ex}");
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// 检查角色是否已在原生 AcquiredTalentSet 中拥有指定专长标记。
+    /// </summary>
+    public static bool HasAcquiredTalent(Character Character, Property Property)
+    {
+      if (Character == null || Property == null || CharacterHasAcquiredTalentMethod == null)
+        return false;
+
+      try
+      {
+        return CharacterHasAcquiredTalentMethod.Invoke(Character, new object[] { Property }) is bool B && B;
+      }
+      catch
+      {
+        return false;
+      }
     }
 
     public static Spell GetCastCommandSpell(object Command)

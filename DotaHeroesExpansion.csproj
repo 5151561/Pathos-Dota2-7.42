@@ -35,6 +35,10 @@
       <HintPath>$(PathosInstallation)\Inv.Library.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="InvPlatform">
+      <HintPath>$(PathosInstallation)\Inv.Platform.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="PathosLibrary">
       <HintPath>$(PathosInstallation)\PathosLibrary.dll</HintPath>
       <Private>false</Private>
