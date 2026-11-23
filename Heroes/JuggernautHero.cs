@@ -63,7 +63,7 @@ namespace Pathos.DotaHeroes.Heroes
 
     public void Register(DotaHeroContext Ctx)
     {
-      // 1. 注册贴图（对应 Atlases/<tileset>/*.png；使用 "yurnero" 避免与官方内置怪物贴图 "juggernaut" 重名冲突）
+      // 1. 注册贴图（对应 Resources/Heroes/juggernaut/<tileset>/*.png；使用 "yurnero" 避免与官方内置怪物贴图 "juggernaut" 重名冲突）
       var JuggernautGlyph = Ctx.RegisterGlyph("yurnero");
       BladeformGlyph = Ctx.RegisterGlyph("bladeform");
       BladeFuryGlyph = Ctx.RegisterGlyph("blade fury");

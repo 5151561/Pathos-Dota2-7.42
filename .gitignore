@@ -1,5 +1,6 @@
 bin/
 obj/
+Atlases/
 .vs/
 *.user
 *.suo

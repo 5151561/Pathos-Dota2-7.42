@@ -47,7 +47,7 @@ namespace Pathos.DotaHeroes.Framework
     private readonly Dictionary<string, Glyph> GlyphCache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 注册并缓存一个贴图（对应 Atlases/&lt;tileset&gt;/&lt;Name&gt;.png）。
+    /// 注册并缓存一个贴图（源文件位于 Resources/Heroes/&lt;hero&gt;/&lt;tileset&gt;/&lt;Name&gt;.png，构建期自动聚合到 Atlases/）。
     /// </summary>
     public Glyph RegisterGlyph(string Name)
     {

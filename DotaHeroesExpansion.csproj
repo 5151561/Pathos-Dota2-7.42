@@ -49,6 +49,58 @@
     </Reference>
   </ItemGroup>
 
+  <!-- 将按英雄分目录存放的贴图（Resources/**/<tileset>/*.png）自动聚合到 PathosMaker 要求的 Atlases/<tileset>/ 暂存目录 -->
+  <Target Name="StageAtlasesForPathosMaker" BeforeTargets="PathosMakerPostBuild">
+    <PropertyGroup>
+      <_AtlasStagingDir>$(ProjectDir)Atlases</_AtlasStagingDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_AbsurdPngs Include="$(ProjectDir)Resources\**\absurd\*.png" />
+      <_ClassicPngs Include="$(ProjectDir)Resources\**\classic\*.png" />
+      <_GeoduckPngs Include="$(ProjectDir)Resources\**\geoduck\*.png" />
+      <_SonyvandaPngs Include="$(ProjectDir)Resources\**\sonyvanda\*.png" />
+
+      <_AbsurdDistinct Include="@(_AbsurdPngs->'%(Filename)%(Extension)')" />
+      <_ClassicDistinct Include="@(_ClassicPngs->'%(Filename)%(Extension)')" />
+      <_GeoduckDistinct Include="@(_GeoduckPngs->'%(Filename)%(Extension)')" />
+      <_SonyvandaDistinct Include="@(_SonyvandaPngs->'%(Filename)%(Extension)')" />
+    </ItemGroup>
+
+    <!-- 校验不同英雄之间是否存在同名贴图冲突 -->
+    <RemoveDuplicates Inputs="@(_AbsurdDistinct)">
+      <Output TaskParameter="Filtered" ItemName="_AbsurdUnique" />
+    </RemoveDuplicates>
+    <Error Condition="@(_AbsurdPngs->Count()) != @(_AbsurdUnique->Count())"
+           Text="Detected duplicate PNG filename(s) across Resources/**/absurd/. Glyph filenames must be globally unique." />
+
+    <RemoveDuplicates Inputs="@(_ClassicDistinct)">
+      <Output TaskParameter="Filtered" ItemName="_ClassicUnique" />
+    </RemoveDuplicates>
+    <Error Condition="@(_ClassicPngs->Count()) != @(_ClassicUnique->Count())"
+           Text="Detected duplicate PNG filename(s) across Resources/**/classic/. Glyph filenames must be globally unique." />
+
+    <RemoveDuplicates Inputs="@(_GeoduckDistinct)">
+      <Output TaskParameter="Filtered" ItemName="_GeoduckUnique" />
+    </RemoveDuplicates>
+    <Error Condition="@(_GeoduckPngs->Count()) != @(_GeoduckUnique->Count())"
+           Text="Detected duplicate PNG filename(s) across Resources/**/geoduck/. Glyph filenames must be globally unique." />
+
+    <RemoveDuplicates Inputs="@(_SonyvandaDistinct)">
+      <Output TaskParameter="Filtered" ItemName="_SonyvandaUnique" />
+    </RemoveDuplicates>
+    <Error Condition="@(_SonyvandaPngs->Count()) != @(_SonyvandaUnique->Count())"
+           Text="Detected duplicate PNG filename(s) across Resources/**/sonyvanda/. Glyph filenames must be globally unique." />
+
+    <RemoveDir Directories="$(_AtlasStagingDir)" Condition="Exists('$(_AtlasStagingDir)')" />
+    <MakeDir Directories="$(_AtlasStagingDir)\absurd;$(_AtlasStagingDir)\classic;$(_AtlasStagingDir)\geoduck;$(_AtlasStagingDir)\sonyvanda" />
+
+    <Copy SourceFiles="@(_AbsurdPngs)" DestinationFiles="@(_AbsurdPngs->'$(_AtlasStagingDir)\absurd\%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(_ClassicPngs)" DestinationFiles="@(_ClassicPngs->'$(_AtlasStagingDir)\classic\%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(_GeoduckPngs)" DestinationFiles="@(_GeoduckPngs->'$(_AtlasStagingDir)\geoduck\%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(_SonyvandaPngs)" DestinationFiles="@(_SonyvandaPngs->'$(_AtlasStagingDir)\sonyvanda\%(Filename)%(Extension)')" />
+  </Target>
+
   <!-- 编译后自动运行 PathosMaker 打包图集/翻译并部署到 Expansions 目录 -->
   <Target Name="PathosMakerPostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="&quot;$(PathosInstallation)\PathosMaker.exe&quot; &quot;$(PathosInstallation)&quot; &quot;$(ProjectDir.TrimEnd('\'))&quot; &quot;$(TargetDir)$(TargetName).dll&quot;" />

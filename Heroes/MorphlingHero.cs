@@ -28,7 +28,7 @@ namespace Pathos.DotaHeroes.Heroes
 
     public void Register(DotaHeroContext Ctx)
     {
-      // 1. 注册贴图（对应 Atlases/<tileset>/*.png）
+      // 1. 注册贴图（对应 Resources/Heroes/morphling/<tileset>/*.png）
       var MorphlingGlyph = Ctx.RegisterGlyph("morphling");
       var WaveformGlyph = Ctx.RegisterGlyph("waveform");
       var AdaptiveStrikeGlyph = Ctx.RegisterGlyph("adaptive strike");
