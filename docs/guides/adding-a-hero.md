@@ -72,7 +72,7 @@ var HeroRegistry = new List<IDotaHeroDefinition>
 
 ---
 
-### 第 5 步：补充英雄文档
+### 第 5 步：补充英雄文档（含 7.42 数值映射溯源表）
 
-1. 在 `docs/heroes/` 下新建 `<hero_id>.md`（可参考 [morphling.md](../heroes/morphling.md) 或 [juggernaut.md](../heroes/juggernaut.md)），记录种族/职业、技能数值、Hook Key 清单与贴图清单，方便后续调参。
+1. 在 `docs/heroes/` 下新建 `<hero_id>.md`（可参考 [morphling.md](../heroes/morphling.md) 或 [juggernaut.md](../heroes/juggernaut.md)），**必须标明参考版本（如 `DOTA2 7.42`）并附上完整的「DOTA2 7.42 → Pathos 数值映射溯源表」**（包含初始属性、蓝量、蓝耗、持续时间、护甲等原版数值与换算依据），同时记录种族/职业、Hook Key 清单与贴图清单，方便后续版本更新时溯源调参。
 2. 在 [docs/heroes/README.md](../heroes/README.md) 与 [docs/README.md](../README.md) 中补充索引链接。

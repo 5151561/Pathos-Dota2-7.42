@@ -225,4 +225,44 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     /// </summary>
     public bool Cancel { get; set; }
   }
+
+  /// <summary>
+  /// 角色开局创建或重摇事件上下文（对应 Pathos.Engine.CreateActor / RerollActor）。
+  /// 适合锁定 DOTA2 英雄固定初始六维属性并同步重算初始 Life / Mana。
+  /// </summary>
+  public sealed class ActorCreateEventArgs
+  {
+    public ActorCreateEventArgs(object Engine, Actor Actor, Character Character, bool IsReroll)
+    {
+      this.Engine = Engine;
+      this.Actor = Actor;
+      this.Character = Character;
+      this.IsReroll = IsReroll;
+    }
+
+    public object Engine { get; }
+    public Actor Actor { get; }
+    public Character Character { get; }
+    public bool IsReroll { get; }
+  }
+
+  /// <summary>
+  /// 角色防御值（Defence）查询事件上下文（对应 Pathos.Engine.GetDefenceClass）。
+  /// 适合实现 DOTA2 被动加甲、光环护甲与减甲 Debuff（直接反映在面板 Defence 与命中判定中）。
+  /// </summary>
+  public sealed class DefenceQueryEventArgs
+  {
+    public DefenceQueryEventArgs(object Engine, Character Character, DamageType? DamageType, int Defence)
+    {
+      this.Engine = Engine;
+      this.Character = Character;
+      this.DamageType = DamageType;
+      this.Defence = Defence;
+    }
+
+    public object Engine { get; }
+    public Character Character { get; }
+    public DamageType? DamageType { get; }
+    public int Defence { get; set; }
+  }
 }

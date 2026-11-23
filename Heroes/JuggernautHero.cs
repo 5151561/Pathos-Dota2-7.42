@@ -27,9 +27,19 @@ namespace Pathos.DotaHeroes.Heroes
     private const string OmnislashSpellName = "omnislash";
 
     private const int BladeformMaxStacks = 10;
-    private const int BladeformIntervalTurns = 2;
-    private const int BladeformLingerTurns = 2;
-    private const int OmnislashManaCost = 14;
+    private static readonly int BladeformIntervalTurns = DotaMechanicsMapper.MapDurationTurns(2.0f); // 2 秒 = 4 回合
+    private static readonly int BladeformLingerTurns = DotaMechanicsMapper.MapDurationTurns(2.0f);   // 2 秒 = 4 回合
+
+    // DOTA2 7.42 主宰初始三维：STR 20 / AGI 32 / INT 14
+    private const int DotaBaseStr = 20;
+    private const int DotaBaseAgi = 32;
+    private const int DotaBaseInt = 14;
+    private static readonly PathosStartingStats StartingStats =
+      DotaMechanicsMapper.MapStartingStats(DotaBaseStr, DotaBaseAgi, DotaBaseInt, Charisma: 10);
+
+    private static readonly int BladeFuryManaCost = DotaMechanicsMapper.MapSkillManaCost(110);
+    private static readonly int HealingWardManaCost = DotaMechanicsMapper.MapSkillManaCost(140);
+    private static readonly int OmnislashManaCost = DotaMechanicsMapper.MapSkillManaCost(250); // 200/250/300 取中值
 
     private sealed class BladeformState
     {
@@ -107,6 +117,9 @@ namespace Pathos.DotaHeroes.Heroes
 
     public void RegisterHooks(DotaHeroContext Ctx)
     {
+      // 0. 锁定主宰固定初始六维（STR 12 / DEX 17 / CON 12 / INT 9 / WIS 9 / CHA 10）与 1 级初始蓝量（12）
+      DotaMechanicsMapper.RegisterFixedStartingStats(JuggernautClassName, StartingStats);
+
       // 1. 施法后置钩子：Q 剑刃风暴（驱散+立刻触发一次转伤）、W 治疗守卫（追踪/替换）、R 无敌斩（连续瞬移斩击）
       DotaHookBus.RegisterAfterCastSpell("juggernaut.spell_casts", Args =>
       {
@@ -406,8 +419,26 @@ namespace Pathos.DotaHeroes.Heroes
         return;
 
       int Tier = GetSkillTier(Ctx, Caster, Ctx.Skills.clerical);
-      int Duration = 6 + Tier * 2; // 8 ~ 16 回合
-      float HealPct = 0.03f + Tier * 0.01f; // 4% ~ 8%
+      // 对应 DOTA2 百科：持续 18 / 20 / 22 / 24 秒（Champion 保持 24 秒并享受魔晶 6.5%/s 回复）
+      float DurationSeconds = Tier switch
+      {
+        1 => 18.0f,
+        2 => 20.0f,
+        3 => 22.0f,
+        _ => 24.0f
+      };
+      int Duration = DotaMechanicsMapper.MapDurationTurns(DurationSeconds); // 36 / 40 / 44 / 48 回合
+
+      // 对应 DOTA2 每秒 2% / 3% / 4% / 5%（魔晶 6.5%），按 1 秒 = 2 回合折算为每回合回复比例
+      float HealPerSec = Tier switch
+      {
+        1 => 0.02f,
+        2 => 0.03f,
+        3 => 0.04f,
+        4 => 0.05f,
+        _ => 0.065f
+      };
+      float HealPct = HealPerSec / DotaMechanicsMapper.TurnsPerSecond; // 1.0% / 1.5% / 2.0% / 2.5% / 3.25% 每回合
 
       // 寻找刚召唤出的新治疗守卫
       Character NewWard = null;
@@ -428,14 +459,14 @@ namespace Pathos.DotaHeroes.Heroes
       if (NewWard == null)
         return;
 
-      // 若之前已有存活的治疗守卫，先解散旧守卫（上限同时存在 1 个）
+      // 若之前已有存活的治疗守卫，先彻底消散旧守卫（上限同时存在 1 个，避免残留野生单位）
       if (OwnerActiveWard.TryGetValue(Caster, out var OldRef) &&
           OldRef.TryGetTarget(out var OldWard) &&
           OldWard != null &&
           OldWard != NewWard &&
           !OldWard.Deceased)
       {
-        PathosEngineBridge.DismissAlly(Args.Engine, OldWard);
+        PathosEngineBridge.DespawnSummon(Args.Engine, OldWard, "replaced");
       }
 
       WardStates.AddOrUpdate(NewWard, new HealingWardState
@@ -481,7 +512,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       State.RemainingTurns--;
       if (State.RemainingTurns <= 0)
-        PathosEngineBridge.DismissAlly(Engine, Ward);
+        PathosEngineBridge.DespawnSummon(Engine, Ward, "expired");
     }
 
     private void HandleOmnislashCast(DotaHeroContext Ctx, SpellCastEventArgs Args)
@@ -763,7 +794,7 @@ namespace Pathos.DotaHeroes.Heroes
       return Ctx.Properties.Add(P =>
       {
         P.Name = "bladeform";
-        P.Description = "Innate (Bladeform): Gain 1 stack every 2 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 2 turns after taking damage.";
+        P.Description = "Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.";
         P.Glyph = Icon;
       });
     }
@@ -831,12 +862,12 @@ namespace Pathos.DotaHeroes.Heroes
       return Ctx.Spells.Add(S =>
       {
         S.Name = BladeFurySpellName;
-        S.Description = "Dispel debuffs and spin in a bladestorm for 4 to 6 turns, gaining debuff immunity, 80% magical damage reduction, and dealing magical damage to adjacent foes each turn (can crit with Blade Dance).";
+        S.Description = "Dispel debuffs and spin in a bladestorm for 10 to 12 turns, gaining debuff immunity, 80% magical damage reduction, and dealing magical damage to adjacent foes each turn (can crit with Blade Dance).";
         S.Glyph = Icon;
         S.School = Ctx.Schools.evocation;
         S.Precept = new Precept(Purpose.Buff);
-        S.Level = 1;
-        S.Mana = 6;
+        S.Level = DotaMechanicsMapper.MapSpellLevel(BladeFuryManaCost);
+        S.Mana = BladeFuryManaCost;
 
         void Configure(Qualification Qual, int Turns)
         {
@@ -845,11 +876,12 @@ namespace Pathos.DotaHeroes.Heroes
           Adept.Apply.ApplyTransient(BladeFuryStatus, Dice.Fixed(Turns));
         }
 
-        Configure(Ctx.Qualifications.proficient, 4);
-        Configure(Ctx.Qualifications.specialist, 4);
-        Configure(Ctx.Qualifications.expert, 5);
-        Configure(Ctx.Qualifications.master, 5);
-        Configure(Ctx.Qualifications.champion, 6);
+        // 对应 DOTA2 剑刃风暴全等级 5 秒（Champion 对应 +1 秒天赋 -> 6 秒）
+        Configure(Ctx.Qualifications.proficient, DotaMechanicsMapper.MapDurationTurns(5.0f)); // 10
+        Configure(Ctx.Qualifications.specialist, DotaMechanicsMapper.MapDurationTurns(5.0f)); // 10
+        Configure(Ctx.Qualifications.expert, DotaMechanicsMapper.MapDurationTurns(5.0f));     // 10
+        Configure(Ctx.Qualifications.master, DotaMechanicsMapper.MapDurationTurns(5.0f));     // 10
+        Configure(Ctx.Qualifications.champion, DotaMechanicsMapper.MapDurationTurns(6.0f));   // 12
       });
     }
 
@@ -858,12 +890,12 @@ namespace Pathos.DotaHeroes.Heroes
       return Ctx.Spells.Add(S =>
       {
         S.Name = HealingWardSpellName;
-        S.Description = "Summon a fragile movable Healing Ward (1 HP, max 1 active) for 8 to 16 turns that heals all allies within 2 tiles for 4% to 8% of their maximum HP each turn.";
+        S.Description = "Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.";
         S.Glyph = Icon;
         S.School = Ctx.Schools.clerical;
         S.Precept = new Precept(Purpose.Healing);
-        S.Level = 1;
-        S.Mana = 7;
+        S.Level = DotaMechanicsMapper.MapSpellLevel(HealingWardManaCost);
+        S.Mana = HealingWardManaCost;
 
         void Configure(Qualification Qual)
         {
@@ -889,7 +921,7 @@ namespace Pathos.DotaHeroes.Heroes
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Teleport);
-        S.Level = 3;
+        S.Level = DotaMechanicsMapper.MapSpellLevel(OmnislashManaCost);
         S.Mana = OmnislashManaCost;
 
         void Configure(Qualification Qual, int Range)
@@ -922,7 +954,8 @@ namespace Pathos.DotaHeroes.Heroes
         C.Description = "A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.";
         C.Backpack = Ctx.Items.Backpack;
         C.LifeAdvancement.Set(14, 1.d10());
-        C.ManaAdvancement.Set(10, 1.d4());
+        int ClassManaBase = DotaMechanicsMapper.ComputeClassManaBase(DotaBaseInt, RaceManaBase: 1, StartingStats.Wis);
+        C.ManaAdvancement.Set(ClassManaBase, 1.d2());
 
         C.SetDistribution(
           Ctx.Attributes.dexterity,

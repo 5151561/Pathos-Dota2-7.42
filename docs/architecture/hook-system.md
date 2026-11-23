@@ -30,8 +30,10 @@
 | `RegisterCastRange` | `Engine.CastEffects` | `BonusRange` | 法术施法距离加成（如水人高力加施法距离） |
 | `RegisterBeforeApplyTransient` | `Engine.ApplyTransient` (Prefix) | `Duration`, `Cancel` | 状态免疫（剑刃风暴减益免疫）、减速抗性、眩晕时长动态缩放 |
 | `RegisterAfterExecuteCommand` | `Director.Execute` (Postfix) | 只读上下文 | 每回合行动结算（光环回血、持续转伤、脱战叠层） |
-| `RegisterBeforeAttack` | `Director.Attack` (Prefix) | `Cancel` | 拦截/改写普通攻击 |
+| `RegisterBeforeAttack` | `Director.Attack` (Prefix) | `Cancel` | 拦截/改写普通攻击（或触发「被攻击即计次」类被动） |
 | `RegisterAfterAttack` | `Director.Attack` (Postfix) | 只读上下文 | 普攻后触发特效 |
+| `RegisterAfterCreateActor` | `Engine.CreateActor` / `RerollActor` (Postfix) | 只读上下文 | 锁定 DOTA2 英雄固定初始六维与初始 HP/Mana |
+| `RegisterDefenceQuery` | `Engine.GetDefenceClass` (Postfix) | `Defence` | 被动加甲、光环护甲与减甲 Debuff（实时反映在面板 Defence） |
 
 ### 线程级上下文追踪
 

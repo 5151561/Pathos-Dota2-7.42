@@ -193,6 +193,8 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var CommandType = EngineAsm.GetType("Pathos.Command");
         var AttackCmdType = EngineAsm.GetType("Pathos.AttackCommand");
         var CharacterType = EngineAsm.GetType("Pathos.Character");
+        var ActorType = EngineAsm.GetType("Pathos.Actor");
+        var ElectType = EngineAsm.GetType("Pathos.Elect");
         var SquareType = EngineAsm.GetType("Pathos.Square");
         var PropertySetType = EngineAsm.GetType("Pathos.PropertySet");
 
@@ -288,6 +290,29 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           new[] { CharacterType, AttackCmdType },
           prefix: nameof(AttackPrefix),
           postfix: nameof(AttackPostfix));
+
+        // 11. 角色开局创建与重摇钩子：Engine.CreateActor / RerollActor（用于固定 DOTA2 英雄初始六维）
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "CreateActor",
+          new[] { ActorType, ElectType, typeof(bool) },
+          postfix: nameof(CreateActorPostfix));
+
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "RerollActor",
+          new[] { ActorType },
+          postfix: nameof(RerollActorPostfix));
+
+        // 12. 角色防御值查询钩子：Engine.GetDefenceClass(Character, DamageType?)（用于被动加甲/减甲）
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "GetDefenceClass",
+          new[] { CharacterType, typeof(DamageType?) },
+          postfix: nameof(GetDefenceClassPostfix));
       }
 
       private static void PatchMethod(
@@ -528,6 +553,32 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         {
           DotaHookBus.ActiveAttack = __state.PreviousActive;
         }
+      }
+
+      private static void CreateActorPostfix(object __instance, Actor Actor)
+      {
+        if (Actor?.Character == null)
+          return;
+
+        DotaHookBus.DispatchAfterCreateActor(new ActorCreateEventArgs(__instance, Actor, Actor.Character, IsReroll: false));
+      }
+
+      private static void RerollActorPostfix(object __instance, Actor Actor)
+      {
+        if (Actor?.Character == null)
+          return;
+
+        DotaHookBus.DispatchAfterCreateActor(new ActorCreateEventArgs(__instance, Actor, Actor.Character, IsReroll: true));
+      }
+
+      private static void GetDefenceClassPostfix(object __instance, Character Character, DamageType? DamageType, ref int __result)
+      {
+        if (Character == null)
+          return;
+
+        var Args = new DefenceQueryEventArgs(__instance, Character, DamageType, __result);
+        DotaHookBus.DispatchDefenceQuery(Args);
+        __result = Args.Defence;
       }
     }
   }

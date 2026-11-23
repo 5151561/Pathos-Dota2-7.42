@@ -14,7 +14,7 @@ EntityName,healing ward,治療守衛
 EntityName,waterkin,變體水靈
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的遠程水彈，可作為彈弓無限彈藥發射。
 ItemName,tidal orb,潮汐水彈
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 2 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 2 turns after taking damage.,先天技能「劍心猶在」：每連續 2 回合未受傷害疊加 1 層（上限 10 層），每層提供 +1% 移速與 +2.5% 等效敏捷攻速及近戰/無敵斬額外傷害；受傷後保留 2 回合粘滯期。
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,先天技能「劍心猶在」：每連續 4 回合未受傷害疊加 1 層（上限 10 層），每層提供 +1% 移速與 +2.5% 等效敏捷攻速及近戰/無敵斬額外傷害；受傷後保留 4 回合粘滯期。
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,先天技能「潮漲潮落」：敏捷提供額外移速與遠程攻擊距離；力量提供額外施法距離與減速抗性（變形期間持續保留）。
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% to 35% chance (by Medium Blade mastery) to critically strike for 1.8x damage.",被動技能「劍舞」：近戰普攻、無敵斬與劍刃風暴有 20% ~ 35% 概率（隨中刃熟練度提升）觸發 1.8 倍致命一擊。
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",劍刃風暴旋轉中：免疫負面狀態、獲得 80% 魔法/元素傷害減免，並每回合對周圍敵人造成魔法傷害。
@@ -26,14 +26,14 @@ RaceName,waterkin//female,變體水靈
 RaceName,waterkin//male,變體水靈
 RaceName,waterkin//non-binary,變體水靈
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",指向一名生物並化身為對方形態，複製其外形、屬性、技能與法術，且先天技能「潮漲潮落」持續保留。
-SpellDescription,"Dispel debuffs and spin in a bladestorm for 4 to 6 turns, gaining debuff immunity, 80% magical damage reduction, and dealing magical damage to adjacent foes each turn (can crit with Blade Dance).",基礎驅散自身負面狀態並舞起持續 4~6 回合的劍刃風暴：獲得減益免疫與 80% 魔法減傷，每回合對周圍敵人造成魔法傷害（可觸發劍舞暴擊）。
+SpellDescription,"Dispel debuffs and spin in a bladestorm for 10 to 12 turns, gaining debuff immunity, 80% magical damage reduction, and dealing magical damage to adjacent foes each turn (can crit with Blade Dance).",基礎驅散自身負面狀態並舞起持續 10~12 回合的劍刃風暴：獲得減益免疫與 80% 魔法減傷，每回合對周圍敵人造成魔法傷害（可觸發劍舞暴擊）。
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",化作洶湧波浪向前閃爍突進，對周圍敵人造成水波範圍傷害，並短暫獲得穿牆與幻影閃避。
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",發射高壓水波造成基礎水傷並擊退眩暈目標：額外爆發傷害隨敏捷/力量比值動態提升，眩暈時長隨力量/敏捷比值動態延長。
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes across nearby foes, triggering Blade Dance critical strikes and Bladeform bonuses.",躍向目標敵人並在周圍敵方單位間連續發動 5~12 次無敵武器斬擊，全程免疫一切傷害，每次斬擊均可觸發劍舞暴擊與劍心猶在加成。
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,解除當前變形狀態，立即切回變體水靈本體。
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",將敏捷轉化為力量與體質（隨變化系熟練度每次 1~5 點），總量守恆並同步提升最大生命與當前生命。
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",將力量與體質轉化為敏捷（隨變化系熟練度每次 1~5 點），總量守恆並降低最大生命值，當前生命值僅在超過新上限時截斷。
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 8 to 16 turns that heals all allies within 2 tiles for 4% to 8% of their maximum HP each turn.",召喚一個 1 點生命值的可移動治療守衛（同時上限 1 個，持續 8~16 回合），每回合為周圍 2 格友方回復 4%~8% 最大生命值。
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",召喚一個 1 點生命值的可移動治療守衛（同時上限 1 個，持續 36~48 回合），每回合為周圍 2 格友方回復 1%~3.25% 最大生命值。
 SpellName,adaptive strike,變體打擊
 SpellName,blade fury,劍刃風暴
 SpellName,healing ward,治療守衛

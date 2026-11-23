@@ -72,6 +72,18 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       EngineType?.GetMethod("DismissAlly", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character) }, null);
 
+    private static readonly MethodInfo EngineKillCharacterMethod =
+      EngineType?.GetMethod("KillCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Character), typeof(string) }, null);
+
+    private static readonly MethodInfo MapRemoveCharacterMethod =
+      typeof(Map).GetMethod("RemoveCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character) }, null);
+
+    private static readonly MethodInfo CharacterSetDeceasedMethod =
+      typeof(Character).GetMethod("SetDeceased", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(bool) }, null);
+
     private static readonly MethodInfo EngineGetMeleeDamageDiceMethod =
       EngineType?.GetMethod("GetMeleeDamageDice", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character), typeof(Asset) }, null);
@@ -200,6 +212,31 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         return;
 
       EngineDismissAllyMethod.Invoke(Engine, new object[] { Ally });
+    }
+
+    /// <summary>
+    /// 彻底销毁/消散召唤物（到期或被新召唤物替换时使用）：
+    /// 以无攻击者（null）结算死亡并从地图移除，避免像 DismissAlly 那样残留中立/野生单位在场上，
+    /// 同时不会触发玩家误杀盟友的运程（Karma）惩罚。
+    /// </summary>
+    public static void DespawnSummon(object Engine, Character Summon, string Cause = "expired")
+    {
+      if (Summon == null || Summon.Deceased)
+        return;
+
+      if (Engine != null && EngineKillCharacterMethod != null)
+      {
+        EngineKillCharacterMethod.Invoke(Engine, new object[] { null, Summon, Cause });
+        if (Summon.Deceased && Summon.Square == null)
+          return;
+      }
+
+      // 兜底：若仍残留在地图上，强制移出地图并标记死亡
+      var Map = Summon.Square?.Map;
+      if (Map != null && MapRemoveCharacterMethod != null)
+        MapRemoveCharacterMethod.Invoke(Map, new object[] { Summon });
+
+      CharacterSetDeceasedMethod?.Invoke(Summon, new object[] { true });
     }
 
     public static Dice GetMeleeDamageDice(object Engine, Character Character, Asset WeaponAsset)

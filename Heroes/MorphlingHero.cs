@@ -24,6 +24,19 @@ namespace Pathos.DotaHeroes.Heroes
     private const int MinMaxLifePoints = 10;
     private const int HpPerShiftedPoint = 6;
 
+    // DOTA2 7.42 变体精灵初始三维：STR 16 / AGI 33 / INT 19
+    private const int DotaBaseStr = 16;
+    private const int DotaBaseAgi = 33;
+    private const int DotaBaseInt = 19;
+    private static readonly PathosStartingStats StartingStats =
+      DotaMechanicsMapper.MapStartingStats(DotaBaseStr, DotaBaseAgi, DotaBaseInt, Charisma: 10);
+
+    private static readonly int WaveformManaCost = DotaMechanicsMapper.MapSkillManaCost(115);      // 6
+    private static readonly int AdaptiveStrikeManaCost = DotaMechanicsMapper.MapSkillManaCost(80); // 4
+    private static readonly int AttributeShiftManaCost = DotaMechanicsMapper.MapSkillManaCost(0);  // 0（忠实还原 7.42）
+    private static readonly int MorphManaCost = DotaMechanicsMapper.MapSkillManaCost(120);         // 原 50 蓝，Pathos Impersonate 强度修正 -> 6
+    private static readonly int MorphRevertManaCost = DotaMechanicsMapper.MapSkillManaCost(0);     // 0
+
     public string Id => "morphling";
 
     public void Register(DotaHeroContext Ctx)
@@ -82,6 +95,9 @@ namespace Pathos.DotaHeroes.Heroes
 
     public void RegisterHooks(DotaHeroContext Ctx)
     {
+      // 0. 锁定变体精灵固定初始六维（STR 10 / DEX 18 / CON 10 / INT 12 / WIS 12 / CHA 10）与 1 级初始蓝量（15）
+      DotaMechanicsMapper.RegisterFixedStartingStats(MorphlingClassName, StartingStats);
+
       // E1/E2：属性转换（总量守恒 + CurrentForm/MaximumForm 同步 + DOTA2 血量联动）
       DotaHookBus.RegisterAfterCastSpell("morphling.attribute_shift", Args =>
       {
@@ -171,7 +187,8 @@ namespace Pathos.DotaHeroes.Heroes
           float Scale = Math.Clamp((Ratio - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
 
           int MasteryTier = GetSkillTier(Ctx, ActiveCast.Character, Ctx.Skills.evocation);
-          int MaxStun = 2 + MasteryTier; // 3 ~ 7 回合
+          // 对应 DOTA2 变体打击最短 0.5 秒（1 回合）、最长 1.5 / 2.0 / 2.5 / 3.0 秒（3 / 4 / 5 / 6 回合，Champion 7 回合）
+          int MaxStun = DotaMechanicsMapper.MapDurationTurns(1.0f + MasteryTier * 0.5f);
           int FinalStun = Math.Max(1, (int)MathF.Round(1.0f + (MaxStun - 1.0f) * Scale));
           Args.Duration = Dice.Fixed(FinalStun);
         }
@@ -406,8 +423,8 @@ namespace Pathos.DotaHeroes.Heroes
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Teleport);
-        S.Level = 1;
-        S.Mana = 6;
+        S.Level = DotaMechanicsMapper.MapSpellLevel(WaveformManaCost);
+        S.Mana = WaveformManaCost;
 
         void Configure(Qualification Qual, int Range, Dice WaveDamage, int WaveRadius, int EvasionTurns)
         {
@@ -419,11 +436,11 @@ namespace Pathos.DotaHeroes.Heroes
           Adept.Apply.ApplyTransient(Ctx.Properties.displacement, Dice.Fixed(EvasionTurns));
         }
 
-        Configure(Ctx.Qualifications.proficient, Range: 5, WaveDamage: 2.d4(), WaveRadius: 2, EvasionTurns: 2);
-        Configure(Ctx.Qualifications.specialist, Range: 6, WaveDamage: 2.d6(), WaveRadius: 2, EvasionTurns: 2);
-        Configure(Ctx.Qualifications.expert, Range: 7, WaveDamage: 3.d6(), WaveRadius: 2, EvasionTurns: 3);
-        Configure(Ctx.Qualifications.master, Range: 9, WaveDamage: 4.d6(), WaveRadius: 3, EvasionTurns: 3);
-        Configure(Ctx.Qualifications.champion, Range: 11, WaveDamage: 5.d6(), WaveRadius: 3, EvasionTurns: 4);
+        Configure(Ctx.Qualifications.proficient, Range: 5, WaveDamage: 2.d4(), WaveRadius: 2, EvasionTurns: 3);
+        Configure(Ctx.Qualifications.specialist, Range: 6, WaveDamage: 2.d6(), WaveRadius: 2, EvasionTurns: 4);
+        Configure(Ctx.Qualifications.expert, Range: 7, WaveDamage: 3.d6(), WaveRadius: 2, EvasionTurns: 4);
+        Configure(Ctx.Qualifications.master, Range: 9, WaveDamage: 4.d6(), WaveRadius: 3, EvasionTurns: 5);
+        Configure(Ctx.Qualifications.champion, Range: 11, WaveDamage: 5.d6(), WaveRadius: 3, EvasionTurns: 6);
       });
     }
 
@@ -436,8 +453,8 @@ namespace Pathos.DotaHeroes.Heroes
         S.Glyph = Icon;
         S.School = Ctx.Schools.evocation;
         S.Precept = new Precept(Purpose.Blast, Ctx.Elements.water);
-        S.Level = 1;
-        S.Mana = 5;
+        S.Level = DotaMechanicsMapper.MapSpellLevel(AdaptiveStrikeManaCost);
+        S.Mana = AdaptiveStrikeManaCost;
 
         void Configure(Qualification Qual, int Range, Dice BaseDamage)
         {
@@ -466,8 +483,8 @@ namespace Pathos.DotaHeroes.Heroes
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Buff);
-        S.Level = 1;
-        S.Mana = 2;
+        S.Level = DotaMechanicsMapper.MapSpellLevel(AttributeShiftManaCost);
+        S.Mana = AttributeShiftManaCost;
 
         // 声明式仅保留施法外壳，真实属性转换与血量联动由 Hook 全权执行
         void Configure(Qualification Qual)
@@ -494,8 +511,8 @@ namespace Pathos.DotaHeroes.Heroes
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Healing);
-        S.Level = 1;
-        S.Mana = 2;
+        S.Level = DotaMechanicsMapper.MapSpellLevel(AttributeShiftManaCost);
+        S.Mana = AttributeShiftManaCost;
 
         // 声明式仅保留施法外壳，真实属性转换与血量联动由 Hook 全权执行
         void Configure(Qualification Qual)
@@ -522,8 +539,8 @@ namespace Pathos.DotaHeroes.Heroes
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Buff);
-        S.Level = 3;
-        S.Mana = 10;
+        S.Level = DotaMechanicsMapper.MapSpellLevel(MorphManaCost);
+        S.Mana = MorphManaCost;
 
         void Configure(Qualification Qual, int Range)
         {
@@ -549,8 +566,8 @@ namespace Pathos.DotaHeroes.Heroes
         S.Glyph = Icon;
         S.School = Ctx.Schools.transmutation;
         S.Precept = new Precept(Purpose.Buff);
-        S.Level = 1;
-        S.Mana = 2;
+        S.Level = DotaMechanicsMapper.MapSpellLevel(MorphRevertManaCost);
+        S.Mana = MorphRevertManaCost;
 
         void Configure(Qualification Qual)
         {
@@ -602,7 +619,14 @@ namespace Pathos.DotaHeroes.Heroes
         E.Figure.Set(Ctx.Anatomies.mind);
         E.Figure.Set(Ctx.Anatomies.voice);
 
-        Ctx.SetFormScores(E.DefaultForm, Str: 10, Dex: 14, Con: 10, Int: 11, Wis: 10, Cha: 9);
+        Ctx.SetFormScores(
+          E.DefaultForm,
+          Str: StartingStats.Str,
+          Dex: StartingStats.Dex,
+          Con: StartingStats.Con,
+          Int: StartingStats.Int,
+          Wis: StartingStats.Wis,
+          Cha: StartingStats.Cha);
         Ctx.SetFormScores(E.LimitForm, Str: 26, Dex: 30, Con: 26, Int: 18, Wis: 16, Cha: 14);
 
         E.LifeAdvancement.Set(0, Dice.Zero);
@@ -657,7 +681,8 @@ namespace Pathos.DotaHeroes.Heroes
         C.Description = "A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.";
         C.Backpack = Ctx.Items.Backpack;
         C.LifeAdvancement.Set(12, 1.d8());
-        C.ManaAdvancement.Set(14, 1.d6());
+        int ClassManaBase = DotaMechanicsMapper.ComputeClassManaBase(DotaBaseInt, RaceManaBase: 2, StartingStats.Wis);
+        C.ManaAdvancement.Set(ClassManaBase, new Dice(1, 3, 0));
 
         C.SetDistribution(
           Ctx.Attributes.dexterity,
