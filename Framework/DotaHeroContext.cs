@@ -25,12 +25,15 @@ namespace Pathos.DotaHeroes.Framework
     public CodexElements Elements => Codex.Elements;
     public CodexEntities Entities => Codex.Entities;
     public CodexExplosions Explosions => Codex.Explosions;
+    public CodexFeatures Features => Codex.Features;
     public CodexGenders Genders => Codex.Genders;
     public CodexGlyphs Glyphs => Codex.Glyphs;
+    public CodexGrades Grades => Codex.Grades;
     public CodexHeroes Heroes => Codex.Heroes;
     public CodexItems Items => Codex.Items;
     public CodexKinds Kinds => Codex.Kinds;
     public CodexMaterials Materials => Codex.Materials;
+    public CodexMotions Motions => Codex.Motions;
     public CodexProperties Properties => Codex.Properties;
     public CodexQualifications Qualifications => Codex.Qualifications;
     public CodexRaces Races => Codex.Races;
@@ -39,6 +42,7 @@ namespace Pathos.DotaHeroes.Framework
     public CodexSonics Sonics => Codex.Sonics;
     public CodexSpecials Specials => Codex.Specials;
     public CodexSpells Spells => Codex.Spells;
+    public CodexStocks Stocks => Codex.Stocks;
 
     private readonly Dictionary<string, Glyph> GlyphCache = new(StringComparer.OrdinalIgnoreCase);
 

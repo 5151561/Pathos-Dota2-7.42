@@ -23,26 +23,34 @@ namespace Pathos.DotaHeroes.Heroes
       var AdaptiveStrikeGlyph = Ctx.RegisterGlyph("adaptive strike");
       var MorphAgilityGlyph = Ctx.RegisterGlyph("morph agility");
       var MorphStrengthGlyph = Ctx.RegisterGlyph("morph strength");
+      var TidalOrbGlyph = Ctx.RegisterGlyph("tidal orb");
 
-      // 2. 注册水人四大专属技能
+      // 2. 注册水人专属无限远程普攻：潮汐水弹（tidal orb）
+      var TidalOrbItem = RegisterTidalOrbItem(Ctx, TidalOrbGlyph);
+
+      // 3. 注册水人四大专属技能
       var WaveformSpell = RegisterWaveformSpell(Ctx, WaveformGlyph);
       var AdaptiveStrikeSpell = RegisterAdaptiveStrikeSpell(Ctx, AdaptiveStrikeGlyph);
       var MorphAgilitySpell = RegisterMorphAgilitySpell(Ctx, MorphAgilityGlyph);
       var MorphStrengthSpell = RegisterMorphStrengthSpell(Ctx, MorphStrengthGlyph);
 
-      // 3. 注册专属种族：变体水灵（waterkin）
+      // 4. 注册专属种族：变体水灵（waterkin，含遇水回血回蓝与遇火蒸发反应）
       var WaterkinRace = RegisterWaterkinRace(Ctx, MorphlingGlyph);
 
-      // 4. 注册专属职业：变体精灵（morphling）
+      // 5. 注册水系环境专属交互（水药水吸收 + 喷泉汲取）
+      RegisterWaterInteractions(Ctx);
+
+      // 6. 注册专属职业：变体精灵（morphling）
       var MorphlingClass = RegisterMorphlingClass(
         Ctx,
         MorphlingGlyph,
+        TidalOrbItem,
         WaveformSpell,
         AdaptiveStrikeSpell,
         MorphAgilitySpell,
         MorphStrengthSpell);
 
-      // 5. 注册预设英雄：Morphling（可在选人界面一键选中）
+      // 7. 注册预设英雄：Morphling（可在选人界面一键选中）
       Ctx.Heroes.Add(H =>
       {
         H.Name = "Morphling";
@@ -51,6 +59,84 @@ namespace Pathos.DotaHeroes.Heroes
         H.Gender = Ctx.Genders.male;
         H.CustomGlyph = MorphlingGlyph;
       });
+    }
+
+    private static Item RegisterTidalOrbItem(DotaHeroContext Ctx, Glyph Icon)
+    {
+      return Ctx.Items.Add(I =>
+      {
+        I.Name = "tidal orb";
+        I.Description = "A condensed sphere of living tidewater hurled at range. Reforms endlessly in a Morphling's grasp without consuming ammunition.";
+        I.Glyph = Icon;
+        I.Stock = Ctx.Stocks.weapon;
+        I.Type = ItemType.ThrownWeapon;
+        I.Grade = Ctx.Grades.standard;
+        I.Material = Ctx.Materials.water;
+        I.Size = Size.Tiny;
+        I.Weight = Weight.Zero;
+        I.Price = Gold.Zero;
+        I.Rarity = 0;
+        I.Sonic = Ctx.Sonics.water_splash;
+        I.BundleDice = Dice.One;
+        I.InfiniteQuantity = true;
+
+        I.SetEquip(EquipAction.Ready, Delay.OneSecond, Ctx.Sonics.water_splash, Audibility: 5);
+
+        var W = I.SetOneHandedWeapon(
+          Ctx.Skills.disc,
+          Ctx.Sonics.water_splash,
+          Ctx.Elements.water,
+          DamageType.Bludgeon,
+          1.d6(),
+          _ => { });
+        W.FixedRange = 5;
+      });
+    }
+
+    private static void RegisterWaterInteractions(DotaHeroContext Ctx)
+    {
+      // 水药水（potion_of_water）：水元素饮用（drink）直接吸收水分，回复生命与法力（水人的大药+小蓝）
+      Ctx.Items.Edit(Ctx.Items.potion_of_water).AddObviousUse(
+        Ctx.Motions.drink,
+        Delay.OneSecond,
+        Ctx.Sonics.quaff,
+        U =>
+        {
+          U.Consume();
+          U.SetCast().SetTargetSelf(true);
+          U.Apply.WhenTargetHasMaterial(
+            Ctx.Materials.water,
+            Then =>
+            {
+              Then.HealEntity(2.d6(), Modifier.Zero);
+              Then.EnergiseEntity(2.d6(), Modifier.Zero);
+            },
+            Else =>
+            {
+              Else.HealEntity(Dice.One, Modifier.Zero);
+            });
+        });
+
+      // 喷泉（fountain）：水元素专属汲取（refill）动作——泡泉水大幅回血回蓝并获得短暂迅捷
+      var FountainUse = Ctx.Features.Edit(Ctx.Features.fountain).AddUse(
+        Ctx.Motions.refill,
+        null,
+        Delay.OneSecond,
+        Ctx.Sonics.water_fountain,
+        Audibility: 10);
+      FountainUse.SetCast().SetTargetSelf(true);
+      FountainUse.Apply.WhenTargetHasMaterial(
+        Ctx.Materials.water,
+        Then =>
+        {
+          Then.HealEntity(3.d6(), Modifier.Zero);
+          Then.EnergiseEntity(3.d6(), Modifier.Zero);
+          Then.ApplyTransient(Ctx.Properties.quickness, 1.d4());
+        },
+        Else =>
+        {
+          Else.Nothing();
+        });
     }
 
     private static Spell RegisterWaveformSpell(DotaHeroContext Ctx, Glyph Icon)
@@ -222,6 +308,19 @@ namespace Pathos.DotaHeroes.Heroes
 
         // 徒手攻击：水流拍击
         E.AddAttack(Ctx.AttackTypes.splash, Ctx.Elements.water, 1.d6(), _ => { });
+
+        // 元素生态反应：
+        // - 遇水（喷水陷阱 / 水系敌人 / 水系法术）：吸收水分回血 + 回蓝
+        E.AddReaction(Chance.Always, Ctx.Elements.water, A =>
+        {
+          A.HealEntity(1.d6(), Modifier.Zero);
+          A.EnergiseEntity(1.d6(), Modifier.Zero);
+        });
+        // - 遇火：50% 几率蒸发少量法力
+        E.AddReaction(Chance.OneIn2, Ctx.Elements.fire, A =>
+        {
+          A.DrainMana(Ctx.Elements.fire, 1.d4());
+        });
       });
 
       var WaterkinRace = Ctx.Races.Add(R =>
@@ -240,6 +339,7 @@ namespace Pathos.DotaHeroes.Heroes
     private static Class RegisterMorphlingClass(
       DotaHeroContext Ctx,
       Glyph AvatarGlyph,
+      Item TidalOrbItem,
       Spell WaveformSpell,
       Spell AdaptiveStrikeSpell,
       Spell MorphAgilitySpell,
@@ -280,8 +380,8 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Skills.evocation,
           Ctx.Skills.transmutation,
           Ctx.Skills.swimming,
+          Ctx.Skills.disc,
           Ctx.Skills.light_armour,
-          Ctx.Skills.light_blade,
           Ctx.Skills.unarmed_combat);
 
         // 开局掌握水人四大基础技能（Q 波浪形态 / W 变体攻击 / E1 转敏 / E2 转力；R 变形大招于 6 级自动解锁）
@@ -290,9 +390,9 @@ namespace Pathos.DotaHeroes.Heroes
         C.Startup.AddGrimoire(Dice.One, MorphAgilitySpell);
         C.Startup.AddGrimoire(Dice.One, MorphStrengthSpell);
 
-        // 开局补给与基础装备
+        // 开局补给与基础装备（无限远程潮汐水弹 + 长袍 + 2瓶水 + 1瓶魔力药水）
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.robe);
-        C.Startup.Loot.AddKit(Chance.Always, Modifier.Plus1, Ctx.Items.short_sword);
+        C.Startup.Loot.AddKit(Chance.Always, TidalOrbItem);
         C.Startup.Loot.AddKit(Chance.Always, Dice.Two, Ctx.Items.potion_of_water);
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.potion_of_gain_energy);
       });
