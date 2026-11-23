@@ -1,0 +1,31 @@
+using System.Collections.Generic;
+using Pathos.DotaHeroes.Framework;
+using Pathos.DotaHeroes.Heroes;
+
+namespace Pathos
+{
+  /// <summary>
+  /// DOTA2 英雄扩展包总入口。
+  /// Pathos 引擎启动时会自动扫描 Expansions/*Expansion.dll 并实例化本类。
+  /// </summary>
+  public sealed class DotaHeroesExpansion : Expansion
+  {
+    public DotaHeroesExpansion(OfficialCampaign Campaign)
+      : base(Campaign, Handle: "dotaheroes", Name: "DOTA2 Heroes")
+    {
+      var Context = new DotaHeroContext(Campaign);
+
+      var HeroRegistry = new List<IDotaHeroDefinition>
+      {
+        new MorphlingHero(),
+        // 后续新增 DOTA2 英雄只需在此追加，例如：
+        // new AntiMageHero(),
+        // new InvokerHero(),
+        // new AxeHero(),
+      };
+
+      foreach (var Hero in HeroRegistry)
+        Hero.Register(Context);
+    }
+  }
+}

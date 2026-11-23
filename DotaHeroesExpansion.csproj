@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- 必须以 Expansion 结尾，Pathos 引擎才会从 Expansions 目录自动加载 -->
+    <AssemblyName>DotaHeroesExpansion</AssemblyName>
+    <RootNamespace>Pathos</RootNamespace>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Library</OutputType>
+    <LangVersion>Latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <!-- 本地 Steam 版 Pathos 安装路径 -->
+  <PropertyGroup>
+    <PathosInstallation>E:\Steam\steamapps\common\Pathos</PathosInstallation>
+    <!-- 调试时默认进入的模块（NetHack Codex 官方主线） -->
+    <PathosModule>NetHack</PathosModule>
+    <!-- 调试时可选自动开局的英雄名（留空则进入选人界面） -->
+    <PathosHero></PathosHero>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="InvLibrary">
+      <HintPath>$(PathosInstallation)\Inv.Library.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="PathosLibrary">
+      <HintPath>$(PathosInstallation)\PathosLibrary.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="PathosEngine">
+      <HintPath>$(PathosInstallation)\PathosEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="PathosOfficial">
+      <HintPath>$(PathosInstallation)\PathosOfficial.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 编译后自动运行 PathosMaker 打包图集/翻译并部署到 Expansions 目录 -->
+  <Target Name="PathosMakerPostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="&quot;$(PathosInstallation)\PathosMaker.exe&quot; &quot;$(PathosInstallation)&quot; &quot;$(ProjectDir.TrimEnd('\'))&quot; &quot;$(TargetDir)$(TargetName).dll&quot;" />
+  </Target>
+</Project>

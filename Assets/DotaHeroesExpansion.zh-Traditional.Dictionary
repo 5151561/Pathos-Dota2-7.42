@@ -1,0 +1,18 @@
+CharacterName,Morphling,變體精靈
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, and morphs into foes.",來自 DOTA2 的水元素英雄，能化作波浪穿梭戰場、在力量與敏捷之間自由轉換，並變形為敵人形態。
+ClassName,morphling//female,變體精靈
+ClassName,morphling//male,變體精靈
+ClassName,morphling//non-binary,變體精靈
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",由活水潮汐凝聚而成的智慧元素，能隨心重塑自身的力量與敏捷形態。
+EntityName,waterkin,變體水靈
+RaceName,waterkin//female,變體水靈
+RaceName,waterkin//male,變體水靈
+RaceName,waterkin//non-binary,變體水靈
+SpellDescription,"Blast a target with a high-pressure surge of water, dealing water damage, knocking them back, and potentially stunning them.",向目標釋放高壓水波衝擊，造成水系傷害並擊退敵人，有幾率使其眩暈。
+SpellDescription,"Dissolve into a surging wave, blinking rapidly across the battlefield and briefly phasing through obstacles.",化作洶湧波浪向前閃爍位移，並在短時間內獲得相位穿梭能力。
+SpellDescription,"Shift your fluid form toward agility, trading Strength for Dexterity and gaining a brief burst of quickness.",將水體形態轉向敏捷：消耗 1 點力量轉化為 1 點敏捷，並獲得短暫迅捷。
+SpellDescription,"Shift your fluid form toward strength, trading Dexterity for Strength while restoring vitality.",將水體形態轉向力量：消耗 1 點敏捷轉化為 1 點力量，同時立即回復生命值。
+SpellName,adaptive strike,變體攻擊
+SpellName,morph agility,屬性轉換·敏捷
+SpellName,morph strength,屬性轉換·力量
+SpellName,waveform,波浪形態

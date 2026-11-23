@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Run Pathos (Dota Heroes)": {
+      "commandName": "Executable",
+      "executablePath": "$(PathosInstallation)\\PathosGame.exe",
+      "commandLineArgs": "disable-update expansion:\"$(AssemblyName).dll\"",
+      "workingDirectory": "$(PathosInstallation)"
+    }
+  }
+}
