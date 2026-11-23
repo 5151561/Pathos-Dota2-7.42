@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Pathos.DotaHeroes.Framework;
+using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Heroes;
 
 namespace Pathos
@@ -13,6 +14,9 @@ namespace Pathos
     public DotaHeroesExpansion(OfficialCampaign Campaign)
       : base(Campaign, Handle: "dotaheroes", Name: "DOTA2 Heroes")
     {
+      // 初始化 Harmony Hook 运行时底座（在 PathosMaker 打包期会自动跳过）
+      HookBootstrap.EnsureInitialized();
+
       var Context = new DotaHeroContext(Campaign);
 
       var HeroRegistry = new List<IDotaHeroDefinition>
@@ -25,7 +29,10 @@ namespace Pathos
       };
 
       foreach (var Hero in HeroRegistry)
+      {
         Hero.Register(Context);
+        Hero.RegisterHooks(Context);
+      }
     }
   }
 }

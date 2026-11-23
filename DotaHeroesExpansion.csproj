@@ -3,7 +3,8 @@
     <!-- 必须以 Expansion 结尾，Pathos 引擎才会从 Expansions 目录自动加载 -->
     <AssemblyName>DotaHeroesExpansion</AssemblyName>
     <RootNamespace>Pathos</RootNamespace>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- 跨平台 net10.0：同时支持 Windows / macOS / Linux 构建与运行 -->
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Library</OutputType>
     <LangVersion>Latest</LangVersion>
     <Nullable>disable</Nullable>
@@ -22,6 +23,12 @@
     <!-- 调试时可选自动开局的英雄名（留空则进入选人界面） -->
     <PathosHero></PathosHero>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lib.Harmony" Version="2.4.3" PrivateAssets="all" GeneratePathProperty="true" />
+    <!-- 将 0Harmony.dll 内嵌为资源，使最终仍保持单 DLL 部署（兼容 Windows/macOS/Linux 与 PathosMaker） -->
+    <EmbeddedResource Include="$(PkgLib_Harmony)/lib/net10.0/0Harmony.dll" LogicalName="0Harmony.dll" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="InvLibrary">

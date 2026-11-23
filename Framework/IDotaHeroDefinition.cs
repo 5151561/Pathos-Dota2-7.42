@@ -15,5 +15,10 @@ namespace Pathos.DotaHeroes.Framework
     /// 将该英雄的贴图、种族、职业、法术、装备及预设英雄注册到 Pathos Campaign 中。
     /// </summary>
     void Register(DotaHeroContext Context);
+
+    /// <summary>
+    /// 可选：向 DotaHookBus 注册该英雄的运行时 Harmony Hook 逻辑（幂等按键注册）。
+    /// </summary>
+    void RegisterHooks(DotaHeroContext Context) { }
   }
 }

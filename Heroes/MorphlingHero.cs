@@ -1,5 +1,6 @@
 using System;
 using Pathos.DotaHeroes.Framework;
+using Pathos.DotaHeroes.Framework.Hooks;
 
 namespace Pathos.DotaHeroes.Heroes
 {
@@ -109,6 +110,20 @@ namespace Pathos.DotaHeroes.Heroes
         H.Class = MorphlingClass;
         H.Gender = Ctx.Genders.male;
         H.CustomGlyph = MorphlingGlyph;
+      });
+    }
+
+    public void RegisterHooks(DotaHeroContext Ctx)
+    {
+      // 水人属性转换后同步 MaximumForm，防止复活或恢复属性药水把已转走的属性回满
+      DotaHookBus.RegisterAfterCastSpell("morphling.sync_max_form", Args =>
+      {
+        var SpellName = Args.Spell?.Name;
+        if (!string.Equals(SpellName, "morph agility", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(SpellName, "morph strength", StringComparison.OrdinalIgnoreCase))
+          return;
+
+        PathosEngineBridge.SyncMaximumFormScores(Args.Character, "strength", "dexterity", "constitution");
       });
     }
 
