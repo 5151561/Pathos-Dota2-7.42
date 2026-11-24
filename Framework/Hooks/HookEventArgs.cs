@@ -72,6 +72,17 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public string Cause { get; }
 
     /// <summary>
+    /// 伤害来源描述（类型 物理/魔法/纯粹、来源 Key、攻击/技能/持续伤害/可暴击标记）。
+    /// 英雄通过 <see cref="Pathos.DotaHeroes.Framework.DotaDamage"/> 结算的伤害带显式标注，原生伤害自动归类。
+    /// </summary>
+    public Pathos.DotaHeroes.Framework.DotaDamageInfo Info { get; internal set; }
+
+    /// <summary>
+    /// 本次伤害被采用的暴击倍率（未暴击为 0），在 Amplify 阶段之后有效。
+    /// </summary>
+    public float CritMultiplier { get; internal set; }
+
+    /// <summary>
     /// 仅在 BeforeDamage 有效：设为 true 将跳过本次伤害结算。
     /// </summary>
     public bool Cancel { get; set; }

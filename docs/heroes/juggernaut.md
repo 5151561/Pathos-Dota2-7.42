@@ -100,7 +100,10 @@
 - `juggernaut.turn_ticks`（`AfterExecuteCommand`）：驱动剑心犹在叠层/粘滞、剑刃风暴每回合 `3×3` 转伤、治疗守卫每回合光环回血与到期消散、无敌斩自动多回合连斩（`QueueWaitDecision`）。
 - `juggernaut.blade_fury_debuff_immunity`（`BeforeApplyTransient`）：剑刃风暴与无敌斩期间减益免疫。
 - `juggernaut.bladeform_speed`（`SpeedQuery`）：剑心犹在移速（每层 `+1%`）与攻速（每层 `+2.5%`）加成，以及 T2 左剑刃风暴移速天赋（`+15%`）。
-- `juggernaut.damage_modifiers`（`BeforeDamage`）：无敌斩无敌、剑刃风暴 80% 魔法/元素减伤与普攻抑制、剑心犹在增伤、剑舞暴击（含 T3 暴击倍率与 T4 暴击吸血）。
+- `juggernaut.damage_modifiers`（`BeforeDamage`, Normal）：剑刃风暴期间原生普攻置零（`Info.Origin == BasicAttack`）、剑心犹在对普攻与无敌斩追加敏捷伤害。
+- `juggernaut.blade_fury`（`DotaDamage.RegisterMagicResist`）：剑刃风暴期间 `80%` 魔抗（只减魔法/未知伤害，纯粹与物理不减）。
+- `juggernaut.blade_dance`（`DotaDamage.RegisterCritSource`）：剑舞对所有 `CanCrit` 伤害（普攻、无敌斩、剑刃风暴旋风）判定 `1.8x`（T3 右 `1.95x`）暴击，`OnCrit` 处理 T4 暴击吸血、特效与日志；与其他暴击来源取最高、不叠加。
+- 伤害标注：剑刃风暴旋风 `DotaDamageInfo.Magical(..., Spell | CanCrit)`、无敌斩斩击 `DotaDamageInfo.Physical`（攻击类，可暴击）；无敌斩无敌由 `juggernaut.omnislash_invulnerable` 在引擎层拦截。
 - `juggernaut.bladeform_on_hit`（`AfterDamage`）：受击后使剑心犹在进入粘滞期。
 
 ### 常用调参常量（位于 [JuggernautHero.cs](../../Heroes/JuggernautHero.cs) 顶部）

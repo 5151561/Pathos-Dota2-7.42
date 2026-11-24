@@ -456,9 +456,9 @@ namespace Pathos.DotaHeroes.Framework
       string Cause = M.Spec.DotCause ?? M.Key;
 
       if (M.Spec.DotElement == null)
-        PathosEngineBridge.StrikeCharacter(Engine, M.Source, Holder, Direction.Self, Damage, Delay.Zero, Cause);
+        DotaDamage.Strike(Engine, M.Source, Holder, Direction.Self, Damage, DotaDamageInfo.Pure(Cause, DotaDamageFlags.Spell | DotaDamageFlags.DoT));
       else
-        PathosEngineBridge.HarmCharacter(Engine, M.Source, Holder, Direction.Self, M.Spec.DotElement, Dice.Fixed(Damage), Modifier.Zero, Cause);
+        DotaDamage.Harm(Engine, M.Source, Holder, Direction.Self, M.Spec.DotElement, Dice.Fixed(Damage), DotaDamageInfo.Magical(Cause, DotaDamageFlags.Spell | DotaDamageFlags.DoT));
     }
 
     private static DotaStatusBadge BuildBadge(Character Character, DotaModifierSpec Spec)

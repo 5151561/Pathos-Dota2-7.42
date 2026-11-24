@@ -14,6 +14,7 @@
 | [DotaTauntService.cs](../../Framework/DotaTauntService.cs) | 通用「嘲讽（Taunt）」状态与行为重定向服务：支持任意嘲讽者/受害者、自动唤醒与驱散恐惧、全链路禁魔、强制靠近与近战攻击嘲讽者、按嘲讽者回合统一递减。 |
 | [DotaModifierService.cs](../../Framework/DotaModifierService.cs) | 通用 DOTA2 Modifier（带回合数的增益/减益）服务：回合递减、护甲/移速/攻速汇总、纯粹/元素持续伤害、减益免疫、基础驱散与状态栏徽章，零 `Codex.Properties` 占用。 |
 | [DotaCharacterFlagSet.cs](../../Framework/DotaCharacterFlagSet.cs) | 弱引用角色标记集合，替代 `static HashSet<Character>`（铁律 6）。 |
+| [DotaDamage.cs](../../Framework/DotaDamage.cs) | 统一伤害管线：伤害类型（物理/魔法/纯粹）与来源标注、暴击（取最高不叠加）与魔抗（乘算叠加）有序修正阶段。 |
 
 ---
 
@@ -25,7 +26,7 @@
 | :--- | :--- | :--- | :--- |
 | `RegisterBeforeCastSpell` | `Director.CastSpell` (Prefix) | `Cancel` | 完全接管或拦截某法术施放 |
 | `RegisterAfterCastSpell` | `Director.CastSpell` (Postfix) | 只读上下文 | 技能施放后的自定义结算（属性转换、驱散、点地召唤、无敌斩启动） |
-| `RegisterBeforeDamage` | `Engine.DamageCharacter` (Prefix) | `DamagePoints`, `Cancel` | 暴击倍率、魔法/元素减伤、无敌免疫、技能伤害缩放、普攻抑制 |
+| `RegisterBeforeDamage` | `Engine.DamageCharacter` (Prefix) | `DamagePoints`, `Cancel`（只读 `Info` / `CritMultiplier`） | 固定值增伤、普攻抑制；**暴击与魔抗请改用 `DotaDamage` 管线**（§7） |
 | `RegisterAfterDamage` | `Engine.DamageCharacter` (Postfix) | 只读上下文 | 受击触发（如剑心犹在进入粘滞期）、反伤 |
 | `RegisterAfterKill` | `Engine.KillCharacter` (Postfix) | 只读上下文 | 击杀触发（刷新、叠层、回蓝等） |
 | `RegisterAfterResurrect` | `Engine.ResurrectCharacter` (Postfix) | 只读上下文 | 复活后状态修正 |
@@ -82,7 +83,7 @@
 | 分类 | 方法 | 用途 |
 | :--- | :--- | :--- |
 | **身份与熟练度** | `IsClass(char, className)` / `IsEntity(char, entityName)` / `GetSkillTier(ctx, char, skill)` | 识别英雄职业、召唤物实体，以及将熟练度转为 `1~5` 阶整数。 |
-| **阵营与来源判定** | `IsHostile(src, tgt)` / `IsFriendly(src, tgt)` / `IsNonBasicPhysicalIncoming(args)` | 统一判断存活敌军、存活友军、以及非普通物理攻击来源（法术/元素/环境）。 |
+| **阵营与来源判定** | `IsHostile(src, tgt)` / `IsFriendly(src, tgt)` | 统一判断存活敌军、存活友军（伤害来源请读 `DamageEventArgs.Info`，`IsNonBasicPhysicalIncoming` 已标记 Obsolete）。 |
 | **标准基础驱散** | `GetStandardNegativeDebuffs(ctx)` / `IsNegativeDebuff(ctx, prop)` / `DispelNegativeDebuffs(ctx, engine, tgt)` | 统一维护 Pathos 14 种负面控制与异常状态，一键实现「基础驱散」与「减益免疫」。 |
 | **装备、骰子与返蓝** | `GetEquippedWeapon(ctx, char)` / `RollDice(dice)` / `RefundMana(char, mana)` | 读取主手武器、安全掷骰（保底 1）、指向性技能空大返蓝。 |
 | **格子与范围搜索** | `IsOpenSquare(sq)` / `FindHostilesInRadius(src, center, r)` / `PickRandomNearbyHostile(caster, r)` / `FindOpenAdjacentSquare(caster, targetSq)` / `FindStepToward(from, to)` | AOE 搜敌、随机跳斩选敌、寻找目标旁可站立空位、向目标靠近一步。 |
@@ -151,3 +152,41 @@ if (Mod == null) { /* 目标无效、减益被免疫 */ }
 - **查询**：`Get` / `Has` / `GetAll` / `Remove` / `CountAppliedBy(source, spec)`（如斧王 T1 天赋统计活跃饥渴目标数）/ `GetTotalDefence` / `GetMoveSpeedMultiplier`。
 
 > 运行时状态保存在 `ConditionalWeakTable` 中，与原先英雄私有状态一致：**不随存档持久化**（读档后短期 Modifier 清空）。需要跨存档的永久数值仍走 `DotaCharacterStorage`。
+
+---
+
+## 7. `DotaDamage` 统一伤害管线
+
+[DotaDamage.cs](../../Framework/DotaDamage.cs) 解决两件事：**这次伤害是什么**（类型 + 来源），以及**修正按什么顺序结算**。
+
+### 7.1 结算带标注的伤害
+
+英雄技能**一律**通过以下方法结算伤害，禁止直接调 `PathosEngineBridge.StrikeCharacter` / `HarmCharacter`：
+
+```csharp
+DotaDamage.Strike(engine, caster, target, dir, damage, DotaDamageInfo.Pure("culling blade"));               // 固定点数
+DotaDamage.Harm(engine, caster, target, dir, Ctx.Elements.water, dice, DotaDamageInfo.Magical("waveform")); // 元素骰
+DotaDamage.Strike(engine, caster, target, dir, slash, DotaDamageInfo.Physical("omnislash"));               // 攻击类（默认 Attack | CanCrit）
+using (DotaDamage.BeginScope(info)) { /* 无法直接改写的原生结算路径 */ }
+```
+
+| 类型 | 用途 | 魔抗 |
+| :--- | :--- | :--- |
+| `Physical` | 普攻、无敌斩等攻击 | 不减免 |
+| `Magical` | 法术伤害（剑刃风暴、波浪形态、变体打击） | 减免 |
+| `Pure` | 纯粹伤害（战斗饥渴、反击螺旋、淘汰之刃） | 不减免 |
+| `Unknown` | 无法归类的原生伤害（远程投射物、陷阱、怪物吐息等） | 减免 |
+
+标记：`Attack`（触发「受到攻击」类被动）、`Spell`、`DoT`（`DotaModifierService` 持续伤害自动带上）、`CanCrit`。
+
+未显式标注的伤害由框架自动归类到 `DamageEventArgs.Info.Origin`：`BasicAttack`（`Director.Attack` 期间，Physical + Attack + CanCrit）、`NativeSpell`（`Director.CastSpell` 期间，Magical）、`Unclassified`（其余，Unknown）。
+
+### 7.2 有序修正阶段
+
+| 阶段 | 注册方式 | 规则 |
+| :--- | :--- | :--- |
+| `Normal` | `DotaHookBus.RegisterBeforeDamage`（默认优先级） | 固定值增减（剑心犹在）、取消（普攻抑制） |
+| `Amplify` | `DotaDamage.RegisterCritSource(key, args => roll or null)` | 各来源独立掷概率，**只取最高倍率**（DOTA2 暴击不叠加）；`OnCrit` 在倍率生效后调用，用于暴击吸血/特效/日志 |
+| `Reduction` | `DotaDamage.RegisterMagicResist(key, args => ratio)` | 多来源 `1 - Π(1 - r)` 乘算叠加，只作用于 `Magical` / `Unknown`；结果为 0 时取消伤害 |
+
+`AfterDamage` 中可读 `Args.Info` 判断来源（如斧王反击螺旋只把 `Unclassified` 与带 `Attack` 标记的脚本伤害计为「受到攻击」），`Args.CritMultiplier` 为本次采用的暴击倍率（未暴击为 0）。

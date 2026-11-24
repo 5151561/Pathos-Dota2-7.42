@@ -77,8 +77,12 @@ namespace Pathos.DotaHeroes.Framework
     /// 判断一次伤害是否属于非普通物理攻击来源（法术、元素喷吐、陷阱、环境等）。
     /// 适用于魔法减伤、魔法免疫等机制判定。
     /// </summary>
+    [Obsolete("改用 DotaDamage.RegisterMagicResist（自动只作用于魔法/未知伤害），或直接读取 Args.Info.Type / Args.Info.IsMagicResistable。")]
     public static bool IsNonBasicPhysicalIncoming(DamageEventArgs Args)
     {
+      if (Args?.Info != null)
+        return Args.Info.Type != DotaDamageType.Physical;
+
       if (DotaHookBus.ActiveSpellCast != null)
         return true;
 

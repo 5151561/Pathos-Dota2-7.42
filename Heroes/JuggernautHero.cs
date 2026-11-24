@@ -111,7 +111,6 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly ConditionalWeakTable<Character, OmnislashSession> ActiveOmnislashSessions = new();
 
     private static readonly DotaCharacterFlagSet ActiveOmnislashCasters = new();
-    private static readonly DotaCharacterFlagSet ActiveBladeFuryTicks = new();
     private static readonly DotaCharacterFlagSet SkipNextBladeFuryTick = new();
     private static readonly DotaCharacterFlagSet SkipNextOmnislashTick = new();
 
@@ -501,56 +500,28 @@ namespace Pathos.DotaHeroes.Heroes
           Args.Speed = Speed.FromRate(Args.Speed.GetRate() * (1.0f + Bonus));
       });
 
-      // 5. 伤害前置钩子：无敌斩绝对无敌、剑刃风暴 80% 魔法/元素减伤与普攻置零、剑心犹在敏捷增伤、剑舞暴击
+      // 5. 伤害前置钩子（Normal 阶段）：剑刃风暴期间普攻置零、剑心犹在敏捷增伤
+      //    无敌斩无敌由 InvulnerableQuery 在引擎层拦截；剑刃风暴 80% 魔抗与剑舞暴击走 DotaDamage 管线（见下方 5.1 / 5.2）
       DotaHookBus.RegisterBeforeDamage("juggernaut.damage_modifiers", Args =>
       {
-        // (a) 无敌斩期间全程免疫一切伤害
-        if (Args.Defender != null && IsInOmnislash(Args.Defender))
-        {
-          Args.Cancel = true;
-          return;
-        }
-
-        // (b) 剑刃风暴期间受到非普通物理攻击（法术/元素/环境伤害）减免 80%
-        if (BladeFuryStatusProperty != null &&
-            Args.Defender != null &&
-            PathosEngineBridge.HasTransient(Args.Defender, BladeFuryStatusProperty) &&
-            Args.DamagePoints > 0 &&
-            DotaCombatHelper.IsNonBasicPhysicalIncoming(Args))
-        {
-          int Reduced = (int)MathF.Floor(Args.DamagePoints * 0.20f);
-          if (Reduced <= 0)
-          {
-            Args.Cancel = true;
-            return;
-          }
-          Args.DamagePoints = Reduced;
-        }
-
         var Attacker = Args.Attacker;
-        if (Attacker == null || Args.Defender == Attacker || Args.DamagePoints <= 0)
+        if (Attacker == null || Args.Defender == Attacker || Args.DamagePoints <= 0 || Args.Info == null)
           return;
 
-        bool IsBasicAttack = DotaHookBus.ActiveAttack?.Character == Attacker;
-        bool IsOmnislash = ActiveOmnislashCasters.Contains(Attacker);
-        bool IsBladeFurySpin = ActiveBladeFuryTicks.Contains(Attacker);
+        bool IsBasicAttack = Args.Info.Origin == DotaDamageOrigin.BasicAttack;
+        bool IsOmnislash = Args.Info.IsFrom(OmnislashSpellName);
 
-        // (c) 剑刃风暴期间普通物理普攻不造成常规伤害
-        if (BladeFuryStatusProperty != null &&
-            PathosEngineBridge.HasTransient(Attacker, BladeFuryStatusProperty) &&
-            IsBasicAttack &&
-            !IsBladeFurySpin &&
-            !IsOmnislash)
+        // (a) 剑刃风暴期间普通物理普攻不造成常规伤害
+        if (IsBasicAttack &&
+            BladeFuryStatusProperty != null &&
+            PathosEngineBridge.HasTransient(Attacker, BladeFuryStatusProperty))
         {
           Args.Cancel = true;
           return;
         }
 
-        if (!IsJuggernaut(Attacker))
-          return;
-
-        // (d) 先天「剑心犹在」：近战普攻与无敌斩按层数追加等效基础敏捷伤害（每层 +2.5% DEX）
-        if (IsBasicAttack || IsOmnislash)
+        // (b) 先天「剑心犹在」：近战普攻与无敌斩按层数追加等效基础敏捷伤害（每层 +2.5% DEX）
+        if ((IsBasicAttack || IsOmnislash) && IsJuggernaut(Attacker))
         {
           var State = GetBladeformState(Attacker);
           if (State.Stacks > 0)
@@ -561,53 +532,64 @@ namespace Pathos.DotaHeroes.Heroes
               Args.DamagePoints += BonusDmg;
           }
         }
+      });
 
-        // (e) 被动「剑舞」：由独立技能等级（1~4 级：20%/25%/30%/35%）驱动，近战普攻、无敌斩与剑刃风暴均可触发 1.8x（T3 右天赋 1.95x）致命一击
-        if (IsBasicAttack || IsOmnislash || IsBladeFurySpin)
+      // 5.1 剑刃风暴：80% 魔法抗性（只作用于魔法/未知伤害，纯粹与物理伤害不减免）
+      DotaDamage.RegisterMagicResist("juggernaut.blade_fury", Args =>
+        BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Args.Defender, BladeFuryStatusProperty) ? 0.80f : 0.0f);
+
+      // 5.2 被动「剑舞」：由独立技能等级（1~4 级：20%/25%/30%/35%）驱动，可暴击伤害（普攻、无敌斩、剑刃风暴旋风）触发 1.8x（T3 右天赋 1.95x）致命一击
+      DotaDamage.RegisterCritSource("juggernaut.blade_dance", Args =>
+      {
+        var Attacker = Args.Attacker;
+        if (!IsJuggernaut(Attacker) || Args.Info == null || !Args.Info.Has(DotaDamageFlags.CanCrit))
+          return null;
+
+        float CritChance = GetBladeDanceCritChance(Attacker);
+        if (CritChance <= 0.0f || Random.Shared.NextSingle() >= CritChance)
+          return null;
+
+        float CritMultiplier = TalentService.HasTalent(Attacker, TalentT3BladeDanceCrit) ? 1.95f : 1.80f;
+        return new DotaCritRoll(CritMultiplier, OnCrit: CritArgs =>
         {
-          float CritChance = GetBladeDanceCritChance(Attacker);
-          if (CritChance > 0.0f && Random.Shared.NextSingle() < CritChance)
+          bool IsOmnislash = CritArgs.Info.IsFrom(OmnislashSpellName);
+          bool IsBladeFurySpin = CritArgs.Info.IsFrom(BladeFurySpellName);
+          string LifestealNote = string.Empty;
+          if (TalentService.HasTalent(Attacker, TalentT4BladeDanceLifesteal) &&
+              Attacker.Life != null &&
+              Attacker.Life.Points < Attacker.Life.Total)
           {
-            float CritMultiplier = TalentService.HasTalent(Attacker, TalentT3BladeDanceCrit) ? 1.95f : 1.80f;
-            Args.DamagePoints = Math.Max(Args.DamagePoints + 1, (int)MathF.Round(Args.DamagePoints * CritMultiplier));
-
-            string LifestealNote = string.Empty;
-            if (TalentService.HasTalent(Attacker, TalentT4BladeDanceLifesteal) &&
-                Attacker.Life != null &&
-                Attacker.Life.Points < Attacker.Life.Total)
-            {
-              int HealAmt = Math.Max(1, (int)MathF.Round(Args.DamagePoints * 0.40f));
-              var SelfDir = Attacker.Square != null ? Attacker.Square.AsDirection(Attacker.Square) : default;
-              PathosEngineBridge.HealCharacter(Args.Engine, Attacker, Attacker, SelfDir, HealAmt);
-              LifestealNote = DotaLocalization.Format("jugg.log.crit_lifesteal", HealAmt);
-            }
-
-            if (IsOmnislash)
-            {
-              LastOmnislashStrikeCritted = true;
-            }
-            else if (Args.Defender?.Square != null)
-            {
-              PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, Args.Defender.Square, BladeDanceCritStrike ?? Ctx.Strikes.flame);
-              PathosEngineBridge.StoryCaption(Args.Engine, Args.Defender.Square, Colour.OrangeRed, DotaLocalization.T("ui.caption.crit"), Delayed: false);
-              PathosEngineBridge.StoryEmitting(Args.Engine, Args.Defender.Square, Ctx.Sonics.sever, Audibility: 6);
-            }
-
-            string SourceTag = IsOmnislash
-              ? DotaLocalization.T("jugg.log.crit_src_omni")
-              : IsBladeFurySpin
-                ? DotaLocalization.T("jugg.log.crit_src_fury")
-                : string.Empty;
-            string TargetName = Args.Defender?.Entity != null
-              ? PathosEngineBridge.GetLocalizedName(Args.Defender.Entity)
-              : DotaLocalization.T("jugg.log.crit_target_fallback");
-            PathosEngineBridge.WriteInternalLog(
-              Args.Engine,
-              Attacker,
-              BladeDanceGlyph,
-              DotaLocalization.Format("jugg.log.blade_dance_crit", SourceTag, Args.DamagePoints, TargetName, LifestealNote));
+            int HealAmt = Math.Max(1, (int)MathF.Round(CritArgs.DamagePoints * 0.40f));
+            var SelfDir = Attacker.Square != null ? Attacker.Square.AsDirection(Attacker.Square) : default;
+            PathosEngineBridge.HealCharacter(CritArgs.Engine, Attacker, Attacker, SelfDir, HealAmt);
+            LifestealNote = DotaLocalization.Format("jugg.log.crit_lifesteal", HealAmt);
           }
-        }
+
+          if (IsOmnislash)
+          {
+            LastOmnislashStrikeCritted = true;
+          }
+          else if (CritArgs.Defender?.Square != null)
+          {
+            PathosEngineBridge.StoryStriking(CritArgs.Engine, Delay.HalfSecond, CritArgs.Defender.Square, BladeDanceCritStrike ?? Ctx.Strikes.flame);
+            PathosEngineBridge.StoryCaption(CritArgs.Engine, CritArgs.Defender.Square, Colour.OrangeRed, DotaLocalization.T("ui.caption.crit"), Delayed: false);
+            PathosEngineBridge.StoryEmitting(CritArgs.Engine, CritArgs.Defender.Square, Ctx.Sonics.sever, Audibility: 6);
+          }
+
+          string SourceTag = IsOmnislash
+            ? DotaLocalization.T("jugg.log.crit_src_omni")
+            : IsBladeFurySpin
+              ? DotaLocalization.T("jugg.log.crit_src_fury")
+              : string.Empty;
+          string TargetName = CritArgs.Defender?.Entity != null
+            ? PathosEngineBridge.GetLocalizedName(CritArgs.Defender.Entity)
+            : DotaLocalization.T("jugg.log.crit_target_fallback");
+          PathosEngineBridge.WriteInternalLog(
+            CritArgs.Engine,
+            Attacker,
+            BladeDanceGlyph,
+            DotaLocalization.Format("jugg.log.blade_dance_crit", SourceTag, CritArgs.DamagePoints, TargetName, LifestealNote));
+        });
       });
 
       // 6. 伤害后置钩子：主宰受伤害后开启「剑心犹在」2 回合粘滞倒计时
@@ -711,29 +693,15 @@ namespace Pathos.DotaHeroes.Heroes
       if (Targets.Count == 0)
         return;
 
-      ActiveBladeFuryTicks.Add(Caster);
-      try
+      // 魔法伤害 + 可暴击（剑舞）
+      var SpinInfo = DotaDamageInfo.Magical(BladeFurySpellName, DotaDamageFlags.Spell | DotaDamageFlags.CanCrit);
+      foreach (var Target in Targets)
       {
-        foreach (var Target in Targets)
-        {
-          if (Target.Deceased || Target.Square == null)
-            continue;
+        if (Target.Deceased || Target.Square == null)
+          continue;
 
-          var Dir = Caster.Square.AsDirection(Target.Square);
-          PathosEngineBridge.HarmCharacter(
-            Engine,
-            Caster,
-            Target,
-            Dir,
-            Ctx.Elements.magical,
-            SpinDice,
-            Modifier.Zero,
-            "blade fury");
-        }
-      }
-      finally
-      {
-        ActiveBladeFuryTicks.Remove(Caster);
+        var Dir = Caster.Square.AsDirection(Target.Square);
+        DotaDamage.Harm(Engine, Caster, Target, Dir, Ctx.Elements.magical, SpinDice, SpinInfo);
       }
     }
 
@@ -963,14 +931,8 @@ namespace Pathos.DotaHeroes.Heroes
         var Dir = ToSq.AsDirection(TargetSq);
 
         LastOmnislashStrikeCritted = false;
-        PathosEngineBridge.StrikeCharacter(
-          Engine,
-          Caster,
-          Target,
-          Dir,
-          SlashDamage,
-          Delay.Zero,
-          "omnislash");
+        // 物理攻击类伤害（可触发剑舞暴击与剑心犹在加成）
+        DotaDamage.Strike(Engine, Caster, Target, Dir, SlashDamage, DotaDamageInfo.Physical(OmnislashSpellName));
 
         // 播放 Pathos 原生挥砍动作（0.25 秒紧凑连斩节奏）+ 自定义无敌斩金白交叉斩击贴图（0.5 秒完整放大渐隐，暴击时切换炽红新月暴击贴图）
         PathosEngineBridge.StoryAttacking(Engine, Delay.FromTurns(15), Caster, Dir);

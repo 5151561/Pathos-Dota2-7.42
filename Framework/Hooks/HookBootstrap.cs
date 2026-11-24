@@ -506,7 +506,10 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         if (DotaHookBus.QueryInvulnerable(Defender))
           return false;
 
-        var Args = new DamageEventArgs(__instance, Attacker, Defender, DamagePoints, Cause);
+        var Args = new DamageEventArgs(__instance, Attacker, Defender, DamagePoints, Cause)
+        {
+          Info = DotaDamage.Classify(Attacker, Cause)
+        };
         __state = Args;
         DotaHookBus.DispatchBeforeDamage(Args);
         DamagePoints = Args.DamagePoints;

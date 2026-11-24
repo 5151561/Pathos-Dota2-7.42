@@ -76,7 +76,8 @@
 - `axe.spell_casts`（`AfterCastSpell`）：Q 狂战士之吼、W 战斗饥渴、R 淘汰之刃结算与空放返蓝
 - 嘲讽由 `DotaTauntService` 提供（`dota.taunt_silence` / `dota.taunt_redirect` / `dota.taunt_tick`）：被嘲讽目标全链路禁魔并强制靠近或近战攻击斧王
 - `axe.turn_ticks`（`AfterExecuteCommand`）：孤军奋战检测/粘滞（吼叫/战吼/饥渴的计时与每回合纯伤由 `dota.modifiers.tick` 统一推进）
-- `axe.counter_helix.melee`（`AfterAttack`）& `axe.counter_helix.ranged`（`AfterDamage`）：受击计次（含 Miss）触发 3×3 纯伤旋斩
+- `axe.counter_helix.melee`（`AfterAttack`）& `axe.counter_helix.ranged`（`AfterDamage`）：受击计次（含 Miss）触发 3×3 纯伤旋斩；`ranged` 分支只计 `Info.Origin == Unclassified`（远程投射物等原生攻击）与带 `Attack` 标记的脚本攻击，技能/持续伤害不计数
+- 伤害标注（`DotaDamage`）：战斗饥渴首跳/DoT、反击螺旋、淘汰之刃均为 **纯粹伤害**（`DotaDamageInfo.Pure`），不受任何魔抗减免
 - `axe.one_man_army_str`（`ActiveFormQuery`）：孤军奋战真实力量加成（同步至面板力量、攻击命中、近战伤害与负重）
 - `axe.defence_query`（`DefenceQuery`）：淘汰之刃永久护甲（临时护甲由 `dota.modifiers.defence` 汇总）
 - `axe.speed_query`（`SpeedQuery`）：T1 左每饥渴目标 `+8%` 移速（饥渴减速与战吼 `+25%` 移速由 `dota.modifiers.speed` 加算汇总，减速下限 35%）

@@ -125,9 +125,6 @@ namespace Pathos.DotaHeroes.Heroes
     [ThreadStatic]
     private static bool IsInsideDefenceQuery;
 
-    [ThreadStatic]
-    private static bool IsInsideHelixDamage;
-
     private Property OneManArmyTalentProperty;
     private Property CounterHelixTalentProperty;
     private Spell BerserkersCallSpellRef;
@@ -460,14 +457,18 @@ namespace Pathos.DotaHeroes.Heroes
           AdvanceCounterHelix(Args.Engine, Target);
       });
 
-      // 6. E 反击螺旋（远程/非近战物理受击计次）
+      // 6. E 反击螺旋（非近战普攻的受击计次）：近战普攻已在 AfterAttack 中计数（含 Miss），
+      //    此处补计远程投射物等无法归类的原生攻击，以及带 Attack 标记的脚本攻击（如敌方无敌斩斩击）；
+      //    技能/持续伤害（魔法、纯粹 DoT，含斧王自身反击螺旋）均带标注，不再被误计为「受到攻击」
       DotaHookBus.RegisterAfterDamage("axe.counter_helix.ranged", Args =>
       {
-        if (IsInsideHelixDamage || Args.Defender == null || !IsAxe(Args.Defender))
+        if (Args.Defender == null || Args.Info == null || !IsAxe(Args.Defender))
           return;
 
-        // 近战攻击已在 AfterAttack 中计数（含 Miss），此处仅补计远程物理/投掷攻击
-        if (DotaHookBus.ActiveAttack != null || DotaHookBus.ActiveSpellCast != null)
+        bool CountsAsAttack =
+          Args.Info.Origin == DotaDamageOrigin.Unclassified ||
+          (Args.Info.Origin == DotaDamageOrigin.Scripted && Args.Info.Has(DotaDamageFlags.Attack));
+        if (!CountsAsAttack)
           return;
 
         if (Args.Attacker != null && DotaCombatHelper.IsHostile(Args.Defender, Args.Attacker))
@@ -725,7 +726,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 施法当回合立即结算 1 次保底纯伤，确保即时反馈
       int FirstDmg = Math.Max(1, (int)MathF.Round((EffectiveDps / DotaMechanicsMapper.TurnsPerSecond) / DotaMechanicsMapper.DamageScale));
-      PathosEngineBridge.StrikeCharacter(Args.Engine, Caster, Target, Args.Direction, FirstDmg, Delay.Zero, "battle hunger");
+      DotaDamage.Strike(Args.Engine, Caster, Target, Args.Direction, FirstDmg, DotaDamageInfo.Pure(BattleHungerSpellName, DotaDamageFlags.Spell | DotaDamageFlags.DoT));
 
       PathosEngineBridge.WriteInternalLog(
         Args.Engine,
@@ -767,7 +768,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (!Killed || !Target.Deceased)
         {
           // 兜底：若目标仍未倒下，施加巨额纯粹斩击
-          PathosEngineBridge.StrikeCharacter(Args.Engine, Caster, Target, Args.Direction, Math.Max(999, CurrentHp + 50), Delay.Zero, "culling blade");
+          DotaDamage.Strike(Args.Engine, Caster, Target, Args.Direction, Math.Max(999, CurrentHp + 50), DotaDamageInfo.Pure(CullingBladeSpellName));
         }
 
         // 100% 返还法力（对应 DOTA2 斩杀刷新冷却，支持连斩！）
@@ -817,7 +818,7 @@ namespace Pathos.DotaHeroes.Heroes
           + (TalentService.HasTalent(Caster, TalentT4CullingDamage) ? CullingTalentBonusDotaDamage : 0.0f);
         Dice DmgDice = DotaMechanicsMapper.MapSkillDamageDice(DotaDmg, DieFaces: 6);
         int Rolled = DotaCombatHelper.RollDice(DmgDice);
-        PathosEngineBridge.StrikeCharacter(Args.Engine, Caster, Target, Args.Direction, Rolled, Delay.Zero, "culling blade");
+        DotaDamage.Strike(Args.Engine, Caster, Target, Args.Direction, Rolled, DotaDamageInfo.Pure(CullingBladeSpellName));
 
         PathosEngineBridge.WriteInternalLog(
           Args.Engine,
@@ -933,24 +934,18 @@ namespace Pathos.DotaHeroes.Heroes
       int TotalHits = 0;
       int LastRolled = 0;
 
-      IsInsideHelixDamage = true;
-      try
+      // 纯粹伤害、非攻击（不会触发暴击，也不会被敌方「受到攻击」类被动计数）
+      var HelixInfo = DotaDamageInfo.Pure("counter helix", DotaDamageFlags.None);
+      foreach (var Enemy in Hostiles)
       {
-        foreach (var Enemy in Hostiles)
-        {
-          if (Enemy == null || Enemy.Deceased)
-            continue;
+        if (Enemy == null || Enemy.Deceased)
+          continue;
 
-          int Rolled = DotaCombatHelper.RollDice(DmgDice);
-          LastRolled = Rolled;
-          TotalHits++;
-          var Dir = Axe.Square.AsDirection(Enemy.Square);
-          PathosEngineBridge.StrikeCharacter(Engine, Axe, Enemy, Dir, Rolled, Delay.Zero, "counter helix");
-        }
-      }
-      finally
-      {
-        IsInsideHelixDamage = false;
+        int Rolled = DotaCombatHelper.RollDice(DmgDice);
+        LastRolled = Rolled;
+        TotalHits++;
+        var Dir = Axe.Square.AsDirection(Enemy.Square);
+        DotaDamage.Strike(Engine, Axe, Enemy, Dir, Rolled, HelixInfo);
       }
 
       if (TotalHits > 0)

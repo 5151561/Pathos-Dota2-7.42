@@ -537,18 +537,9 @@ namespace Pathos.DotaHeroes.Heroes
         }
       });
 
-      // T1 右天赋（+15% 魔法抗性）：对法术/元素/环境等非普通物理伤害减免 15%（减伤阶段，晚于增伤/暴击执行）
-      DotaHookBus.RegisterBeforeDamage("morphling.talent_magic_resist", Args =>
-      {
-        if (Args.Defender != null &&
-            Args.DamagePoints > 0 &&
-            IsMorphling(Args.Defender) &&
-            TalentService.HasTalent(Args.Defender, TalentT1MagicResist) &&
-            DotaCombatHelper.IsNonBasicPhysicalIncoming(Args))
-        {
-          Args.DamagePoints = Math.Max(1, (int)MathF.Round(Args.DamagePoints * 0.85f));
-        }
-      }, DotaHookPriority.Reduction);
+      // T1 右天赋（+15% 魔法抗性）：魔法/未知来源伤害减免 15%（走 DotaDamage 魔抗管线，与其他魔抗乘算叠加，不减免纯粹/物理伤害）
+      DotaDamage.RegisterMagicResist("morphling.talent_magic_resist", Args =>
+        IsMorphling(Args.Defender) && TalentService.HasTalent(Args.Defender, TalentT1MagicResist) ? 0.15f : 0.0f);
     }
 
     private void ExecuteWaveform(DotaHeroContext Ctx, SpellCastEventArgs Args)
@@ -691,7 +682,7 @@ namespace Pathos.DotaHeroes.Heroes
           ? Math.Max(Rolled + 1, (int)MathF.Round(Rolled * StarMult))
           : Rolled;
         var HitDir = DestSquare.AsDirection(Enemy.Square);
-        PathosEngineBridge.HarmCharacter(Args.Engine, Caster, Enemy, HitDir, Ctx.Elements.water, Dice.Fixed(FinalDmg), Modifier.Zero, "waveform");
+        DotaDamage.Harm(Args.Engine, Caster, Enemy, HitDir, Ctx.Elements.water, Dice.Fixed(FinalDmg), DotaDamageInfo.Magical(WaveformSpellName));
       }
     }
 
@@ -751,7 +742,7 @@ namespace Pathos.DotaHeroes.Heroes
       Direction HitDir = Caster.Square.AsDirection(Target.Square);
       PathosEngineBridge.StoryEmitting(Args.Engine, Target.Square, Ctx.Sonics.water_splash, Audibility: 7);
       PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, Target.Square, AdaptiveStrikeImpactStrike ?? Ctx.Strikes.frost);
-      PathosEngineBridge.HarmCharacter(Args.Engine, Caster, Target, HitDir, Ctx.Elements.water, Dice.Fixed(TotalDamage), Modifier.Zero, "adaptive strike");
+      DotaDamage.Harm(Args.Engine, Caster, Target, HitDir, Ctx.Elements.water, Dice.Fixed(TotalDamage), DotaDamageInfo.Magical(AdaptiveStrikeSpellName));
 
       if (Target.Deceased || Target.Square == null)
         return;

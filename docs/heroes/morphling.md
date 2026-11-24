@@ -110,7 +110,8 @@
 - `morphling.ebb_flow.attack_range`（`AttackRangeQuery`）：高敏捷远程射程加成 + T2 左天赋 `+1` 格。
 - `morphling.ebb_flow.cast_range`（`CastRange`）：高力量施法距离加成。
 - `morphling.transient_hooks`（`BeforeApplyTransient`）：高力量减速抗性 + 变体打击 7.42 眩晕时长缩放。
-- `morphling.adaptive_strike`（`BeforeDamage`）：T1 右天赋 `15%` 魔法抗性 + 波浪形态升星增幅 + 变体打击 7.42 阶梯敏捷爆发伤害与命中单格水爆 VFX。
+- `morphling.talent_magic_resist`（`DotaDamage.RegisterMagicResist`）：T1 右天赋 `15%` 魔抗，与其他魔抗乘算叠加，只减魔法/未知伤害。
+- 伤害标注：波浪形态、变体打击均为 `DotaDamageInfo.Magical`（水元素 `HarmCharacter`）。
 
 ---
 
