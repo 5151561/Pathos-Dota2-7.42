@@ -14,7 +14,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
   /// <summary>
   /// DOTA2 独立天赋树面板 UI 桥接层（原生 Pathos 风格）：
   /// - 入口按钮为原生 Pathos.MenuButton，放置在左下角「休息」按钮右侧（通过 StagePanel.EdgeWidth 动态对齐，避免被 LeftDock 裁切）。
-  /// - 天赋树面板为左下角停靠的原生 Pathos 风格侧边面板（与角色/法术/日志面板同位互斥），复用 Pathos.Theme 配色与标准字体。
+  /// - 天赋树面板为左下角停靠的原生 Pathos 风格侧边面板（与角色/法术左侧面板同位互斥），复用 Pathos.Theme 配色与标准字体。
   /// - 支持 F2 快捷开关、ESC 关闭；原生 TalentPanel.Refresh 中自动隐藏内部持久化标记（dota_talent_*）。
   /// </summary>
   internal static class TalentTreeUiBridge
@@ -28,7 +28,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
     private static PropertyInfo StageShellProp;
     private static PropertyInfo StageCharacterPanelProp;
     private static PropertyInfo StageCastPanelProp;
-    private static PropertyInfo StageJournalPanelProp;
     private static MethodInfo StageEdgeWidthMethod;
     private static MethodInfo StageAddModalityPanelMethod;
     private static MethodInfo StageRemoveModalityPanelMethod;
@@ -99,7 +98,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
         StageShellProp = StagePanelType.GetProperty("Shell", AnyInstance);
         StageCharacterPanelProp = StagePanelType.GetProperty("CharacterPanel", AnyInstance);
         StageCastPanelProp = StagePanelType.GetProperty("CastPanel", AnyInstance);
-        StageJournalPanelProp = StagePanelType.GetProperty("JournalPanel", AnyInstance);
         StageEdgeWidthMethod = StagePanelType.GetMethod("EdgeWidth", AnyInstance, null, Type.EmptyTypes, null);
         StageAddModalityPanelMethod = StagePanelType.GetMethod("AddModalityPanel", AnyInstance, null, new[] { typeof(Inv.Panel) }, null);
         StageRemoveModalityPanelMethod = StagePanelType.GetMethod("RemoveModalityPanel", AnyInstance, null, new[] { typeof(Inv.Panel) }, null);
@@ -227,7 +225,10 @@ namespace Pathos.DotaHeroes.Framework.Talents
       try
       {
         if (StageControllers.TryGetValue(__instance, out var Controller))
+        {
+          Controller.OnNativeLeftPanelsChanged();
           Controller.UpdateLayoutMetrics();
+        }
       }
       catch (Exception Ex)
       {
@@ -559,7 +560,8 @@ namespace Pathos.DotaHeroes.Framework.Talents
           return;
         }
 
-        // 若玩家点开了原版左侧面板（角色/法术/日志），自动收起成长面板以保持同位互斥
+        // 若玩家点开了原版左侧面板（角色/法术），自动收起成长面板以保持同位互斥
+        // 注意：JournalPanel 是顶部自动弹出的消息日志横幅，不属于左侧面板，升级/点天赋写日志会使其自动变为可见，绝不可纳入互斥判定
         if (PanelOpen && AnyNativeLeftPanelVisible())
           ClosePanel();
 
@@ -660,10 +662,9 @@ namespace Pathos.DotaHeroes.Framework.Talents
             ActiveTab = GrowthTab.Talents;
         }
 
-        // 关闭同侧原版面板，使成长面板与角色/法术/日志面板完全一致地切换
+        // 关闭同侧原版面板（仅左侧角色/法术面板；不隐藏顶部 JournalPanel 日志横幅）
         HideNativeSidePanel(StageCharacterPanelProp?.GetValue(StagePanel));
         HideNativeSidePanel(StageCastPanelProp?.GetValue(StagePanel));
-        HideNativeSidePanel(StageJournalPanelProp?.GetValue(StagePanel));
 
         if (!PanelOpen)
         {
@@ -696,11 +697,16 @@ namespace Pathos.DotaHeroes.Framework.Talents
         MenuButtonIsCheckedProp?.SetValue(MenuButtonObj, false);
       }
 
+      public void OnNativeLeftPanelsChanged()
+      {
+        if (PanelOpen && AnyNativeLeftPanelVisible())
+          ClosePanel();
+      }
+
       private bool AnyNativeLeftPanelVisible()
       {
         return IsNativeSidePanelVisible(StageCharacterPanelProp?.GetValue(StagePanel)) ||
-               IsNativeSidePanelVisible(StageCastPanelProp?.GetValue(StagePanel)) ||
-               IsNativeSidePanelVisible(StageJournalPanelProp?.GetValue(StagePanel));
+               IsNativeSidePanelVisible(StageCastPanelProp?.GetValue(StagePanel));
       }
 
       private void EnsureMenuButtonAttached()
