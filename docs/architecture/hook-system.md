@@ -10,7 +10,8 @@
 | [DotaHookBus.cs](../../Framework/Hooks/DotaHookBus.cs) | 线程安全、**按字符串 Key 幂等注册**的事件总线。即使 Pathos 多次重建 Campaign，相同 Key 只覆盖旧处理器，不会重复触发。 |
 | [HookEventArgs.cs](../../Framework/Hooks/HookEventArgs.cs) | 所有 Hook 事件的强类型参数对象，部分支持修改返回值或 `Cancel = true` 拦截原生逻辑。 |
 | [PathosEngineBridge.cs](../../Framework/Hooks/PathosEngineBridge.cs) | 统一封装 `PathosEngine` / `Director` / `Story` / `Decision` / `Character` / `Meter` 等内部成员的反射访问与缓存，避免英雄代码散落反射。 |
-| [DotaCombatHelper.cs](../../Framework/DotaCombatHelper.cs) | 收敛跨英雄复用的战斗、敌友判定、熟练度分档、标准基础驱散、目标解析、空大返蓝与残影绘制辅助方法。 |
+| [DotaCombatHelper.cs](../../Framework/DotaCombatHelper.cs) | 收敛跨英雄复用的战斗、敌友判定、熟练度分档、标准基础驱散、目标解析、寻路靠近、空大返蓝与残影绘制辅助方法。 |
+| [DotaTauntService.cs](../../Framework/DotaTauntService.cs) | 通用「嘲讽（Taunt）」状态与行为重定向服务：支持任意嘲讽者/受害者、自动唤醒与驱散恐惧、全链路禁魔、强制靠近与近战攻击嘲讽者、按嘲讽者回合统一递减。 |
 
 ---
 
@@ -75,6 +76,16 @@
 | **阵营与来源判定** | `IsHostile(src, tgt)` / `IsFriendly(src, tgt)` / `IsNonBasicPhysicalIncoming(args)` | 统一判断存活敌军、存活友军、以及非普通物理攻击来源（法术/元素/环境）。 |
 | **标准基础驱散** | `GetStandardNegativeDebuffs(ctx)` / `IsNegativeDebuff(ctx, prop)` / `DispelNegativeDebuffs(ctx, engine, tgt)` | 统一维护 Pathos 14 种负面控制与异常状态，一键实现「基础驱散」与「减益免疫」。 |
 | **装备、骰子与返蓝** | `GetEquippedWeapon(ctx, char)` / `RollDice(dice)` / `RefundMana(char, mana)` | 读取主手武器、安全掷骰（保底 1）、指向性技能空大返蓝。 |
-| **格子与范围搜索** | `IsOpenSquare(sq)` / `FindHostilesInRadius(src, center, r)` / `PickRandomNearbyHostile(caster, r)` / `FindOpenAdjacentSquare(caster, targetSq)` | AOE 搜敌、随机跳斩选敌、寻找目标旁可站立空位。 |
+| **格子与范围搜索** | `IsOpenSquare(sq)` / `FindHostilesInRadius(src, center, r)` / `PickRandomNearbyHostile(caster, r)` / `FindOpenAdjacentSquare(caster, targetSq)` / `FindStepToward(from, to)` | AOE 搜敌、随机跳斩选敌、寻找目标旁可站立空位、向目标靠近一步。 |
 | **全射程目标解析** | `ResolveHostileTarget(caster, dir, range, pending)` / `ResolveOpenPointTarget(caster, dir, pending)` | 消费 `DotaRangeTargetingBridge.ConsumePendingTarget`：敌方目标支持「精确点击 → 周围 1 格智能吸附 → 方向射线 → 射程内最近敌人」四级解析；点地目标支持「点击格 → 方向相邻格 → 周围空位回退」。 |
 | **连线特效** | `PlayBeamTrail(engine, fromSq, toSq, beam, maxSteps)` | 沿 Bresenham 直线播放 4 方向 `Beam` 瞬移残影/弹道连线。 |
+
+---
+
+## 5. `DotaTauntService` 通用嘲讽基建
+
+[DotaTauntService.cs](../../Framework/DotaTauntService.cs) 将 DOTA2 嘲讽机制（如斧王狂战士之吼、军团决斗、寒冬飞龙寒冬诅咒等）抽离为即插即用的公共服务：
+
+- **一键施加**：`DotaTauntService.ApplyTaunt(ctx, engine, taunter, victim, durationTurns, sourceKey: ..., onFallbackAttack: ...)` 自动完成首次 Hook 幂等注册、唤醒沉睡/移除恐惧、头顶飘字与嘲讽者回合追踪。
+- **全链路禁魔 + 强制普攻**：自动挂载 `dota.taunt_silence` 与 `dota.taunt_redirect`，禁止被嘲讽单位施放任何法术/吐息/凝视/魔杖/卷轴，并强制其向 `taunter` 移动或近战普攻（嘲讽者死亡即刻解除）。
+- **状态查询与清理**：提供 `IsTaunted`、`TryGetTaunter`、`GetRemainingTurns`、`ClearTaunt`、`ClearTauntsByTaunter` 与 `CountActiveTauntedTargets`。

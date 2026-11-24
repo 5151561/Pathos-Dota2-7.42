@@ -120,15 +120,6 @@ namespace Pathos.DotaHeroes.Heroes
 
       // R：淘汰之刃战吼增益（斧王自身与友军共用另一表，但此处保留快捷读取）
       public readonly HashSet<WeakReference<Character>> ActiveHungerTargets = new();
-
-      // Q：狂战士之吼当前嘲讽中的敌方列表（随斧王自身回合统一递减，防止高速/多动怪提前解控）
-      public readonly HashSet<WeakReference<Character>> ActiveTauntedTargets = new();
-    }
-
-    private sealed class TauntState
-    {
-      public WeakReference<Character> Taunter;
-      public int RemainingTurns;
     }
 
     private sealed class BattleHungerState
@@ -147,15 +138,11 @@ namespace Pathos.DotaHeroes.Heroes
     }
 
     private static readonly ConditionalWeakTable<Character, AxeRuntimeState> AxeStates = new();
-    private static readonly ConditionalWeakTable<Character, TauntState> TauntedUnits = new();
     private static readonly ConditionalWeakTable<Character, BattleHungerState> HungerAfflicted = new();
     private static readonly ConditionalWeakTable<Character, CullingBuffState> CullingBuffs = new();
 
     [ThreadStatic]
     private static bool IsInsideDefenceQuery;
-
-    [ThreadStatic]
-    private static bool IsInsideTauntRedirect;
 
     [ThreadStatic]
     private static bool IsInsideHelixDamage;
@@ -425,17 +412,8 @@ namespace Pathos.DotaHeroes.Heroes
         }
       });
 
-      // 2. 嘲讽全链路禁魔拦截：引擎层封死 CanCast / CastSpell / CastEffects（含怪物吐息、凝视、射线、魔杖与卷轴）
-      DotaHookBus.RegisterSilenceQuery("axe.taunt_silence", Ch => IsTauntedByLivingAxe(Ch, out _));
-
-      // 3. 嘲讽重定向：被嘲讽的敌人行动时强制靠近斧王或近战普攻斧王
-      DotaHookBus.RegisterBeforeExecuteCommand("axe.taunt_redirect", Args =>
-      {
-        if (IsInsideTauntRedirect || Args.Character == null || Args.Character.Deceased)
-          return;
-
-        HandleTauntedUnitCommand(Args);
-      });
+      // 2. 初始化通用嘲讽基建（禁魔拦截 + 强制转向/攻击 + 回合递减）
+      DotaTauntService.EnsureInitialized();
 
       // 4. 每回合推进：孤军奋战、狂战士之吼计时、淘汰战吼计时、战斗饥渴每回合纯伤
       DotaHookBus.RegisterAfterExecuteCommand("axe.turn_ticks", Args =>
@@ -723,19 +701,14 @@ namespace Pathos.DotaHeroes.Heroes
       var Hostiles = DotaCombatHelper.FindHostilesInRadius(Caster, Caster.Square, Radius);
       foreach (var Enemy in Hostiles)
       {
-        // 唤醒沉睡并移除恐惧，确保被嘲讽目标立刻转向斧王
-        if (PathosEngineBridge.HasTransient(Enemy, Ctx.Properties.sleeping))
-          PathosEngineBridge.RemoveTransient(Args.Engine, Caster, Enemy, Ctx.Properties.sleeping);
-        if (PathosEngineBridge.HasTransient(Enemy, Ctx.Properties.fear))
-          PathosEngineBridge.RemoveTransient(Args.Engine, Caster, Enemy, Ctx.Properties.fear);
-
-        var TState = TauntedUnits.GetOrCreateValue(Enemy);
-        TState.Taunter = new WeakReference<Character>(Caster);
-        TState.RemainingTurns = DurationTurns;
-        TrackTauntedTarget(Caster, Enemy);
-
-        if (Enemy.Square != null)
-          PathosEngineBridge.StoryCaption(Args.Engine, Enemy.Square, Colour.Crimson, DotaLocalization.T("axe.caption.taunted"), Delayed: false);
+        DotaTauntService.ApplyTaunt(
+          Ctx,
+          Args.Engine,
+          Caster,
+          Enemy,
+          DurationTurns,
+          SourceKey: "axe.berserkers_call",
+          OnFallbackAttack: (Engine, Taunter, _) => AdvanceCounterHelix(Engine, Taunter));
       }
 
       RefreshOneManArmy(Args.Engine, Caster);
@@ -880,61 +853,6 @@ namespace Pathos.DotaHeroes.Heroes
       }
     }
 
-    private void HandleTauntedUnitCommand(CommandEventArgs Args)
-    {
-      var Unit = Args.Character;
-      if (!IsTauntedByLivingAxe(Unit, out var Axe))
-        return;
-
-      if (!TauntedUnits.TryGetValue(Unit, out var TState) || TState.RemainingTurns <= 0)
-        return;
-
-      if (Unit.Square == null || Axe.Square == null || Unit.Square.Map != Axe.Square.Map)
-        return;
-
-      int Dist = Unit.Square.AsRange(Axe.Square);
-      var DirToAxe = Unit.Square.AsDirection(Axe.Square);
-
-      // 若该怪物的原始指令已经是朝斧王挥砍，直接放行
-      if (Dist <= 1 && PathosEngineBridge.IsAttackCommand(Args.Command))
-      {
-        var CmdDir = PathosEngineBridge.GetAttackCommandDirection(Args.Command);
-        if (CmdDir == DirToAxe)
-          return;
-      }
-
-      // 否则取消原指令（逃跑/施法/打友军），强制转向斧王！
-      Args.Cancel = true;
-
-      IsInsideTauntRedirect = true;
-      try
-      {
-        if (Dist <= 1)
-        {
-          if (!PathosEngineBridge.ForceDirectorAttack(Args.Director, Unit, DirToAxe))
-          {
-            var AtkDelay = PathosEngineBridge.GetAttackDelay(Args.Engine, Unit);
-            PathosEngineBridge.SetBusy(Args.Engine, Unit, AtkDelay);
-            PathosEngineBridge.StoryAttacking(Args.Engine, Delay.FromTurns(10), Unit, DirToAxe);
-            AdvanceCounterHelix(Args.Engine, Axe);
-          }
-        }
-        else
-        {
-          var NextSq = FindStepToward(Unit.Square, Axe.Square);
-          if (NextSq != null)
-            PathosEngineBridge.DashCharacter(Args.Engine, Unit, NextSq);
-
-          var StepDelay = PathosEngineBridge.GetAttackDelay(Args.Engine, Unit);
-          PathosEngineBridge.SetBusy(Args.Engine, Unit, StepDelay);
-        }
-      }
-      finally
-      {
-        IsInsideTauntRedirect = false;
-      }
-    }
-
     private void TickAxeTurn(object Engine, Character Axe)
     {
       var State = GetAxeState(Axe);
@@ -946,45 +864,7 @@ namespace Pathos.DotaHeroes.Heroes
           State.CallBonusDefence = 0;
       }
 
-      TickTauntedTargets(Axe, State);
       RefreshOneManArmy(Engine, Axe);
-    }
-
-    private static void TrackTauntedTarget(Character Caster, Character Victim)
-    {
-      if (Caster == null || Victim == null)
-        return;
-
-      var State = GetAxeState(Caster);
-      State.ActiveTauntedTargets.RemoveWhere(Wr => !Wr.TryGetTarget(out var Existing) || Existing == null || Existing.Deceased || Existing == Victim);
-      State.ActiveTauntedTargets.Add(new WeakReference<Character>(Victim));
-    }
-
-    private static void TickTauntedTargets(Character Axe, AxeRuntimeState State)
-    {
-      if (Axe == null || State == null || State.ActiveTauntedTargets.Count == 0)
-        return;
-
-      State.ActiveTauntedTargets.RemoveWhere(Wr =>
-      {
-        if (!Wr.TryGetTarget(out var Victim) || Victim == null || Victim.Deceased)
-          return true;
-
-        if (!TauntedUnits.TryGetValue(Victim, out var TState) ||
-            TState.Taunter == null ||
-            !TState.Taunter.TryGetTarget(out var Owner) ||
-            Owner != Axe)
-          return true;
-
-        TState.RemainingTurns--;
-        if (TState.RemainingTurns <= 0)
-        {
-          TauntedUnits.Remove(Victim);
-          return true;
-        }
-
-        return false;
-      });
     }
 
     private void RefreshOneManArmy(object Engine, Character Axe)
@@ -1482,44 +1362,6 @@ namespace Pathos.DotaHeroes.Heroes
       var Buff = CullingBuffs.GetOrCreateValue(Target);
       Buff.RemainingTurns = Math.Max(Buff.RemainingTurns, Turns);
       Buff.BonusDefence = Math.Max(Buff.BonusDefence, BonusDef);
-    }
-
-    private static bool IsTauntedByLivingAxe(Character Unit, out Character Axe)
-    {
-      Axe = null;
-      if (Unit == null || !TauntedUnits.TryGetValue(Unit, out var State) || State.RemainingTurns <= 0)
-        return false;
-
-      if (State.Taunter == null || !State.Taunter.TryGetTarget(out var T) || T == null || T.Deceased)
-      {
-        TauntedUnits.Remove(Unit);
-        return false;
-      }
-
-      Axe = T;
-      return true;
-    }
-
-    private static Square FindStepToward(Square From, Square To)
-    {
-      if (From == null || To == null || From.Map != To.Map)
-        return null;
-
-      Square Best = null;
-      int BestDist = From.AsRange(To);
-      foreach (var Adj in From.GetAroundSquares(1))
-      {
-        if (!DotaCombatHelper.IsOpenSquare(Adj))
-          continue;
-
-        int D = Adj.AsRange(To);
-        if (D < BestDist)
-        {
-          BestDist = D;
-          Best = Adj;
-        }
-      }
-      return Best;
     }
 
     private static int QueryDefenceSafe(object Engine, Character Character)

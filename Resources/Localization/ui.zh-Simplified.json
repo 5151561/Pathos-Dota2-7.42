@@ -1,6 +1,7 @@
 {
   "axe.caption.culled": "淘汰!",
   "axe.caption.taunted": "嘲讽!",
+  "dota.caption.taunted": "嘲讽!",
   "axe.help.cast_range_suffix": "施咒 范围 {0}",
   "axe.help.q.key_armor": "额外防御",
   "axe.help.q.key_duration": "嘲讽时长",

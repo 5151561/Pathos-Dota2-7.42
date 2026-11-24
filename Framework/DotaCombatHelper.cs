@@ -264,6 +264,32 @@ namespace Pathos.DotaHeroes.Framework
     }
 
     /// <summary>
+    /// 从 From 向 To 寻找一步可通行的最优相邻格（严格缩短切比雪夫距离）。
+    /// </summary>
+    public static Square FindStepToward(Square From, Square To)
+    {
+      if (From == null || To == null || From.Map != To.Map)
+        return null;
+
+      Square Best = null;
+      int BestDist = From.AsRange(To);
+      foreach (var Adj in From.GetAroundSquares(1))
+      {
+        if (!IsOpenSquare(Adj))
+          continue;
+
+        int D = Adj.AsRange(To);
+        if (D < BestDist)
+        {
+          BestDist = D;
+          Best = Adj;
+        }
+      }
+
+      return Best;
+    }
+
+    /// <summary>
     /// 解析点地技能（如点地召唤、定点位移）的最终可用落点：
     /// 优先使用 DotaRangeTargetingBridge 捕获的玩家点击格，其次施法方向相邻格；若被占据则自动回退到附近空格。
     /// </summary>

@@ -1,6 +1,7 @@
 {
   "axe.caption.culled": "CULLED!",
   "axe.caption.taunted": "TAUNTED!",
+  "dota.caption.taunted": "TAUNTED!",
   "axe.help.cast_range_suffix": "Cast Range {0}",
   "axe.help.q.key_armor": "Bonus Defence",
   "axe.help.q.key_duration": "Taunt Duration",
