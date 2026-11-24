@@ -33,12 +33,17 @@ namespace Pathos.DotaHeroes.Heroes
     private const int MinMaxLifePoints = 10;
     private const int HpPerShiftedPoint = 6;
 
-    // DOTA2 7.42 变体精灵初始三维：STR 16 / AGI 33 / INT 19
+    // DOTA2 7.42 变体精灵初始三维与成长：STR 16 (+2.8) / AGI 33 (+4.2) / INT 19 (+2.0)
     private const int DotaBaseStr = 16;
+    private const float DotaStrGain = 2.8f;
     private const int DotaBaseAgi = 33;
+    private const float DotaAgiGain = 4.2f;
     private const int DotaBaseInt = 19;
+    private const float DotaIntGain = 2.0f;
     private static readonly PathosStartingStats StartingStats =
       DotaMechanicsMapper.MapStartingStats(DotaBaseStr, DotaBaseAgi, DotaBaseInt, Charisma: 10);
+    private static readonly PathosStatLimits StatLimits =
+      DotaMechanicsMapper.MapStatLimits(DotaBaseStr, DotaStrGain, DotaBaseAgi, DotaAgiGain, DotaBaseInt, DotaIntGain, CharismaLimit: 20, StartingCha: 10);
 
     private static readonly int WaveformManaCost = DotaMechanicsMapper.MapSkillManaCost(115);      // 6
     private static readonly int AdaptiveStrikeManaCost = DotaMechanicsMapper.MapSkillManaCost(80); // 4
@@ -189,8 +194,9 @@ namespace Pathos.DotaHeroes.Heroes
 
     public void RegisterHooks(DotaHeroContext Ctx)
     {
-      // 0. 锁定变体精灵固定初始六维（STR 10 / DEX 18 / CON 10 / INT 12 / WIS 12 / CHA 10）与 1 级初始蓝量（15）
+      // 0. 锁定变体精灵固定初始六维（STR 10 / DEX 18 / CON 10 / INT 12 / WIS 12 / CHA 10）、1 级初始蓝量（15）与 30 级职业属性上限（27 / 34 / 27 / 25 / 25 / 20）
       DotaMechanicsMapper.RegisterFixedStartingStats(MorphlingClassName, StartingStats);
+      DotaMechanicsMapper.RegisterHeroStatLimits(MorphlingClassName, StatLimits);
 
       // 0.1 注册 Pathos 原生选框扩距（波浪形态 / 变体打击 / 变形）
       DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
@@ -1170,7 +1176,14 @@ namespace Pathos.DotaHeroes.Heroes
           Int: StartingStats.Int,
           Wis: StartingStats.Wis,
           Cha: StartingStats.Cha);
-        Ctx.SetFormScores(E.LimitForm, Str: 26, Dex: 30, Con: 26, Int: 18, Wis: 16, Cha: 14);
+        Ctx.SetFormScores(
+          E.LimitForm,
+          Str: StatLimits.Str,
+          Dex: StatLimits.Dex,
+          Con: StatLimits.Con,
+          Int: StatLimits.Int,
+          Wis: StatLimits.Wis,
+          Cha: StatLimits.Cha);
 
         E.LifeAdvancement.Set(0, Dice.Zero);
         E.ManaAdvancement.Set(2, Dice.Fixed(2));

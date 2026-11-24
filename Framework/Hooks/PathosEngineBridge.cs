@@ -229,6 +229,15 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly MethodInfo CharacterGetLimitFormMethod =
       typeof(Character).GetMethod("GetLimitForm", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
 
+    private static readonly MethodInfo CharacterIsPolymorphedMethod =
+      typeof(Character).GetMethod("IsPolymorphed", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+
+    private static readonly ConstructorInfo FormDefaultCtor =
+      typeof(Form).GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+
+    private static readonly MethodInfo FormAssignMethod =
+      typeof(Form).GetMethod("Assign", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Form) }, null);
+
     private static readonly MethodInfo CharacterGetQualificationMethod =
       typeof(Character).GetMethod("GetQualification", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Skill) }, null);
 
@@ -589,6 +598,45 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       var LimitForm = CharacterGetLimitFormMethod.Invoke(Character, null) as Form;
       var Ability = FindAbility(LimitForm, AttributeName);
       return Ability?.Score ?? 25;
+    }
+
+    /// <summary>
+    /// 判断角色当前是否处于变形/变身状态（如变形术、水人 Morph）。
+    /// </summary>
+    public static bool IsPolymorphed(Character Character)
+    {
+      if (Character == null || CharacterIsPolymorphedMethod == null)
+        return false;
+
+      return CharacterIsPolymorphedMethod.Invoke(Character, null) is bool B && B;
+    }
+
+    /// <summary>
+    /// 基于现有 Form 克隆出一份独立 Form 并覆写六维属性分值（绝不修改原模板 Form）。
+    /// </summary>
+    public static Form CloneFormWithScores(Form TemplateForm, int Str, int Dex, int Con, int Int, int Wis, int Cha)
+    {
+      if (TemplateForm == null || FormDefaultCtor == null || FormAssignMethod == null)
+        return TemplateForm;
+
+      try
+      {
+        var Cloned = (Form)FormDefaultCtor.Invoke(null);
+        FormAssignMethod.Invoke(Cloned, new object[] { TemplateForm });
+
+        SetAbilityScore(FindAbility(Cloned, "strength"), Str);
+        SetAbilityScore(FindAbility(Cloned, "dexterity"), Dex);
+        SetAbilityScore(FindAbility(Cloned, "constitution"), Con);
+        SetAbilityScore(FindAbility(Cloned, "intelligence"), Int);
+        SetAbilityScore(FindAbility(Cloned, "wisdom"), Wis);
+        SetAbilityScore(FindAbility(Cloned, "charisma"), Cha);
+        return Cloned;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"CloneFormWithScores failed: {Ex}");
+        return TemplateForm;
+      }
     }
 
     /// <summary>

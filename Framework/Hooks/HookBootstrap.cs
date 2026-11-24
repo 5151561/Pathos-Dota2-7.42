@@ -327,6 +327,14 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           new[] { MasteryType, typeof(Qualification) },
           postfix: nameof(SpellCostPostfix));
 
+        // 13.5 角色属性上限查询钩子：Character.GetLimitForm()（用于按 DOTA2 英雄职业覆盖种族默认属性上限）
+        PatchMethod(
+          Harmony,
+          CharacterType,
+          "GetLimitForm",
+          Type.EmptyTypes,
+          postfix: nameof(GetLimitFormPostfix));
+
         // 14. 角色升级钩子：Generator.AdvanceLevel(Character, bool)（用于天赋解锁提示与升级联动）
         PatchMethod(
           Harmony,
@@ -694,6 +702,17 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var Args = new SpellCostQueryEventArgs(__instance, Spell, Mastery, Qualification, __result);
         DotaHookBus.DispatchSpellCostQuery(Args);
         __result = Math.Max(0, Args.ManaCost);
+      }
+
+      private static void GetLimitFormPostfix(Character __instance, ref Form __result)
+      {
+        if (__instance == null || __result == null)
+          return;
+
+        var Args = new LimitFormQueryEventArgs(__instance, __result);
+        DotaHookBus.DispatchLimitFormQuery(Args);
+        if (Args.LimitForm != null)
+          __result = Args.LimitForm;
       }
 
       private static void AdvanceLevelPrefix(Character Character, out int __state)

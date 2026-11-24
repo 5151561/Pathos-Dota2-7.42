@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using Pathos.DotaHeroes.Framework.Hooks;
 
 namespace Pathos.DotaHeroes.Framework
@@ -10,6 +11,29 @@ namespace Pathos.DotaHeroes.Framework
   public readonly struct PathosStartingStats
   {
     public PathosStartingStats(int Str, int Dex, int Con, int Int, int Wis, int Cha)
+    {
+      this.Str = Str;
+      this.Dex = Dex;
+      this.Con = Con;
+      this.Int = Int;
+      this.Wis = Wis;
+      this.Cha = Cha;
+    }
+
+    public int Str { get; }
+    public int Dex { get; }
+    public int Con { get; }
+    public int Int { get; }
+    public int Wis { get; }
+    public int Cha { get; }
+  }
+
+  /// <summary>
+  /// Pathos 英雄职业专属六维属性上限（由 DOTA2 7.42 30 级自然属性推导，通过 Hook 覆盖种族默认 LimitForm）。
+  /// </summary>
+  public readonly struct PathosStatLimits
+  {
+    public PathosStatLimits(int Str, int Dex, int Con, int Int, int Wis, int Cha)
     {
       this.Str = Str;
       this.Dex = Dex;
@@ -45,6 +69,11 @@ namespace Pathos.DotaHeroes.Framework
     private static readonly ConcurrentDictionary<string, PathosStartingStats> FixedClassStats =
       new(StringComparer.OrdinalIgnoreCase);
 
+    private static readonly ConcurrentDictionary<string, PathosStatLimits> FixedClassLimits =
+      new(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly ConditionalWeakTable<Form, ConcurrentDictionary<string, Form>> CachedLimitForms = new();
+
     /// <summary>
     /// 线性锚定公式：将 DOTA2 英雄初始单项属性映射为 Pathos 初始属性（6 ~ 18）。
     /// </summary>
@@ -64,6 +93,46 @@ namespace Pathos.DotaHeroes.Framework
       int IntWis = MapAttribute(BaseInt);
       int Cha = Math.Clamp(Charisma, 6, 18);
       return new PathosStartingStats(Str: StrCon, Dex: Dex, Con: StrCon, Int: IntWis, Wis: IntWis, Cha: Cha);
+    }
+
+    /// <summary>
+    /// 按 DOTA2 英雄 30 级自然属性（Base + 29 × Gain）推导 Pathos 单项属性上限（20 ~ 34）：
+    /// - 锚定公式：Clamp(Round(25 + (Lv30 - 80) * 0.12), 20, 34)
+    /// - 保底不低于 StartingScore + 7，确保 7 级全属性黄点 100% 有效不撞墙，同时防止突破 Pathos d20 平衡。
+    /// </summary>
+    public static int MapAttributeLimit(int DotaBaseValue, float DotaGainPerLevel, int StartingScore)
+    {
+      float Lv30 = DotaBaseValue + 29.0f * Math.Max(0.0f, DotaGainPerLevel);
+      int Mapped = Math.Clamp((int)MathF.Round(25.0f + (Lv30 - 80.0f) * 0.12f), 20, 34);
+      int MinForYellowBonus = Math.Min(34, Math.Max(20, StartingScore + 7));
+      return Math.Max(Mapped, MinForYellowBonus);
+    }
+
+    /// <summary>
+    /// 将 DOTA2 英雄 7.42 三维初始值与每级成长映射为 Pathos 职业专属六维属性上限。
+    /// </summary>
+    public static PathosStatLimits MapStatLimits(
+      int BaseStr,
+      float StrGain,
+      int BaseAgi,
+      float AgiGain,
+      int BaseInt,
+      float IntGain,
+      int CharismaLimit = 20,
+      int StartingCha = 10)
+    {
+      var Starting = MapStartingStats(BaseStr, BaseAgi, BaseInt, StartingCha);
+      int StrConLimit = MapAttributeLimit(BaseStr, StrGain, Starting.Str);
+      int DexLimit = MapAttributeLimit(BaseAgi, AgiGain, Starting.Dex);
+      int IntWisLimit = MapAttributeLimit(BaseInt, IntGain, Starting.Int);
+      int ChaLimit = Math.Clamp(Math.Max(CharismaLimit, Starting.Cha + 7), 20, 34);
+      return new PathosStatLimits(
+        Str: StrConLimit,
+        Dex: DexLimit,
+        Con: StrConLimit,
+        Int: IntWisLimit,
+        Wis: IntWisLimit,
+        Cha: ChaLimit);
     }
 
     /// <summary>
@@ -252,6 +321,47 @@ namespace Pathos.DotaHeroes.Framework
 
       FixedClassStats[ClassName] = Stats;
       DotaHookBus.RegisterAfterCreateActor("dota.fixed_starting_stats", HandleAfterCreateActor);
+    }
+
+    /// <summary>
+    /// 为指定 DOTA2 职业注册专属六维属性上限（LimitForm）。
+    /// 通过 Character.GetLimitForm Postfix 在非变形状态下接管上限，使种族只负责风味与生态、英雄职业负责 DOTA2 30 级成长空间。
+    /// </summary>
+    public static void RegisterHeroStatLimits(string ClassName, PathosStatLimits Limits)
+    {
+      if (string.IsNullOrWhiteSpace(ClassName))
+        throw new ArgumentException("ClassName cannot be null or empty.", nameof(ClassName));
+
+      FixedClassLimits[ClassName] = Limits;
+      DotaHookBus.RegisterLimitFormQuery("dota.hero_stat_limits", HandleLimitFormQuery);
+    }
+
+    private static void HandleLimitFormQuery(LimitFormQueryEventArgs Args)
+    {
+      var Character = Args?.Character;
+      var BaseLimitForm = Args?.LimitForm;
+      if (Character == null || BaseLimitForm == null)
+        return;
+
+      // 变形期间（如变形术、水人 Morph）保留目标生物自身的属性上限
+      if (PathosEngineBridge.IsPolymorphed(Character))
+        return;
+
+      var ClassName = Character.Class?.Name;
+      if (string.IsNullOrEmpty(ClassName) || !FixedClassLimits.TryGetValue(ClassName, out var Limits))
+        return;
+
+      var PerTemplate = CachedLimitForms.GetOrCreateValue(BaseLimitForm);
+      Args.LimitForm = PerTemplate.GetOrAdd(
+        ClassName,
+        _ => PathosEngineBridge.CloneFormWithScores(
+          BaseLimitForm,
+          Limits.Str,
+          Limits.Dex,
+          Limits.Con,
+          Limits.Int,
+          Limits.Wis,
+          Limits.Cha));
     }
 
     private static void HandleAfterCreateActor(ActorCreateEventArgs Args)

@@ -314,4 +314,20 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public int PreviousLevel { get; }
     public int NewLevel { get; }
   }
+
+  /// <summary>
+  /// 角色属性上限（LimitForm）查询事件上下文（对应 Pathos.Character.GetLimitForm）。
+  /// 用于按 DOTA2 英雄职业覆盖种族默认属性上限，避免修改共享的 Entity.LimitForm。
+  /// </summary>
+  public sealed class LimitFormQueryEventArgs
+  {
+    public LimitFormQueryEventArgs(Character Character, Form LimitForm)
+    {
+      this.Character = Character;
+      this.LimitForm = LimitForm;
+    }
+
+    public Character Character { get; }
+    public Form LimitForm { get; set; }
+  }
 }

@@ -55,12 +55,17 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly int BladeformIntervalTurns = DotaMechanicsMapper.MapDurationTurns(2.0f); // 2 秒 = 4 回合
     private static readonly int BladeformLingerTurns = DotaMechanicsMapper.MapDurationTurns(2.0f);   // 2 秒 = 4 回合
 
-    // DOTA2 7.42 主宰初始三维：STR 20 / AGI 32 / INT 14
+    // DOTA2 7.42 主宰初始三维与成长：STR 20 (+2.0) / AGI 32 (+2.8) / INT 14 (+1.4)
     private const int DotaBaseStr = 20;
+    private const float DotaStrGain = 2.0f;
     private const int DotaBaseAgi = 32;
+    private const float DotaAgiGain = 2.8f;
     private const int DotaBaseInt = 14;
+    private const float DotaIntGain = 1.4f;
     private static readonly PathosStartingStats StartingStats =
       DotaMechanicsMapper.MapStartingStats(DotaBaseStr, DotaBaseAgi, DotaBaseInt, Charisma: 10);
+    private static readonly PathosStatLimits StatLimits =
+      DotaMechanicsMapper.MapStatLimits(DotaBaseStr, DotaStrGain, DotaBaseAgi, DotaAgiGain, DotaBaseInt, DotaIntGain, CharismaLimit: 20, StartingCha: 10);
 
     private static readonly int BladeFuryManaCost = DotaMechanicsMapper.MapSkillManaCost(110);
     private static readonly int HealingWardManaCost = DotaMechanicsMapper.MapSkillManaCost(140);
@@ -330,8 +335,9 @@ namespace Pathos.DotaHeroes.Heroes
 
     public void RegisterHooks(DotaHeroContext Ctx)
     {
-      // 0. 锁定主宰固定初始六维（STR 12 / DEX 17 / CON 12 / INT 9 / WIS 9 / CHA 10）与 1 级初始蓝量（12）
+      // 0. 锁定主宰固定初始六维（STR 12 / DEX 17 / CON 12 / INT 9 / WIS 9 / CHA 10）、1 级初始蓝量（12）与 30 级职业属性上限（25 / 29 / 25 / 22 / 22 / 20）
       DotaMechanicsMapper.RegisterFixedStartingStats(JuggernautClassName, StartingStats);
+      DotaMechanicsMapper.RegisterHeroStatLimits(JuggernautClassName, StatLimits);
 
       // 0.1 注册 Pathos 原生选框扩距（无敌斩 4~7 格敌方目标选定；治疗守卫 3~5 格点地召唤）
       DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(

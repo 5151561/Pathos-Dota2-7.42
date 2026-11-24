@@ -25,11 +25,20 @@ $$\text{Map}(x) = \text{Clamp}\Big(\text{Round}\big(12 + (x - 20) \times 0.45\bi
 - `CHA` 默认 `10`（可按背景人设微调 ±2）
 
 ### 运行时锁定方式
-在英雄 `RegisterHooks` 中调用一行即可：
+在英雄 `RegisterHooks` 中调用两行即可同时锁定初始六维与职业专属属性上限：
 ```csharp
 DotaMechanicsMapper.RegisterFixedStartingStats(ClassName, StartingStats);
+DotaMechanicsMapper.RegisterHeroStatLimits(ClassName, StatLimits);
 ```
 框架会在 `Engine.CreateActor` 与 `Engine.RerollActor` 的 Postfix 中自动覆写 `CurrentForm` / `MaximumForm`，并按 Pathos 原生公式重算 1 级初始 `Life` 与 `Mana`。
+
+### 英雄属性上限映射（种族管风味，职业管上限）
+Pathos 原生人类等种族六维上限仅为 `20`，会导致高初始属性英雄（如主宰 17 敏）点满 7 级全属性黄点时提前撞墙。因此框架通过 Hook `Character.GetLimitForm()`（变形期间自动保留目标生物上限），按 DOTA2 7.42 **30 级自然属性**（$\text{Lv30} = \text{Base} + 29 \times \text{Gain}$）统一推导每个英雄职业专属的 `LimitForm`（`DotaMechanicsMapper.MapStatLimits`）：
+
+$$\text{Limit} = \max\Big(\text{Starting} + 7,\ \text{Clamp}\big(\text{Round}(25 + (\text{Lv30} - 80) \times 0.12),\ 20,\ 34\big)\Big)$$
+
+- **不污染种族列表**：人类系英雄继续复用 `human`，有强生态特征的非人英雄（如水人 `waterkin`）可继续建专属种族。
+- **7 级黄点 100% 生效**：保底 $\ge \text{Starting} + 7$，确保全属性黄点绝不浪费，同时上限封顶 `34` 防止击穿 Pathos d20 平衡。
 
 ---
 

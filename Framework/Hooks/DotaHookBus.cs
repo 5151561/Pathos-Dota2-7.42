@@ -53,6 +53,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly ConcurrentDictionary<string, Action<DefenceQueryEventArgs>> DefenceQueryHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<SpellCostQueryEventArgs>> SpellCostQueryHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<LevelUpEventArgs>> AfterLevelUpHandlers = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Action<LimitFormQueryEventArgs>> LimitFormQueryHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Func<Character, bool>> InvulnerableQueries = new(StringComparer.Ordinal);
 
     public static void RegisterBeforeCastSpell(string Key, Action<SpellCastEventArgs> Handler)
@@ -105,6 +106,9 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     public static void RegisterAfterLevelUp(string Key, Action<LevelUpEventArgs> Handler)
       => Register(AfterLevelUpHandlers, Key, Handler);
+
+    public static void RegisterLimitFormQuery(string Key, Action<LimitFormQueryEventArgs> Handler)
+      => Register(LimitFormQueryHandlers, Key, Handler);
 
     /// <summary>
     /// 注册「无敌/不可选中（Invulnerable）」状态查询器：
@@ -191,6 +195,9 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     internal static void DispatchAfterLevelUp(LevelUpEventArgs Args)
       => Dispatch(AfterLevelUpHandlers, Args, nameof(AfterLevelUpHandlers));
+
+    internal static void DispatchLimitFormQuery(LimitFormQueryEventArgs Args)
+      => Dispatch(LimitFormQueryHandlers, Args, nameof(LimitFormQueryHandlers));
 
     private static void Register<TArgs>(ConcurrentDictionary<string, Action<TArgs>> Map, string Key, Action<TArgs> Handler)
     {
