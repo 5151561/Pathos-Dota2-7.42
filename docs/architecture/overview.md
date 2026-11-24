@@ -42,11 +42,11 @@ pathos-mod/
 ├── Heroes/                        # 各英雄独立实现（每英雄一个主文件）
 │   ├── MorphlingHero.cs
 │   └── JuggernautHero.cs
-├── Resources/                     # 原始美术/媒体资源（按英雄分目录管理，入库）
+├── Resources/                     # 原始美术/媒体资源（按英雄分目录单份存放，入库）
 │   └── Heroes/
-│       ├── morphling/             # 变体精灵专属贴图（absurd / classic / geoduck / sonyvanda）
-│       └── juggernaut/            # 主宰专属贴图（absurd / classic / geoduck / sonyvanda）
-├── Atlases/                       # [构建期自动生成，已 .gitignore] PathosMaker 要求的扁平贴图目录
+│       ├── morphling/             # 变体精灵专属贴图（单份 128x128 PNG）
+│       └── juggernaut/            # 主宰专属贴图（单份 128x128 PNG）
+├── Atlases/                       # [构建期自动生成，已 .gitignore] PathosMaker 要求的四套扁平贴图目录
 ├── Assets/                        # PathosMaker 生成的二进制 Atlas 与多语言 Dictionary
 └── docs/                          # 项目文档中心
     ├── architecture/              # 架构、Hook 总线与设计规范
@@ -64,11 +64,11 @@ Pathos 官方打包工具 `PathosMaker.exe` 要求贴图位于项目根目录的
 
 ```mermaid
 flowchart LR
-    R["Resources/Heroes/&lt;hero&gt;/&lt;tileset&gt;/*.png<br/>(Git 跟踪的按英雄分目录源文件)"] --> S["MSBuild: StageAtlasesForPathosMaker<br/>1. 校验跨英雄同名冲突<br/>2. 清空并重建 Atlases/"]
-    S --> A["Atlases/&lt;tileset&gt;/*.png<br/>(构建期暂存目录，已忽略入库)"]
+    R["Resources/Heroes/&lt;hero&gt;/*.png<br/>(Git 跟踪的按英雄分目录单份源文件)"] --> S["MSBuild: StageAtlasesForPathosMaker<br/>1. 校验跨英雄同名冲突<br/>2. 清空并分发至 4 套 Atlases/"]
+    S --> A["Atlases/&lt;tileset&gt;/*.png<br/>(构建期自动复制的四套暂存目录，已忽略入库)"]
     A --> P["PathosMaker.exe<br/>打包生成 Assets/*.Atlas 并部署"]
 ```
 
-- **源码侧**：始终在 `Resources/Heroes/<hero_id>/<tileset>/` 下维护贴图（未来若有跨英雄通用资源，可放在 `Resources/Shared/<tileset>/`，构建脚本同样会自动收录）。
-- **冲突保护**：如果两个不同英雄在同一套图集下存在同名 PNG，编译阶段会直接报错提示，防止静默覆盖。
+- **源码侧**：始终在 `Resources/Heroes/<hero_id>/` 下维护单份贴图（未来若有跨英雄通用资源，可放在 `Resources/Shared/`，构建脚本同样会自动收录），构建期自动分发至 `absurd` / `classic` / `geoduck` / `sonyvanda` 四套图集目录。
+- **冲突保护**：如果不同目录下存在同名 PNG，编译阶段会直接报错提示，防止静默覆盖。
 - **零冗余提交**：`Atlases/` 已加入 `.gitignore`，仓库中仅保留一份按英雄归档的源文件。

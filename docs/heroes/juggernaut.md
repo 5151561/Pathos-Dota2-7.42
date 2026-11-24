@@ -97,7 +97,7 @@
 
 ## 5. 贴图资源清单
 
-位于 `Resources/Heroes/juggernaut/<absurd|classic|geoduck|sonyvanda>/`：
+位于 `Resources/Heroes/juggernaut/`（构建期自动分发至四套图集）：
 - `yurnero.png`（使用 `yurnero` 避免与 Pathos 官方内置怪物贴图 `juggernaut` 重名冲突）
 - `bladeform.png`
 - `blade fury.png`

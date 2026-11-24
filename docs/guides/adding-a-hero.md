@@ -6,25 +6,15 @@
 
 ### 第 1 步：准备英雄贴图资源
 
-在 `Resources/Heroes/<hero_id>/` 下创建四套图集目录，放入 `128x128` 透明背景 PNG：
+在 `Resources/Heroes/<hero_id>/` 下直接放入单份 `128x128` 透明背景 PNG：
 
 ```text
 Resources/Heroes/antimage/
-├── absurd/
-│   ├── antimage.png
-│   └── mana break.png
-├── classic/
-│   ├── antimage.png
-│   └── mana break.png
-├── geoduck/
-│   ├── antimage.png
-│   └── mana break.png
-└── sonyvanda/
-    ├── antimage.png
-    └── mana break.png
+├── antimage.png
+└── mana break.png
 ```
 
-> **注意**：文件名（不含 `.png`）必须全局唯一且不与 Pathos 官方内置贴图冲突。构建时 MSBuild 会自动将 `Resources/Heroes/**/<tileset>/*.png` 聚合到 `Atlases/<tileset>/` 并进行重名校验。
+> **注意**：文件名（不含 `.png`）必须全局唯一且不与 Pathos 官方内置贴图冲突。构建时 MSBuild 会自动将 `Resources/**/*.png` 分发到 `Atlases/{absurd,classic,geoduck,sonyvanda}/` 并进行重名校验。
 
 ---
 

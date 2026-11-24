@@ -123,11 +123,11 @@ Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等
 
 ## 8. 贴图与标识符命名规范
 
-1. **按英雄分目录存放**：所有贴图放在 `Resources/Heroes/<hero_id>/<tileset>/<glyph_name>.png`，必须同时补齐四套图集：`absurd`、`classic`、`geoduck`、`sonyvanda`（尺寸 `128x128`，透明背景 PNG）。
+1. **按英雄分目录单份存放**：所有贴图放在 `Resources/Heroes/<hero_id>/<glyph_name>.png`（尺寸 `128x128`，透明背景 PNG），无需手动复制四份；构建时 MSBuild 会自动分发到 `absurd`、`classic`、`geoduck`、`sonyvanda` 四套图集。
 2. **避免与官方内置 Glyph 重名**：
    - `PathosMaker` 打包后所有 Glyph 名称处于同一全局命名空间。
    - 例如官方已有内置怪物 `juggernaut`，因此主宰的英雄贴图使用 `yurnero.png` 以避免冲突。
-   - 若两个英雄在同一图集下存在同名 PNG，`dotnet build` 的 `StageAtlasesForPathosMaker` 步骤会直接报错拦截。
+   - 若不同目录下存在同名 PNG，`dotnet build` 的 `StageAtlasesForPathosMaker` 步骤会直接报错拦截。
 3. **Hook Key 命名**：统一使用 `<hero_id>.<module>` 小写蛇形命名（如 `morphling.ebb_flow.speed`），确保幂等注册不冲突。
 
 ---

@@ -30,7 +30,7 @@ dotnet build .\DotaHeroesExpansion.csproj -c Release
 构建过程会自动完成以下流水线：
 
 1. **编译 C# 扩展**：将 `0Harmony.dll` 内嵌进 `DotaHeroesExpansion.dll`（单 DLL 成品）。
-2. **聚合贴图资源（`StageAtlasesForPathosMaker`）**：校验 `Resources/**/<tileset>/*.png` 无跨英雄同名冲突，并自动复制到临时目录 `Atlases/<tileset>/`。
+2. **聚合贴图资源（`StageAtlasesForPathosMaker`）**：校验 `Resources/**/*.png` 无跨英雄同名冲突，并自动复制到临时目录 `Atlases/{absurd,classic,geoduck,sonyvanda}/`。
 3. **运行 `PathosMaker.exe`**：
    - 校验并加载 `DotaHeroesExpansion.dll`（打包期 `HookBootstrap` 自动跳过 Harmony 补丁）
    - 打包 `Atlases/` 下的四套 `128x128` 图集到 `Assets/*.Atlas`

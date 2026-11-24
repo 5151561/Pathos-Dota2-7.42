@@ -96,7 +96,7 @@
 
 ## 5. 贴图资源清单
 
-位于 `Resources/Heroes/morphling/<absurd|classic|geoduck|sonyvanda>/`：
+位于 `Resources/Heroes/morphling/`（构建期自动分发至四套图集）：
 - `morphling.png`
 - `waveform.png`
 - `adaptive strike.png`
