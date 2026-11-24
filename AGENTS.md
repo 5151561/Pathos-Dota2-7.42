@@ -74,7 +74,10 @@ docs/                          # 完整架构、基建、指南与英雄 7.42 �
 2. **学习/升星法术必须用 `Character.Knowledge.LearnSpell(Spell, 1)`（已封装在 `PathosEngineBridge.LearnSpell`）**：禁止直接调 `Engine.LearnSpell`（会触发低智力读魔法书失败惩罚，如幻觉/困惑）。
 3. **点地召唤禁止在声明式 `Plain` 射线上直接挂 `SummonEntity`**：`Plain(Range)` 会对路径每格执行一次 `Apply`，导致一次召唤多个。正确做法：声明式用 `Plain(Range)` + `Apply.Nothing()`，在 `AfterCastSpell` 中调用 `PathosEngineBridge.SummonAllyEntity(...)`。
 4. **召唤物到期 / 替换销毁必须用 `PathosEngineBridge.DespawnSummon`**：禁止用 `DismissAlly`（会残留中立/野生单位在地图上）。
-5. **贴图资源**：单份 `128x128` 透明 PNG 放在 `Resources/Heroes/<hero_id>/`，**不要手动修改 `Atlases/`**（构建期清空重建且已 `.gitignore`）。文件名必须全局唯一且不与官方内置 Glyph 冲突（如主宰用 `yurnero.png` 避开内置怪物 `juggernaut`）。
+5. **贴图资源与视觉素材（严格遵循官方 Wiki）**：
+   - 英雄形象、召唤物、技能图标与天赋/状态图标等各种素材，**必须严格按照 DOTA2 官方 Wiki（Liquipedia / 刀塔百科）的官方原图与造型制作或获取**，严禁凭想象乱画。
+   - 技能视觉特效（VFX，如弹道、斩击、爆炸、光环等），可参考官方 Wiki 页面中的技能演示图/动图与配色风格来绘制。
+   - 单份 `128x128` 透明 PNG 放在 `Resources/Heroes/<hero_id>/`，**不要手动修改 `Atlases/`**（构建期清空重建且已 `.gitignore`）。文件名必须全局唯一且不与官方内置 Glyph 冲突（如主宰用 `yurnero.png` 避开内置怪物 `juggernaut`）。
 6. **角色私有运行时状态**：必须用 `ConditionalWeakTable<Character, TState>` 绑定，避免内存泄漏；Hook Key 统一 `<hero_id>.<feature>` 保证幂等覆盖。
 7. **客户端与引擎双可见**：凡通过 Hook 结算伤害的技能，必须在法术 `Description` 中明确写出伤害骰与倍率。
 
