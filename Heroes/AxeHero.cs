@@ -127,9 +127,9 @@ namespace Pathos.DotaHeroes.Heroes
 
     private Property OneManArmyTalentProperty;
     private Property CounterHelixTalentProperty;
-    private Spell BerserkersCallSpellRef;
-    private Spell BattleHungerSpellRef;
-    private Spell CullingBladeSpellRef;
+    private DotaAbility CallAbility;
+    private DotaAbility HungerAbility;
+    private DotaAbility CullingAbility;
 
     private Glyph MogulKhanGlyph;
     private Glyph OneManArmyGlyph;
@@ -172,9 +172,7 @@ namespace Pathos.DotaHeroes.Heroes
         Icon: CounterHelixGlyph);
 
       // 3. 注册 3 个主动技能外壳（Q / W / R）
-      BerserkersCallSpellRef = RegisterBerserkersCallSpell(Ctx, BerserkersCallGlyph);
-      BattleHungerSpellRef = RegisterBattleHungerSpell(Ctx, BattleHungerGlyph);
-      CullingBladeSpellRef = RegisterCullingBladeSpell(Ctx, CullingBladeGlyph);
+      RegisterAbilities(Ctx);
 
       // 3.5 声明技能附带的增益/减益 Modifier
       RegisterModifiers();
@@ -186,7 +184,7 @@ namespace Pathos.DotaHeroes.Heroes
       Ctx.RegisterPresetHero("Axe", Ctx.Races.orc, AxeClass, Ctx.Genders.male, MogulKhanGlyph);
 
       // 6. 注册技能加点表（Q/W/E/R + 7 级全属性黄点，力量主属性；E 反击螺旋 0→1 授予原生被动专长）
-      RegisterSkillBuild(Ctx, BerserkersCallSpellRef, BattleHungerSpellRef, CullingBladeSpellRef, CounterHelixTalentProperty);
+      RegisterSkillBuild(Ctx, CallAbility.Spell, HungerAbility.Spell, CullingAbility.Spell, CounterHelixTalentProperty);
 
       // 7. 注册 DOTA2 7.42 四层天赋树（Lv 10/15/20/25 + Lv 27~30 双修）
       RegisterTalentTree(Ctx);
@@ -203,7 +201,7 @@ namespace Pathos.DotaHeroes.Heroes
         BadgeGlyph = BerserkersCallGlyph,
         BadgeTitle = () => DotaLocalization.T("axe.status.call"),
         BadgeColour = Colour.DarkRed,
-        HelpSpell = BerserkersCallSpellRef
+        HelpSpell = CallAbility.Spell
       });
 
       BattleHungerModifier = DotaModifierService.Define(new DotaModifierSpec
@@ -383,49 +381,13 @@ namespace Pathos.DotaHeroes.Heroes
         }
       });
 
-      // 0.1 全射程选格（W 战斗饥渴 4~7 格选敌；R 淘汰之刃 2 格选敌）
-      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
-        SpellName: BattleHungerSpellName,
-        DisplayTitle: "Battle Hunger",
-        Mode: DotaTargetMode.UnitHostile,
-        ResolveRange: Caster => GetBattleHungerCastRange(Ctx, Caster),
-        AllowSelf: false,
-        ResolveDisplayTitle: () => DotaLocalization.T("axe.skill.w.title")));
-
-      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
-        SpellName: CullingBladeSpellName,
-        DisplayTitle: "Culling Blade",
-        Mode: DotaTargetMode.UnitHostile,
-        ResolveRange: _ => 2,
-        AllowSelf: false,
-        ResolveDisplayTitle: () => DotaLocalization.T("axe.skill.r.title")));
+      // 0.1 全射程选格与施法分发由 DotaAbility 自动注册（W 战斗饥渴 4~7 格选敌；R 淘汰之刃 2 格选敌）
 
       // 0.2 左上角状态栏徽章（0 Codex.Properties 占用）
       RegisterStatusBadges();
 
       // 0.3 技能帮助面板实时数值与 5 阶熟练度详情
       RegisterSpellHelpSpecs(Ctx);
-
-      // 1. 施法后置钩子：Q 狂战士之吼 / W 战斗饥渴 / R 淘汰之刃
-      DotaHookBus.RegisterAfterCastSpell("axe.spell_casts", Args =>
-      {
-        var SpellName = Args.Spell?.Name;
-        if (string.IsNullOrEmpty(SpellName))
-          return;
-
-        if (string.Equals(SpellName, BerserkersCallSpellName, StringComparison.OrdinalIgnoreCase))
-        {
-          HandleBerserkersCallCast(Ctx, Args);
-        }
-        else if (string.Equals(SpellName, BattleHungerSpellName, StringComparison.OrdinalIgnoreCase))
-        {
-          HandleBattleHungerCast(Ctx, Args);
-        }
-        else if (string.Equals(SpellName, CullingBladeSpellName, StringComparison.OrdinalIgnoreCase))
-        {
-          HandleCullingBladeCast(Ctx, Args);
-        }
-      });
 
       // 2. 初始化通用嘲讽基建（禁魔拦截 + 强制转向/攻击 + 回合递减）
       DotaTauntService.EnsureInitialized();
@@ -608,7 +570,7 @@ namespace Pathos.DotaHeroes.Heroes
           Text = DotaLocalization.T("axe.status.hunger").ToUpper(),
           Count = $"×{Active}",
           Colour = Colour.DarkRed,
-          HelpSpell = BattleHungerSpellRef
+          HelpSpell = HungerAbility.Spell
         };
       });
 
@@ -635,19 +597,20 @@ namespace Pathos.DotaHeroes.Heroes
           Text = DotaLocalization.T("axe.status.culling").ToUpper(),
           Count = CountText,
           Colour = HasBuff ? Colour.Crimson : Colour.Black,
-          HelpSpell = CullingBladeSpellRef
+          HelpSpell = CullingAbility.Spell
         };
       });
     }
 
-    private void HandleBerserkersCallCast(DotaHeroContext Ctx, SpellCastEventArgs Args)
+    private void HandleBerserkersCallCast(DotaHeroContext Ctx, DotaAbilityCast Cast)
     {
-      var Caster = Args.Character;
+      var Args = Cast.Args;
+      var Caster = Cast.Caster;
       if (Caster == null || Caster.Deceased || Caster.Square == null)
         return;
 
-      int SkillLv = Math.Clamp(HeroSkillService.GetSkillLevel(Caster, SkillCallId), 1, 4);
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.abjuration);
+      int SkillLv = CallAbility.Level(Caster, 4);
+      int Tier = Cast.Tier;
       int ExtraTurns = Tier >= 5 ? 2 : (Tier >= 3 ? 1 : 0);
       int DurationTurns = GetCallBaseDurationTurns(SkillLv) + ExtraTurns;
 
@@ -684,27 +647,20 @@ namespace Pathos.DotaHeroes.Heroes
         DotaLocalization.Format("axe.log.call_cast", Hostiles.Count, BonusDef, DurationTurns));
     }
 
-    private void HandleBattleHungerCast(DotaHeroContext Ctx, SpellCastEventArgs Args)
+    private void HandleBattleHungerCast(DotaAbilityCast Cast)
     {
-      var Caster = Args.Character;
+      var Args = Cast.Args;
+      var Caster = Cast.Caster;
       if (Caster == null || Caster.Deceased || Caster.Square == null)
         return;
 
-      int CastRange = GetBattleHungerCastRange(Ctx, Caster);
-      var Pending = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      var Target = DotaCombatHelper.ResolveHostileTarget(Caster, Args.Direction, CastRange, Pending, AllowDirectionFallback: true);
-
-      if (Target == null)
-      {
-        DotaCombatHelper.RefundSpellCost(Args);
-        PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, BattleHungerGlyph, DotaLocalization.T("axe.log.hunger_no_target"));
+      if (!Cast.TryResolveHostileTarget(out var Target, "axe.log.hunger_no_target"))
         return;
-      }
 
-      int SkillLv = Math.Clamp(HeroSkillService.GetSkillLevel(Caster, SkillHungerId), 1, 4);
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.enchantment);
+      int SkillLv = HungerAbility.Level(Caster, 4);
+      int Tier = Cast.Tier;
       float BaseDps = GetHungerBaseDps(SkillLv) + (TalentService.HasTalent(Caster, TalentT2HungerDps) ? HungerTalentBonusDps : 0.0f);
-      float StarAndTierMult = (1.0f + (SkillLv - 1) * 0.15f) * (1.0f + (Tier - 1) * 0.08f);
+      float StarAndTierMult = HungerAbility.StarMultiplier(Caster) * (1.0f + (Tier - 1) * 0.08f);
       float EffectiveDps = BaseDps * StarAndTierMult;
       float Slow = GetHungerSlowRatio(SkillLv);
 
@@ -735,24 +691,18 @@ namespace Pathos.DotaHeroes.Heroes
         DotaLocalization.Format("axe.log.hunger_cast", GetCharacterDisplayName(Target), BattleHungerDurationTurns, $"{Slow * 100.0f:0}"));
     }
 
-    private void HandleCullingBladeCast(DotaHeroContext Ctx, SpellCastEventArgs Args)
+    private void HandleCullingBladeCast(DotaAbilityCast Cast)
     {
-      var Caster = Args.Character;
+      var Args = Cast.Args;
+      var Caster = Cast.Caster;
       if (Caster == null || Caster.Deceased || Caster.Square == null)
         return;
 
-      var Pending = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      var Target = DotaCombatHelper.ResolveHostileTarget(Caster, Args.Direction, 2, Pending, AllowDirectionFallback: true);
-
-      if (Target == null)
-      {
-        DotaCombatHelper.RefundSpellCost(Args);
-        PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, CullingBladeGlyph, DotaLocalization.T("axe.log.culling_no_target"));
+      if (!Cast.TryResolveHostileTarget(out var Target, "axe.log.culling_no_target"))
         return;
-      }
 
-      int SkillLv = Math.Clamp(HeroSkillService.GetSkillLevel(Caster, SkillCullingId), 1, 3);
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.evocation);
+      int SkillLv = CullingAbility.Level(Caster, 3);
+      int Tier = Cast.Tier;
       int Threshold = GetCullingEffectiveThreshold(Caster, SkillLv, Tier);
 
       var TargetSq = Target.Square;
@@ -964,12 +914,12 @@ namespace Pathos.DotaHeroes.Heroes
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
         SpellName = BerserkersCallSpellName,
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.abjuration),
+        ResolveCurrentTier = CallAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int SkillLv = Math.Clamp(HeroSkillService.GetSkillLevel(Ch, SkillCallId), 1, 4);
-          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.abjuration);
+          int SkillLv = CallAbility.Level(Ch, 4);
+          int Tier = CallAbility.Tier(Ch);
           int ExtraTurns = Tier >= 5 ? 2 : (Tier >= 3 ? 1 : 0);
           int Duration = GetCallBaseDurationTurns(SkillLv) + ExtraTurns;
           bool HasArmorTalent = TalentService.HasTalent(Ch, TalentT2CallArmor);
@@ -1010,15 +960,15 @@ namespace Pathos.DotaHeroes.Heroes
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
         SpellName = BattleHungerSpellName,
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.enchantment),
+        ResolveCurrentTier = HungerAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int SkillLv = Math.Clamp(HeroSkillService.GetSkillLevel(Ch, SkillHungerId), 1, 4);
-          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.enchantment);
-          int Range = GetBattleHungerCastRange(Ctx, Ch);
+          int SkillLv = HungerAbility.Level(Ch, 4);
+          int Tier = HungerAbility.Tier(Ch);
+          int Range = HungerAbility.Range(Ch);
           float BaseDps = GetHungerBaseDps(SkillLv) + (TalentService.HasTalent(Ch, TalentT2HungerDps) ? HungerTalentBonusDps : 0.0f);
-          float Mult = (1.0f + (SkillLv - 1) * 0.15f) * (1.0f + (Tier - 1) * 0.08f);
+          float Mult = HungerAbility.StarMultiplier(Ch) * (1.0f + (Tier - 1) * 0.08f);
           float EffDps = BaseDps * Mult;
           int EstTotal = Math.Max(1, (int)MathF.Round((EffDps * 12.0f) / DotaMechanicsMapper.DamageScale));
           float Slow = GetHungerSlowRatio(SkillLv) * 100.0f;
@@ -1040,7 +990,7 @@ namespace Pathos.DotaHeroes.Heroes
           var List = new List<DotaSpellHelpTier>(5);
           for (int Tier = 1; Tier <= 5; Tier++)
           {
-            int Range = GetBattleHungerRangeByTier(Tier);
+            int Range = HungerAbility.BaseRange(Tier);
             int BonusPct = (Tier - 1) * 8;
             List.Add(new DotaSpellHelpTier
             {
@@ -1057,12 +1007,12 @@ namespace Pathos.DotaHeroes.Heroes
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
         SpellName = CullingBladeSpellName,
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation),
+        ResolveCurrentTier = CullingAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int SkillLv = Math.Clamp(HeroSkillService.GetSkillLevel(Ch, SkillCullingId), 1, 3);
-          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation);
+          int SkillLv = CullingAbility.Level(Ch, 3);
+          int Tier = CullingAbility.Tier(Ch);
           int Threshold = GetCullingEffectiveThreshold(Ch, SkillLv, Tier);
           int BuffTurns = CullingBuffBaseTurns + (TalentService.HasTalent(Ch, TalentT1CullingBuffDuration) ? CullingBuffTalentExtraTurns : 0);
           int BuffDef = DotaMechanicsMapper.MapArmorToDefence(CullingBuffDotaArmor[SkillLv - 1]);
@@ -1090,7 +1040,7 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", 2),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", CullingAbility.BaseRange(Tier)),
               Bullets = new[] { DotaLocalization.Format("axe.help.r.tier_bullet", BonusHp) }
             });
           }
@@ -1099,84 +1049,57 @@ namespace Pathos.DotaHeroes.Heroes
       });
     }
 
-    private static Spell RegisterBerserkersCallSpell(DotaHeroContext Ctx, Glyph Icon)
+    private void RegisterAbilities(DotaHeroContext Ctx)
     {
-      return Ctx.Spells.Add(S =>
+      // Q：狂战士之吼（自身施放，嘲讽周围敌人并获得高甲）
+      CallAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = BerserkersCallSpellName;
-        S.Description = "Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.abjuration;
-        S.Precept = new Precept(Purpose.Buff);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(BerserkersCallManaCost);
-        S.Mana = BerserkersCallManaCost;
-
-        void Configure(Qualification Qual)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().SetTargetSelf(true);
-          Adept.Apply.Nothing();
-        }
-
-        Configure(Ctx.Qualifications.proficient);
-        Configure(Ctx.Qualifications.specialist);
-        Configure(Ctx.Qualifications.expert);
-        Configure(Ctx.Qualifications.master);
-        Configure(Ctx.Qualifications.champion);
+        SpellName = BerserkersCallSpellName,
+        Description = "Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",
+        Icon = BerserkersCallGlyph,
+        School = Ctx.Schools.abjuration,
+        Skill = Ctx.Skills.abjuration,
+        Precept = new Precept(Purpose.Buff),
+        ManaCost = BerserkersCallManaCost,
+        Targeting = DotaAbilityTargeting.Self,
+        SkillSlotId = SkillCallId,
+        OnCast = Cast => HandleBerserkersCallCast(Ctx, Cast)
       });
-    }
 
-    private static Spell RegisterBattleHungerSpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
+      // W：战斗饥渴（指向敌方，4~7 格随附魔系熟练度）
+      HungerAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = BattleHungerSpellName;
-        S.Description = "Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.enchantment;
-        S.Precept = new Precept(Purpose.Blast, Ctx.Elements.fire);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(BattleHungerManaCost);
-        S.Mana = BattleHungerManaCost;
-
-        void Configure(Qualification Qual, int Range)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().Plain(Dice.Fixed(Range));
-          Adept.Apply.Nothing();
-        }
-
-        Configure(Ctx.Qualifications.proficient, 4);
-        Configure(Ctx.Qualifications.specialist, 5);
-        Configure(Ctx.Qualifications.expert, 5);
-        Configure(Ctx.Qualifications.master, 6);
-        Configure(Ctx.Qualifications.champion, 7);
+        SpellName = BattleHungerSpellName,
+        DisplayTitle = "Battle Hunger",
+        TitleResolver = () => DotaLocalization.T("axe.skill.w.title"),
+        Description = "Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.",
+        Icon = BattleHungerGlyph,
+        School = Ctx.Schools.enchantment,
+        Skill = Ctx.Skills.enchantment,
+        Precept = new Precept(Purpose.Blast, Ctx.Elements.fire),
+        ManaCost = BattleHungerManaCost,
+        Targeting = DotaAbilityTargeting.UnitHostile,
+        Range = DotaTable.Of(4, 5, 5, 6, 7),
+        SkillSlotId = SkillHungerId,
+        OnCast = Cast => HandleBattleHungerCast(Cast)
       });
-    }
 
-    private static Spell RegisterCullingBladeSpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
+      // R：淘汰之刃（指向敌方，近战 2 格）
+      CullingAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = CullingBladeSpellName;
-        S.Description = "Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.evocation;
-        S.Precept = new Precept(Purpose.Blast, Ctx.Elements.fire);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(CullingBladeManaCost);
-        S.Mana = CullingBladeManaCost;
-
-        void Configure(Qualification Qual)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().Plain(Dice.Fixed(2));
-          Adept.Apply.Nothing();
-        }
-
-        Configure(Ctx.Qualifications.proficient);
-        Configure(Ctx.Qualifications.specialist);
-        Configure(Ctx.Qualifications.expert);
-        Configure(Ctx.Qualifications.master);
-        Configure(Ctx.Qualifications.champion);
+        SpellName = CullingBladeSpellName,
+        DisplayTitle = "Culling Blade",
+        TitleResolver = () => DotaLocalization.T("axe.skill.r.title"),
+        Description = "Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+        Icon = CullingBladeGlyph,
+        School = Ctx.Schools.evocation,
+        Skill = Ctx.Skills.evocation,
+        Precept = new Precept(Purpose.Blast, Ctx.Elements.fire),
+        ManaCost = CullingBladeManaCost,
+        Targeting = DotaAbilityTargeting.UnitHostile,
+        Range = DotaTable.Uniform(2),
+        SkillSlotId = SkillCullingId,
+        OnCast = Cast => HandleCullingBladeCast(Cast)
       });
     }
 
@@ -1261,23 +1184,6 @@ namespace Pathos.DotaHeroes.Heroes
       return BaseHp + MasteryBonus + TalentBonus;
     }
 
-    private static int GetBattleHungerRangeByTier(int Tier)
-    {
-      return Tier switch
-      {
-        <= 1 => 4,
-        2 => 5,
-        3 => 5,
-        4 => 6,
-        _ => 7
-      };
-    }
-
-    private static int GetBattleHungerCastRange(DotaHeroContext Ctx, Character Caster)
-    {
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.enchantment);
-      return GetBattleHungerRangeByTier(Tier);
-    }
 
     private static int GetCullingPermanentDefenceBonus(Character Axe)
     {

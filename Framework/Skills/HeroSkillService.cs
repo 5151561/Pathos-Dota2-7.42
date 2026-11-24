@@ -32,6 +32,27 @@ namespace Pathos.DotaHeroes.Framework.Skills
       return GetSkillLevel(Character, Slot);
     }
 
+    /// <summary>主动技能升星统一的每星基础数值增幅（★ 每升一星 +15%）。</summary>
+    public const float DefaultStarBonusPerStep = 0.15f;
+
+    /// <summary>
+    /// 升星步数：技能等级 1 为 0 步，每升 1 级 +1（未学会时为 0）。用于「每星 +N 格射程 / +N 回合 / +N 斩」等线性加成。
+    /// </summary>
+    public static int GetStarSteps(Character Character, string SkillId)
+      => Math.Max(0, GetSkillLevel(Character, SkillId) - 1);
+
+    /// <summary>
+    /// 升星基础数值倍率：<c>1 + 升星步数 × PerStep</c>（默认每星 +15%）。
+    /// </summary>
+    public static float GetStarMultiplier(Character Character, string SkillId, float PerStep = DefaultStarBonusPerStep)
+      => 1.0f + GetStarSteps(Character, SkillId) * PerStep;
+
+    /// <summary>
+    /// 给定技能等级的升星倍率（用于加点面板描述文本，Lv ≤ 1 返回 1）。
+    /// </summary>
+    public static float GetStarMultiplierForLevel(int SkillLevel, float PerStep = DefaultStarBonusPerStep)
+      => 1.0f + Math.Max(0, SkillLevel - 1) * PerStep;
+
     public static int GetSkillLevel(Character Character, DotaSkillSlot Slot)
     {
       if (Character == null || Slot == null)

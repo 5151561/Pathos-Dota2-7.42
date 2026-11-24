@@ -46,10 +46,29 @@ Resources/Heroes/antimage/
 2. **长效天赋 vs 短期技能状态**（严格区分，避免污染天赋栏）：
    - 先天/被动（需展示在原生天赋栏与百科）：`Ctx.RegisterPassiveProperty(name, desc, glyph)`，并在职业中 `C.AddFeat(1, prop)`。
    - 主动技能短期状态（仅施法期间作为 `Transient` 生效）：**必须**使用 `Ctx.RegisterSkillStatusProperty(name, desc, glyph)`，自动从原生天赋栏与百科中隐藏。
-3. **召唤物 / 装备 / 主动技能外壳 / 职业 / 预设英雄**：
-   - 点地召唤技能外壳请用 `Adept.SetCast().Plain(Dice.Fixed(Range))` + `Adept.Apply.Nothing()`，避免射线每格重复召唤。
+3. **主动技能**：每个技能用 `DotaAbility.Register(Ctx, new DotaAbilitySpec { ... })` 声明一次（详见 [hook-system.md §8](../architecture/hook-system.md)），自动生成 5 阶法术外壳（射程写入 `Plain`、`Apply.Nothing()` 防止射线每格重复召唤）、全射程选格与按法术名分发的 `OnCast`：
+   ```csharp
+   ManaVoidAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
+   {
+     SpellName = "mana void", DisplayTitle = "Mana Void", TitleResolver = () => DotaLocalization.T("am.skill.r.title"),
+     Description = "...", Icon = ManaVoidGlyph,
+     School = Ctx.Schools.evocation, Skill = Ctx.Skills.evocation, Precept = new Precept(Purpose.Blast),
+     ManaCost = DotaMechanicsMapper.MapSkillManaCost(250),
+     Targeting = DotaAbilityTargeting.UnitHostile, Range = DotaTable.Of(4, 5, 5, 6, 7),
+     SkillSlotId = SkillManaVoidId,
+     OnCast = Cast =>
+     {
+       if (!Cast.TryResolveHostileTarget(out var Target, "am.log.void_no_target"))
+         return;   // 已按实际扣蓝返还并写日志
+       int Tier = Cast.Tier; float Star = ManaVoidAbility.StarMultiplier(Cast.Caster);
+       DotaDamage.Strike(Cast.Engine, Cast.Caster, Target, Cast.Direction, Damage, DotaDamageInfo.Magical("mana void"));
+     }
+   });
+   ```
+   - 加点表 `DotaSkillSlot.CreateActive(Spell: ManaVoidAbility.Spell, ...)`、帮助面板 `ResolveCurrentTier = ManaVoidAbility.Tier`、职业 `C.Startup` 等都直接引用 `Ability.Spell` / `Ability.Tier`。
+4. **召唤物 / 装备 / 职业 / 预设英雄**：
    - 预设英雄一键注册：`Ctx.RegisterPresetHero("HeroName", race, heroClass, gender, glyph)`。
-4. **4 层天赋树**：
+5. **4 层天赋树**：
    - 使用 `HeroTalentTree.CreateStandard(...)` 定义 Lv 5/10/15/20（双修 Lv 22/23/24/25）共 8 个节点；减冷却天赋直接挂 `SpellManaReductionRule`，然后调用 `TalentRegistry.Register(Ctx, tree)`。
 
 #### 2.3 `RegisterHooks(DotaHeroContext Ctx)` — 接入运行时基建
@@ -57,22 +76,15 @@ Resources/Heroes/antimage/
    ```csharp
    DotaMechanicsMapper.RegisterFixedStartingStats(HeroClassName, StartingStats);
    ```
-2. **接入全射程选格**（所有指向敌方 / 点地技能）：
-   ```csharp
-   DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
-     SpellName: "mana void",
-     DisplayTitle: "法力虚空",
-     Mode: DotaTargetMode.UnitHostile,
-     ResolveRange: Caster => GetManaVoidRange(Ctx, Caster),
-     AllowSelf: false));
-   ```
+2. **全射程选格与施法分发**：由 `DotaAbility.Register` 自动完成，无需手动调用 `DotaRangeTargetingBridge.RegisterSpell` 或注册 `AfterCastSpell` + 比较法术名。
 3. **接入左上角状态栏叠层徽章**（若有叠层/充能/粘滞状态）：
    ```csharp
    DotaStatusBarBridge.RegisterProvider("<hero_id>.<stack_name>", Character => ...);
    ```
 4. **订阅 `DotaHookBus` 并复用 `DotaCombatHelper` & `PathosEngineBridge`**：
    - Hook Key 统一命名 `<hero_id>.<feature>`。
-   - 直接复用 `DotaCombatHelper` 中的 `IsClass`、`GetSkillTier`、`IsHostile`、`IsFriendly`、`DispelNegativeDebuffs`、`IsNegativeDebuff`、`ResolveHostileTarget`、`ResolveOpenPointTarget`、`RefundMana`、`PlayBeamTrail`。
+   - 熟练度阶数 / 技能等级 / 升星 / 射程统一走 `Ability.Tier(ch)` / `Ability.Level(ch)` / `Ability.StarMultiplier(ch)` / `Ability.Range(ch)`；按阶或按级的数值表用 `DotaTable.Of(...)[tier]`。
+   - 直接复用 `DotaCombatHelper` 中的 `IsClass`、`IsHostile`、`IsFriendly`、`DispelNegativeDebuffs`、`IsNegativeDebuff`、`PlayBeamTrail`。
    - 召唤与销毁统一调用 `PathosEngineBridge.SummonAllyEntity` / `DespawnSummon`。
    - 角色私有运行时状态统一使用 `ConditionalWeakTable<Character, TState>`。
 

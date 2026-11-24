@@ -15,6 +15,7 @@
 | [DotaModifierService.cs](../../Framework/DotaModifierService.cs) | 通用 DOTA2 Modifier（带回合数的增益/减益）服务：回合递减、护甲/移速/攻速汇总、纯粹/元素持续伤害、减益免疫、基础驱散与状态栏徽章，零 `Codex.Properties` 占用。 |
 | [DotaCharacterFlagSet.cs](../../Framework/DotaCharacterFlagSet.cs) | 弱引用角色标记集合，替代 `static HashSet<Character>`（铁律 6）。 |
 | [DotaDamage.cs](../../Framework/DotaDamage.cs) | 统一伤害管线：伤害类型（物理/魔法/纯粹）与来源标注、暴击（取最高不叠加）与魔抗（乘算叠加）有序修正阶段。 |
+| [DotaAbility.cs](../../Framework/DotaAbility.cs) / [DotaTable.cs](../../Framework/DotaTable.cs) | 技能一次性声明：5 阶法术外壳、全射程选格、按法术名施法分发、目标解析与空放返蓝、熟练度/等级/升星/射程查询；1 起始自动夹取的数值表。 |
 
 ---
 
@@ -190,3 +191,54 @@ using (DotaDamage.BeginScope(info)) { /* 无法直接改写的原生结算路径
 | `Reduction` | `DotaDamage.RegisterMagicResist(key, args => ratio)` | 多来源 `1 - Π(1 - r)` 乘算叠加，只作用于 `Magical` / `Unknown`；结果为 0 时取消伤害 |
 
 `AfterDamage` 中可读 `Args.Info` 判断来源（如斧王反击螺旋只把 `Unclassified` 与带 `Attack` 标记的脚本伤害计为「受到攻击」），`Args.CritMultiplier` 为本次采用的暴击倍率（未暴击为 0）。
+
+---
+
+## 8. `DotaAbility` 技能声明与 `DotaTable` 数值表
+
+[DotaAbility.cs](../../Framework/DotaAbility.cs) 把一个 DOTA2 技能的全部「元数据」收敛到一处声明，消灭同一射程/学派在法术外壳、选格、施法、帮助面板中各写一遍导致的漂移。
+
+### 8.1 声明（英雄 `Register` 中，每技能一次）
+
+```csharp
+HungerAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
+{
+  SpellName = "battle hunger",                 // 法术名（选格 / 分发 / 帮助面板 / 伤害来源 Key）
+  DisplayTitle = "Battle Hunger", TitleResolver = () => DotaLocalization.T("axe.skill.w.title"),
+  Description = "...", Icon = BattleHungerGlyph,
+  School = Ctx.Schools.enchantment,            // Spell.School
+  Skill = Ctx.Skills.enchantment,              // 决定熟练度阶数
+  Precept = new Precept(Purpose.Blast, Ctx.Elements.fire),
+  ManaCost = BattleHungerManaCost,             // 已 MapSkillManaCost 换算
+  Targeting = DotaAbilityTargeting.UnitHostile,// Self / UnitHostile / PointOpen / PointAny
+  Range = DotaTable.Of(4, 5, 5, 6, 7),         // 5 阶熟练度基础射程（Self 可省略）
+  RangeBonus = ch => ...,                      // 可选：升星 / 天赋 / 先天属性加射程
+  AllowSelfTarget = false,                     // 可选：点地技能允许点自身格
+  SkillSlotId = SkillHungerId,                 // HeroSkillBuild 技能槽（等级 / 升星）
+  ConfigureApply = (tier, apply) => ...,       // 可选：声明式效果（默认 Apply.Nothing()）
+  OnCast = Cast => HandleBattleHungerCast(Cast)
+});
+```
+
+框架自动完成：
+- **5 阶法术外壳**：`Self` → `SetTargetSelf(true)`；指向类 → `Plain(Dice.Fixed(Range[tier]))`（+ `AllowSelfTarget` 时 `SetTargetSelf(true)`）；`Apply` 默认 `Nothing()`，避免 `Plain` 射线每格重复结算。
+- **全射程选格**：射程 = `Range[熟练度阶数] + RangeBonus(ch)`，与施法结算使用同一来源。
+- **施法分发**：单个 `dota.abilities.cast`（`AfterCastSpell`）按法术名字典分发到 `OnCast`，英雄不再注册 `AfterCastSpell` + 比较法术名。
+
+### 8.2 施法上下文 `DotaAbilityCast`
+
+| 成员 | 说明 |
+| :--- | :--- |
+| `Args` / `Engine` / `Caster` / `Direction` | 原始施法参数 |
+| `Tier` / `Range` | 施法瞬间的熟练度阶数与实际射程 |
+| `TryResolveHostileTarget(out target, noTargetLogKey)` | 四级目标解析；失败时 **按本次实际扣蓝返还** 并写日志 |
+| `ResolveHostileTarget()` / `ResolveOpenPointTarget()` / `ConsumePendingTarget()` | 不返蓝的底层解析（点击结果只取出一次） |
+| `Refund()` / `RefundAndLog(key)` / `Log(text)` | 返蓝与带技能图标的日志 |
+
+### 8.3 查询
+
+`Ability.Tier(ch)`、`Ability.Level(ch)` / `Level(ch, max)`（夹取到 `[1, max]`）、`Ability.StarSteps(ch)`、`Ability.StarMultiplier(ch)`（默认每星 `+15%`，即 `HeroSkillService.DefaultStarBonusPerStep`）、`Ability.BaseRange(tier)`、`Ability.Range(ch)`、`Ability.Spell`。加点面板描述文本用 `HeroSkillService.GetStarMultiplierForLevel(lv)`。
+
+### 8.4 `DotaTable`
+
+`DotaTable.Of(a, b, c, ...)[n]` 为 1 起始、越界自动夹取的数值表，统一替代 `Arr[Math.Clamp(n - 1, 0, Len - 1)]`：5 阶熟练度表用 `[tier]`，技能等级表用 `[skillLevel]`；全阶同值用 `DotaTable.Uniform(v)`。

@@ -84,6 +84,13 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static readonly ConditionalWeakTable<Character, Square> WaveformOriginSquares = new();
 
+    private static DotaAbility WaveformAbility;
+    private static DotaAbility AdaptiveStrikeAbility;
+    private static DotaAbility MorphAgilityAbility;
+    private static DotaAbility MorphStrengthAbility;
+    private static DotaAbility MorphAbility;
+    private static DotaAbility MorphRevertAbility;
+
     private Property EbbAndFlowTalentProperty;
     private Glyph MorphlingGlyph;
     private Glyph EbbAndFlowGlyph;
@@ -125,12 +132,14 @@ namespace Pathos.DotaHeroes.Heroes
       var TidalOrbItem = RegisterTidalOrbItem(Ctx, TidalOrbGlyph);
 
       // 4. 注册水人全套专属技能（Q / W / E1 / E2 / R1 / R2）
-      var WaveformSpell = RegisterWaveformSpell(Ctx, WaveformGlyph);
-      var AdaptiveStrikeSpell = RegisterAdaptiveStrikeSpell(Ctx, AdaptiveStrikeGlyph);
-      var MorphAgilitySpell = RegisterMorphAgilitySpell(Ctx, MorphAgilityGlyph);
-      var MorphStrengthSpell = RegisterMorphStrengthSpell(Ctx, MorphStrengthGlyph);
-      var MorphSpell = RegisterMorphSpell(Ctx, MorphGlyph);
-      var MorphRevertSpell = RegisterMorphRevertSpell(Ctx, MorphRevertGlyph);
+      //    （DotaAbility 自动生成 5 阶法术外壳、全射程选格与按法术名的施法分发）
+      RegisterAbilities(Ctx, WaveformGlyph, AdaptiveStrikeGlyph, MorphAgilityGlyph, MorphStrengthGlyph, MorphGlyph, MorphRevertGlyph);
+      var WaveformSpell = WaveformAbility.Spell;
+      var AdaptiveStrikeSpell = AdaptiveStrikeAbility.Spell;
+      var MorphAgilitySpell = MorphAgilityAbility.Spell;
+      var MorphStrengthSpell = MorphStrengthAbility.Spell;
+      var MorphSpell = MorphAbility.Spell;
+      var MorphRevertSpell = MorphRevertAbility.Spell;
 
       // 5. 注册专属种族：变体水灵（waterkin，含遇水回血回蓝与遇火蒸发反应）
       var WaterkinRace = RegisterWaterkinRace(Ctx, MorphlingGlyph);
@@ -202,7 +211,7 @@ namespace Pathos.DotaHeroes.Heroes
             ? DotaLocalization.T("morph.skill.q.desc_0")
             : DotaLocalization.Format(
                 "morph.skill.q.desc_lv",
-                $"{1.0f + (Lv - 1) * 0.15f:0.00}",
+                $"{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}",
                 Lv - 1,
                 Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
           TitleResolver: () => DotaLocalization.T("morph.skill.q.title")),
@@ -216,7 +225,7 @@ namespace Pathos.DotaHeroes.Heroes
             ? DotaLocalization.T("morph.skill.w.desc_0")
             : DotaLocalization.Format(
                 "morph.skill.w.desc_lv",
-                $"{1.0f + (Lv - 1) * 0.15f:0.00}",
+                $"{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}",
                 Lv - 1,
                 Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
           TitleResolver: () => DotaLocalization.T("morph.skill.w.title")),
@@ -337,31 +346,7 @@ namespace Pathos.DotaHeroes.Heroes
       DotaMechanicsMapper.RegisterHeroStatLimits(MorphlingClassName, StatLimits);
       DotaMechanicsMapper.RegisterHeroStatLimitBonus(MorphlingClassName, GetTalentStatLimitBonus);
 
-      // 0.1 注册 Pathos 原生选框扩距（波浪形态允许直接点空地或敌人格，自动穿身落位 / 变体打击 / 变形）
-      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
-        SpellName: WaveformSpellName,
-        DisplayTitle: "Waveform",
-        Mode: DotaTargetMode.PointAny,
-        ResolveRange: Caster => GetWaveformRange(Ctx, Caster),
-        AllowSelf: false,
-        ResolveDisplayTitle: () => DotaLocalization.T("morph.skill.q.title")));
-
-      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
-        SpellName: AdaptiveStrikeSpellName,
-        DisplayTitle: "Adaptive Strike",
-        Mode: DotaTargetMode.UnitHostile,
-        ResolveRange: Caster => GetAdaptiveStrikeRange(Ctx, Caster),
-        AllowSelf: false,
-        ResolveDisplayTitle: () => DotaLocalization.T("morph.skill.w.title")));
-
-      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
-        SpellName: MorphSpellName,
-        DisplayTitle: "Morph",
-        Mode: DotaTargetMode.UnitHostile,
-        ResolveRange: Caster => GetMorphRange(Ctx, Caster),
-        AllowSelf: false,
-        ResolveDisplayTitle: () => DotaLocalization.T("morph.spell.morph.title")));
-
+      // 0.1 全射程选格与施法分发由 DotaAbility 自动注册（波浪形态点任意格 / 变体打击 / 变形选敌；属性转换与解除变形自身施放）
       // 0.2 注册左上角状态栏动态徽章：先天「潮涨潮落」实时倾向 & 变形状态
       DotaStatusBarBridge.RegisterProvider("morphling.ebb_flow", Character =>
       {
@@ -421,40 +406,6 @@ namespace Pathos.DotaHeroes.Heroes
           WaveformOriginSquares.Remove(Args.Character);
           WaveformOriginSquares.Add(Args.Character, Args.Character.Square);
         }
-      });
-
-      // Q/W 水系技能落点校准与专属像素 VFX（4 方向水浪残影 + 3×3 潮汐水爆）
-      DotaHookBus.RegisterAfterCastSpell("morphling.range_and_vfx", Args =>
-      {
-        var Caster = Args.Character;
-        var SpellName = Args.Spell?.Name;
-        if (Caster?.Square == null || string.IsNullOrEmpty(SpellName))
-          return;
-
-        if (string.Equals(SpellName, WaveformSpellName, StringComparison.OrdinalIgnoreCase))
-        {
-          ExecuteWaveform(Ctx, Args);
-        }
-        else if (string.Equals(SpellName, AdaptiveStrikeSpellName, StringComparison.OrdinalIgnoreCase))
-        {
-          ExecuteAdaptiveStrike(Ctx, Args);
-        }
-        else if (string.Equals(SpellName, MorphSpellName, StringComparison.OrdinalIgnoreCase))
-        {
-          ExecuteMorph(Ctx, Args);
-        }
-      });
-
-      // E1/E2：属性转换（总量守恒 + CurrentForm/MaximumForm 同步 + DOTA2 血量联动）
-      DotaHookBus.RegisterAfterCastSpell("morphling.attribute_shift", Args =>
-      {
-        var SpellName = Args.Spell?.Name;
-        bool IsAgilityShift = string.Equals(SpellName, MorphAgilitySpellName, StringComparison.OrdinalIgnoreCase);
-        bool IsStrengthShift = string.Equals(SpellName, MorphStrengthSpellName, StringComparison.OrdinalIgnoreCase);
-        if (!IsAgilityShift && !IsStrengthShift)
-          return;
-
-        ExecuteAttributeShift(Ctx, Args, ToAgility: IsAgilityShift);
       });
 
       // T1 左天赋（+12s 变形持续时间）：变形期间额外提供 +2 防御
@@ -542,9 +493,10 @@ namespace Pathos.DotaHeroes.Heroes
         IsMorphling(Args.Defender) && TalentService.HasTalent(Args.Defender, TalentT1MagicResist) ? 0.15f : 0.0f);
     }
 
-    private void ExecuteWaveform(DotaHeroContext Ctx, SpellCastEventArgs Args)
+    private void ExecuteWaveform(DotaHeroContext Ctx, DotaAbilityCast Cast)
     {
-      var Caster = Args.Character;
+      var Args = Cast.Args;
+      var Caster = Cast.Caster;
       if (Caster?.Square == null)
         return;
 
@@ -552,8 +504,8 @@ namespace Pathos.DotaHeroes.Heroes
       WaveformOriginSquares.Remove(Caster);
       OriginSquare ??= Caster.Square;
 
-      var Pending = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      int MaxRange = GetWaveformRange(Ctx, Caster);
+      var Pending = Cast.ConsumePendingTarget();
+      int MaxRange = Cast.Range;
       Square ClickedSquare = null;
       Square DestSquare = null;
 
@@ -619,7 +571,7 @@ namespace Pathos.DotaHeroes.Heroes
       else
         DestSquare = Caster.Square;
 
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.transmutation);
+      int Tier = Cast.Tier;
       int Idx = Math.Clamp(Tier - 1, 0, WaveformDotaDamages.Length - 1);
       int Radius = WaveformRadii[Idx];
       int EvasionTurns = WaveformEvasionTurns[Idx];
@@ -708,24 +660,17 @@ namespace Pathos.DotaHeroes.Heroes
       return Best;
     }
 
-    private void ExecuteAdaptiveStrike(DotaHeroContext Ctx, SpellCastEventArgs Args)
+    private void ExecuteAdaptiveStrike(DotaHeroContext Ctx, DotaAbilityCast Cast)
     {
-      var Caster = Args.Character;
+      var Args = Cast.Args;
+      var Caster = Cast.Caster;
       if (Caster?.Square == null)
         return;
 
-      var Pending = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      int CastRange = GetAdaptiveStrikeRange(Ctx, Caster);
-      var Target = DotaCombatHelper.ResolveHostileTarget(Caster, Args.Direction, CastRange, Pending, AllowDirectionFallback: true);
-
-      if (Target == null || Target == Caster || Target.Deceased || Target.Square == null)
-      {
-        DotaCombatHelper.RefundSpellCost(Args);
-        PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, Args.Spell?.Glyph, DotaLocalization.T("morph.log.adaptive_no_target"));
+      if (!Cast.TryResolveHostileTarget(out var Target, "morph.log.adaptive_no_target"))
         return;
-      }
 
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.evocation);
+      int Tier = Cast.Tier;
       int Idx = Math.Clamp(Tier - 1, 0, AdaptiveStrikeDotaDamages.Length - 1);
       int Dex = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(Caster, "dexterity"));
       int Str = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(Caster, "strength"));
@@ -764,20 +709,19 @@ namespace Pathos.DotaHeroes.Heroes
       }
     }
 
-    private void ExecuteMorph(DotaHeroContext Ctx, SpellCastEventArgs Args)
+    private void ExecuteMorph(DotaHeroContext Ctx, DotaAbilityCast Cast)
     {
-      var Caster = Args.Character;
+      var Args = Cast.Args;
+      var Caster = Cast.Caster;
       if (Caster?.Square == null)
         return;
 
-      var Pending = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      int CastRange = GetMorphRange(Ctx, Caster);
-      var Target = DotaCombatHelper.ResolveHostileTarget(Caster, Args.Direction, CastRange, Pending, AllowDirectionFallback: true);
+      if (!Cast.TryResolveHostileTarget(out var Target, "morph.log.morph_no_target"))
+        return;
 
-      if (Target == null || Target == Caster || Target.Deceased || Target.Entity == null)
+      if (Target.Entity == null)
       {
-        DotaCombatHelper.RefundSpellCost(Args);
-        PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, Args.Spell?.Glyph ?? MorphGlyph, DotaLocalization.T("morph.log.morph_no_target"));
+        Cast.RefundAndLog("morph.log.morph_no_target");
         return;
       }
 
@@ -790,14 +734,14 @@ namespace Pathos.DotaHeroes.Heroes
         PathosEngineBridge.StoryExploding(Args.Engine, Delay.HalfSecond, Caster.Square, WaveformSplashExplosion);
     }
 
-    private static void ExecuteAttributeShift(DotaHeroContext Ctx, SpellCastEventArgs Args, bool ToAgility)
+    private static void ExecuteAttributeShift(DotaHeroContext Ctx, DotaAbilityCast Cast, bool ToAgility)
     {
-      var Character = Args.Character;
+      var Args = Cast.Args;
+      var Character = Cast.Caster;
       if (Character?.CurrentForm == null || Character.MaximumForm == null)
         return;
 
-      int Step = DotaCombatHelper.GetSkillTier(Ctx, Character, Ctx.Skills.transmutation) +
-                 GetAttributeShiftExtraStep(Character);
+      int Step = Cast.Tier + GetAttributeShiftExtraStep(Character);
 
       int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Character, "strength");
       int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Character, "constitution");
@@ -903,64 +847,30 @@ namespace Pathos.DotaHeroes.Heroes
     }
 
     private static float GetWaveformStarDamageMultiplier(Character Character)
-      => 1.0f + Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillWaveformId) - 1) * 0.15f;
+      => WaveformAbility.StarMultiplier(Character);
 
     private static int GetWaveformExtraRange(Character Character)
-      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillWaveformId) - 1);
+      => WaveformAbility.StarSteps(Character);
 
     private static float GetAdaptiveStrikeStarDamageMultiplier(Character Character)
-      => 1.0f + Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillAdaptiveStrikeId) - 1) * 0.15f;
+      => AdaptiveStrikeAbility.StarMultiplier(Character);
 
     private static int GetAdaptiveStrikeExtraMaxStun(Character Character)
-      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillAdaptiveStrikeId) - 1);
+      => AdaptiveStrikeAbility.StarSteps(Character);
 
     private static int GetAttributeShiftExtraStep(Character Character)
-      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillAttributeShiftId) - 1);
+      => MorphAgilityAbility.StarSteps(Character);
 
     private static int GetMorphExtraRange(Character Character)
-      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillMorphId) - 1);
+      => MorphAbility.StarSteps(Character);
 
     private static int GetWaveformTalentRangeBonus(Character Character)
       => TalentService.HasTalent(Character, TalentT2WaveformRange) ? TalentWaveformRangeBonus : 0;
-
-    private static int GetWaveformRange(DotaHeroContext Ctx, Character Caster)
-    {
-      var Qual = PathosEngineBridge.GetQualification(Caster, Ctx.Skills.transmutation);
-      int BaseRange = Qual == Ctx.Qualifications.champion ? 11
-        : Qual == Ctx.Qualifications.master ? 9
-        : Qual == Ctx.Qualifications.expert ? 7
-        : Qual == Ctx.Qualifications.specialist ? 6
-        : 5;
-      return BaseRange + GetStrRangeBonus(Caster) + GetWaveformExtraRange(Caster) + GetWaveformTalentRangeBonus(Caster);
-    }
-
-    private static int GetAdaptiveStrikeRange(DotaHeroContext Ctx, Character Caster)
-    {
-      var Qual = PathosEngineBridge.GetQualification(Caster, Ctx.Skills.evocation);
-      int BaseRange = Qual == Ctx.Qualifications.champion ? 9
-        : Qual == Ctx.Qualifications.master ? 8
-        : Qual == Ctx.Qualifications.expert ? 7
-        : Qual == Ctx.Qualifications.specialist ? 6
-        : 5;
-      return BaseRange + GetStrRangeBonus(Caster);
-    }
-
-    private static int GetMorphRange(DotaHeroContext Ctx, Character Caster)
-    {
-      var Qual = PathosEngineBridge.GetQualification(Caster, Ctx.Skills.transmutation);
-      int BaseRange = Qual == Ctx.Qualifications.champion ? 10
-        : Qual == Ctx.Qualifications.master ? 8
-        : Qual == Ctx.Qualifications.expert ? 7
-        : Qual == Ctx.Qualifications.specialist ? 6
-        : 5;
-      return BaseRange + GetStrRangeBonus(Caster) + GetMorphExtraRange(Caster);
-    }
 
     private static bool IsMorphling(Character Character)
       => DotaCombatHelper.IsClass(Character, MorphlingClassName);
 
     private static readonly float[] WaveformDotaDamages = { 75.0f, 150.0f, 225.0f, 300.0f, 360.0f };
-    private static readonly int[] WaveformBaseRanges = { 5, 6, 7, 9, 11 };
     private static readonly int[] WaveformRadii = { 2, 2, 2, 3, 3 };
     private static readonly int[] WaveformEvasionTurns = { 3, 4, 4, 5, 6 };
 
@@ -969,8 +879,6 @@ namespace Pathos.DotaHeroes.Heroes
     private const float AdaptiveStrikeMinAgiMult = 0.35f;
     private static readonly float[] AdaptiveStrikeMaxAgiMults = { 0.90f, 1.10f, 1.30f, 1.50f, 1.70f };
     private static readonly float[] AdaptiveStrikeMaxStunSeconds = { 1.2f, 1.6f, 2.0f, 2.4f, 2.8f };
-    private static readonly int[] AdaptiveStrikeBaseRanges = { 5, 6, 7, 8, 9 };
-    private static readonly int[] MorphBaseRanges = { 5, 6, 7, 8, 10 };
 
     private static float GetAdaptiveStrikeMaxAgiMultiplier(int Tier)
       => AdaptiveStrikeMaxAgiMults[Math.Clamp(Tier - 1, 0, AdaptiveStrikeMaxAgiMults.Length - 1)];
@@ -983,14 +891,14 @@ namespace Pathos.DotaHeroes.Heroes
       // 1. Q：波浪形态
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
-        SpellName = "waveform",
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        SpellName = WaveformSpellName,
+        ResolveCurrentTier = WaveformAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
+          int Tier = WaveformAbility.Tier(Ch);
           int Idx = Math.Clamp(Tier - 1, 0, 4);
-          int BaseRange = WaveformBaseRanges[Idx];
+          int BaseRange = WaveformAbility.BaseRange(Tier);
           int StrBonus = GetStrRangeBonus(Ch);
           int StarRange = GetWaveformExtraRange(Ch);
           int TalentRange = GetWaveformTalentRangeBonus(Ch);
@@ -1043,7 +951,7 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", WaveformBaseRanges[Idx]),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", WaveformAbility.BaseRange(Tier)),
               Bullets = new[]
               {
                 DotaLocalization.Format(
@@ -1061,14 +969,14 @@ namespace Pathos.DotaHeroes.Heroes
       // 2. W：变体打击
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
-        SpellName = "adaptive strike",
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation),
+        SpellName = AdaptiveStrikeSpellName,
+        ResolveCurrentTier = AdaptiveStrikeAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation);
+          int Tier = AdaptiveStrikeAbility.Tier(Ch);
           int Idx = Math.Clamp(Tier - 1, 0, 4);
-          int BaseRange = AdaptiveStrikeBaseRanges[Idx];
+          int BaseRange = AdaptiveStrikeAbility.BaseRange(Tier);
           int StrBonus = GetStrRangeBonus(Ch);
           Dice BaseDice = DotaMechanicsMapper.MapSkillDamageDice(AdaptiveStrikeDotaDamages[Idx]);
 
@@ -1133,7 +1041,7 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", AdaptiveStrikeBaseRanges[Idx]),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", AdaptiveStrikeAbility.BaseRange(Tier)),
               Bullets = new[]
               {
                 DotaLocalization.Format(
@@ -1150,12 +1058,12 @@ namespace Pathos.DotaHeroes.Heroes
       // 3. E1：属性转换·敏捷
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
-        SpellName = "morph agility",
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        SpellName = MorphAgilitySpellName,
+        ResolveCurrentTier = MorphAgilityAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Step = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation) + GetAttributeShiftExtraStep(Ch);
+          int Step = MorphAgilityAbility.Tier(Ch) + GetAttributeShiftExtraStep(Ch);
           int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
           int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
           int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
@@ -1206,12 +1114,12 @@ namespace Pathos.DotaHeroes.Heroes
       // 4. E2：属性转换·力量
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
-        SpellName = "morph strength",
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        SpellName = MorphStrengthSpellName,
+        ResolveCurrentTier = MorphStrengthAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Step = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation) + GetAttributeShiftExtraStep(Ch);
+          int Step = MorphStrengthAbility.Tier(Ch) + GetAttributeShiftExtraStep(Ch);
           int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
           int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
           int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
@@ -1262,13 +1170,13 @@ namespace Pathos.DotaHeroes.Heroes
       // 5. R1：变形
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
-        SpellName = "morph",
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        SpellName = MorphSpellName,
+        ResolveCurrentTier = MorphAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
-          int BaseRange = MorphBaseRanges[Math.Clamp(Tier - 1, 0, 4)];
+          int Tier = MorphAbility.Tier(Ch);
+          int BaseRange = MorphAbility.BaseRange(Tier);
           int StrBonus = GetStrRangeBonus(Ch);
           int StarRange = GetMorphExtraRange(Ch);
           int TotalRange = BaseRange + StrBonus + StarRange;
@@ -1300,12 +1208,12 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", MorphBaseRanges[Tier - 1]),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", MorphAbility.BaseRange(Tier)),
               Bullets = new[]
               {
                 DotaLocalization.Format(
                   "morph.help.r.tier_bullet",
-                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", MorphBaseRanges[Tier - 1])),
+                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", MorphAbility.BaseRange(Tier))),
                   DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
               }
             });
@@ -1400,172 +1308,114 @@ namespace Pathos.DotaHeroes.Heroes
         });
     }
 
-    private static Spell RegisterWaveformSpell(DotaHeroContext Ctx, Glyph Icon)
+    private void RegisterAbilities(
+      DotaHeroContext Ctx,
+      Glyph WaveformIcon,
+      Glyph AdaptiveStrikeIcon,
+      Glyph MorphAgilityIcon,
+      Glyph MorphStrengthIcon,
+      Glyph MorphIcon,
+      Glyph MorphRevertIcon)
     {
-      return Ctx.Spells.Add(S =>
+      // Q：波浪形态（点任意格：空地 / 敌人身后 / 墙边自动寻找落点；DOTA2 7.42 伤害 75/150/225/300，Champion 360 在 OnCast 中经 K_dmg = 15 生成伤害骰）
+      WaveformAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = "waveform";
-        S.Description = "Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.transmutation;
-        S.Precept = new Precept(Purpose.Teleport);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(WaveformManaCost);
-        S.Mana = WaveformManaCost;
-
-        void Configure(Qualification Qual, int Range)
-        {
-          var Adept = S.SetAdept(Qual);
-          // 声明式仅保留全射程施法外壳，精准突进、路径+落点全范围敌方 AOE 伤害与穿墙/闪避状态由 Hook 全权结算
-          Adept.SetCast().Plain(Dice.Fixed(Range));
-          Adept.Apply.Nothing();
-        }
-
-        // DOTA2 7.42 波浪形态基础伤害：75 / 150 / 225 / 300（Champion 360）在 Hook 中经 K_dmg = 15 自动生成伤害骰
-        Configure(Ctx.Qualifications.proficient, Range: 5);
-        Configure(Ctx.Qualifications.specialist, Range: 6);
-        Configure(Ctx.Qualifications.expert, Range: 7);
-        Configure(Ctx.Qualifications.master, Range: 9);
-        Configure(Ctx.Qualifications.champion, Range: 11);
+        SpellName = WaveformSpellName,
+        DisplayTitle = "Waveform",
+        TitleResolver = () => DotaLocalization.T("morph.skill.q.title"),
+        Description = "Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
+        Icon = WaveformIcon,
+        School = Ctx.Schools.transmutation,
+        Skill = Ctx.Skills.transmutation,
+        Precept = new Precept(Purpose.Teleport),
+        ManaCost = WaveformManaCost,
+        Targeting = DotaAbilityTargeting.PointAny,
+        Range = DotaTable.Of(5, 6, 7, 9, 11),
+        RangeBonus = Ch => GetStrRangeBonus(Ch) + WaveformAbility.StarSteps(Ch) + GetWaveformTalentRangeBonus(Ch),
+        SkillSlotId = SkillWaveformId,
+        OnCast = Cast => ExecuteWaveform(Ctx, Cast)
       });
-    }
 
-    private static Spell RegisterAdaptiveStrikeSpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
+      // W：变体打击（指向敌方；基础水伤 + 敏捷爆发 + 力量眩晕/击退）
+      AdaptiveStrikeAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = "adaptive strike";
-        S.Description = "Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.evocation;
-        S.Precept = new Precept(Purpose.Blast, Ctx.Elements.water);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(AdaptiveStrikeManaCost);
-        S.Mana = AdaptiveStrikeManaCost;
-
-        void Configure(Qualification Qual, int Range)
-        {
-          var Adept = S.SetAdept(Qual);
-          // 声明式仅保留全射程施法外壳，真实单体水伤/敏捷爆发/力量击退与眩晕由 Hook 精准锁定敌方目标结算，绝不误伤/自晕
-          Adept.SetCast().Plain(Dice.Fixed(Range));
-          Adept.Apply.Nothing();
-        }
-
-        // DOTA2 7.42 变体打击基础伤害：50 / 70 / 90 / 110（Champion 130）在 Hook 中经 K_dmg = 15 掷骰并叠加敏捷爆发
-        Configure(Ctx.Qualifications.proficient, 5);
-        Configure(Ctx.Qualifications.specialist, 6);
-        Configure(Ctx.Qualifications.expert, 7);
-        Configure(Ctx.Qualifications.master, 8);
-        Configure(Ctx.Qualifications.champion, 9);
+        SpellName = AdaptiveStrikeSpellName,
+        DisplayTitle = "Adaptive Strike",
+        TitleResolver = () => DotaLocalization.T("morph.skill.w.title"),
+        Description = "Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
+        Icon = AdaptiveStrikeIcon,
+        School = Ctx.Schools.evocation,
+        Skill = Ctx.Skills.evocation,
+        Precept = new Precept(Purpose.Blast, Ctx.Elements.water),
+        ManaCost = AdaptiveStrikeManaCost,
+        Targeting = DotaAbilityTargeting.UnitHostile,
+        Range = DotaTable.Of(5, 6, 7, 8, 9),
+        RangeBonus = GetStrRangeBonus,
+        SkillSlotId = SkillAdaptiveStrikeId,
+        OnCast = Cast => ExecuteAdaptiveStrike(Ctx, Cast)
       });
-    }
 
-    private static Spell RegisterMorphAgilitySpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
+      // E1 / E2：属性转换（自身施放，0 蓝耗；两个法术共享同一技能槽）
+      MorphAgilityAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = "morph agility";
-        S.Description = "Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.transmutation;
-        S.Precept = new Precept(Purpose.Buff);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(AttributeShiftManaCost);
-        S.Mana = AttributeShiftManaCost;
-
-        // 声明式仅保留施法外壳，真实属性转换与血量联动由 Hook 全权执行
-        void Configure(Qualification Qual)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().SetTargetSelf(true);
-          Adept.Apply.Nothing();
-        }
-
-        Configure(Ctx.Qualifications.proficient);
-        Configure(Ctx.Qualifications.specialist);
-        Configure(Ctx.Qualifications.expert);
-        Configure(Ctx.Qualifications.master);
-        Configure(Ctx.Qualifications.champion);
+        SpellName = MorphAgilitySpellName,
+        Description = "Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
+        Icon = MorphAgilityIcon,
+        School = Ctx.Schools.transmutation,
+        Skill = Ctx.Skills.transmutation,
+        Precept = new Precept(Purpose.Buff),
+        ManaCost = AttributeShiftManaCost,
+        Targeting = DotaAbilityTargeting.Self,
+        SkillSlotId = SkillAttributeShiftId,
+        OnCast = Cast => ExecuteAttributeShift(Ctx, Cast, ToAgility: true)
       });
-    }
 
-    private static Spell RegisterMorphStrengthSpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
+      MorphStrengthAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = "morph strength";
-        S.Description = "Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.transmutation;
-        S.Precept = new Precept(Purpose.Healing);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(AttributeShiftManaCost);
-        S.Mana = AttributeShiftManaCost;
-
-        // 声明式仅保留施法外壳，真实属性转换与血量联动由 Hook 全权执行
-        void Configure(Qualification Qual)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().SetTargetSelf(true);
-          Adept.Apply.Nothing();
-        }
-
-        Configure(Ctx.Qualifications.proficient);
-        Configure(Ctx.Qualifications.specialist);
-        Configure(Ctx.Qualifications.expert);
-        Configure(Ctx.Qualifications.master);
-        Configure(Ctx.Qualifications.champion);
+        SpellName = MorphStrengthSpellName,
+        Description = "Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
+        Icon = MorphStrengthIcon,
+        School = Ctx.Schools.transmutation,
+        Skill = Ctx.Skills.transmutation,
+        Precept = new Precept(Purpose.Healing),
+        ManaCost = AttributeShiftManaCost,
+        Targeting = DotaAbilityTargeting.Self,
+        SkillSlotId = SkillAttributeShiftId,
+        OnCast = Cast => ExecuteAttributeShift(Ctx, Cast, ToAgility: false)
       });
-    }
 
-    private static Spell RegisterMorphSpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
+      // R1：变形（指向敌方，调用 Engine.ImpersonateCharacter，兜底 PolymorphCharacter）
+      MorphAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = "morph";
-        S.Description = "Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.transmutation;
-        S.Precept = new Precept(Purpose.Buff);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(MorphManaCost);
-        S.Mana = MorphManaCost;
-
-        void Configure(Qualification Qual, int Range)
-        {
-          var Adept = S.SetAdept(Qual);
-          // 声明式仅保留施法外壳，由 Hook 精准解析全射程选中的敌方目标并调用 Engine.ImpersonateCharacter（含兜底 PolymorphCharacter）
-          Adept.SetCast().Plain(Dice.Fixed(Range));
-          Adept.Apply.Nothing();
-        }
-
-        Configure(Ctx.Qualifications.proficient, 5);
-        Configure(Ctx.Qualifications.specialist, 6);
-        Configure(Ctx.Qualifications.expert, 7);
-        Configure(Ctx.Qualifications.master, 8);
-        Configure(Ctx.Qualifications.champion, 10);
+        SpellName = MorphSpellName,
+        DisplayTitle = "Morph",
+        TitleResolver = () => DotaLocalization.T("morph.spell.morph.title"),
+        Description = "Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
+        Icon = MorphIcon,
+        School = Ctx.Schools.transmutation,
+        Skill = Ctx.Skills.transmutation,
+        Precept = new Precept(Purpose.Buff),
+        ManaCost = MorphManaCost,
+        Targeting = DotaAbilityTargeting.UnitHostile,
+        Range = DotaTable.Of(5, 6, 7, 8, 10),
+        RangeBonus = Ch => GetStrRangeBonus(Ch) + MorphAbility.StarSteps(Ch),
+        SkillSlotId = SkillMorphId,
+        OnCast = Cast => ExecuteMorph(Ctx, Cast)
       });
-    }
 
-    private static Spell RegisterMorphRevertSpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
+      // R2：解除变形（纯声明式 UnpolymorphEntity，无需 OnCast）
+      MorphRevertAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = "morph revert";
-        S.Description = "Release your morphed form and immediately return to your true waterkin body.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.transmutation;
-        S.Precept = new Precept(Purpose.Buff);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(MorphRevertManaCost);
-        S.Mana = MorphRevertManaCost;
-
-        void Configure(Qualification Qual)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().SetTargetSelf(true);
-          Adept.Apply.UnpolymorphEntity();
-        }
-
-        Configure(Ctx.Qualifications.proficient);
-        Configure(Ctx.Qualifications.specialist);
-        Configure(Ctx.Qualifications.expert);
-        Configure(Ctx.Qualifications.master);
-        Configure(Ctx.Qualifications.champion);
+        SpellName = MorphRevertSpellName,
+        Description = "Release your morphed form and immediately return to your true waterkin body.",
+        Icon = MorphRevertIcon,
+        School = Ctx.Schools.transmutation,
+        Skill = Ctx.Skills.transmutation,
+        Precept = new Precept(Purpose.Buff),
+        ManaCost = MorphRevertManaCost,
+        Targeting = DotaAbilityTargeting.Self,
+        SkillSlotId = SkillMorphId,
+        ConfigureApply = (_, Apply) => Apply.UnpolymorphEntity()
       });
     }
 

@@ -132,7 +132,7 @@ Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等
 | **长效技能（先天 / 被动）** | `Ctx.RegisterPassiveProperty` + `Class.AddFeat(1, ...)` + `DotaHookBus` 实时驱动 | 水人「潮涨潮落」、主宰「剑心犹在」「剑舞」 |
 | **短期主动技能状态** | `Ctx.RegisterSkillStatusProperty`（自动从原生天赋栏与百科隐藏）+ `ApplyTransient` | 主宰「剑刃风暴」「无敌斩」 |
 | **左上角动态叠层徽章** | `DotaStatusBarBridge.RegisterProvider`（复用原生 `StatusIcon`，支持计数与点击查说明） | 主宰「剑心犹在」 |
-| **全射程选格 / 点地施法** | `DotaRangeTargetingBridge.RegisterSpell` + `DotaCombatHelper.ResolveHostileTarget` / `ResolveOpenPointTarget` + `RefundMana` | 主宰「无敌斩」「治疗守卫」、水人 Q/W/R |
+| **技能声明 / 全射程选格 / 点地施法** | `DotaAbility.Register`（外壳 + 选格 + 分发）+ `Cast.TryResolveHostileTarget` / `Cast.ResolveOpenPointTarget`（失败自动 `RefundSpellCost`） | 三位英雄全部主动技能 |
 | **被动加甲 / 减甲光环** | `RegisterDefenceQuery` + `DotaMechanicsMapper.MapArmorToDefence` | 框架内置支持 |
 | **概率暴击 / 吸血 / 法球** | `DotaDamage.RegisterCritSource`（`OnCrit` 内 `HealCharacter`）| 主宰「剑舞」（含 T4 暴击吸血） |
 | **持续光环 / 每回合转伤 / 治疗** | `AfterExecuteCommand` + `DotaCombatHelper.FindHostilesInRadius` / `IsFriendly` + `HealCharacter` | 主宰「剑刃风暴」「治疗守卫」 |

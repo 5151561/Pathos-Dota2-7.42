@@ -114,6 +114,10 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly DotaCharacterFlagSet SkipNextBladeFuryTick = new();
     private static readonly DotaCharacterFlagSet SkipNextOmnislashTick = new();
 
+    private static DotaAbility BladeFuryAbility;
+    private static DotaAbility HealingWardAbility;
+    private static DotaAbility OmnislashAbility;
+
     private Property BladeformTalentProperty;
     private Property BladeFuryStatusProperty;
     private Property OmnislashStatusProperty;
@@ -177,9 +181,10 @@ namespace Pathos.DotaHeroes.Heroes
       HealingWardEntity = RegisterHealingWardEntity(Ctx, HealingWardTotemGlyph);
 
       // 4. 注册主宰主动技能（Q / W / R）
-      var BladeFurySpell = RegisterBladeFurySpell(Ctx, BladeFuryGlyph, BladeFuryStatusProperty);
-      var HealingWardSpell = RegisterHealingWardSpell(Ctx, HealingWardGlyph, HealingWardEntity);
-      var OmnislashSpell = RegisterOmnislashSpell(Ctx, OmnislashGlyph);
+      RegisterAbilities(Ctx, BladeFuryGlyph, HealingWardGlyph, OmnislashGlyph);
+      var BladeFurySpell = BladeFuryAbility.Spell;
+      var HealingWardSpell = HealingWardAbility.Spell;
+      var OmnislashSpell = OmnislashAbility.Spell;
 
       // 5. 注册专属职业：主宰（juggernaut）
       var JuggernautClass = RegisterJuggernautClass(
@@ -238,7 +243,7 @@ namespace Pathos.DotaHeroes.Heroes
             ? DotaLocalization.T("jugg.skill.q.desc_0")
             : DotaLocalization.Format(
                 "jugg.skill.q.desc_lv",
-                $"{1.0f + (Lv - 1) * 0.15f:0.00}",
+                $"{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}",
                 Lv >= 4 ? DotaLocalization.T("jugg.skill.q.desc_max_suffix") : DotaLocalization.T("jugg.skill.q.desc_next_suffix")),
           TitleResolver: () => DotaLocalization.T("jugg.skill.q.title")),
         SlotW: DotaSkillSlot.CreateActive(
@@ -342,23 +347,7 @@ namespace Pathos.DotaHeroes.Heroes
       DotaMechanicsMapper.RegisterFixedStartingStats(JuggernautClassName, StartingStats);
       DotaMechanicsMapper.RegisterHeroStatLimits(JuggernautClassName, StatLimits);
 
-      // 0.1 注册 Pathos 原生选框扩距（无敌斩 4~7 格敌方目标选定；治疗守卫 3~5 格点地召唤）
-      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
-        SpellName: OmnislashSpellName,
-        DisplayTitle: "Omnislash",
-        Mode: DotaTargetMode.UnitHostile,
-        ResolveRange: Caster => GetOmnislashCastRange(Ctx, Caster),
-        AllowSelf: false,
-        ResolveDisplayTitle: () => DotaLocalization.T("jugg.skill.r.title")));
-
-      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
-        SpellName: HealingWardSpellName,
-        DisplayTitle: "Healing Ward",
-        Mode: DotaTargetMode.PointOpen,
-        ResolveRange: Caster => GetHealingWardCastRange(Ctx, Caster),
-        AllowSelf: true,
-        ResolveDisplayTitle: () => DotaLocalization.T("jugg.skill.w.title")));
-
+      // 0.1 全射程选格与施法分发由 DotaAbility 自动注册（无敌斩 4~7 格敌方目标选定；治疗守卫 3~5 格点地召唤）
       // 0.2 注册「剑心犹在」左上角状态栏动态叠层显示（叠层 > 0 时展示层数，受击粘滞期以橙色高亮提示）
       DotaStatusBarBridge.RegisterProvider("juggernaut.bladeform", Character =>
       {
@@ -392,27 +381,6 @@ namespace Pathos.DotaHeroes.Heroes
       DotaModifierService.RegisterDebuffImmunity(
         "juggernaut.blade_fury_debuff_immunity",
         Ch => BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Ch, BladeFuryStatusProperty));
-
-      // 1. 施法后置钩子：Q 剑刃风暴（驱散+立刻触发一次转伤）、W 治疗守卫（追踪/替换）、R 无敌斩（连续瞬移斩击）
-      DotaHookBus.RegisterAfterCastSpell("juggernaut.spell_casts", Args =>
-      {
-        var SpellName = Args.Spell?.Name;
-        if (string.IsNullOrEmpty(SpellName))
-          return;
-
-        if (string.Equals(SpellName, BladeFurySpellName, StringComparison.OrdinalIgnoreCase))
-        {
-          HandleBladeFuryCast(Ctx, Args);
-        }
-        else if (string.Equals(SpellName, HealingWardSpellName, StringComparison.OrdinalIgnoreCase))
-        {
-          HandleHealingWardCast(Ctx, Args);
-        }
-        else if (string.Equals(SpellName, OmnislashSpellName, StringComparison.OrdinalIgnoreCase))
-        {
-          HandleOmnislashCast(Ctx, Args);
-        }
-      });
 
       // 2. 行动完成钩子：驱动先天「剑心犹在」叠层/粘滞、剑刃风暴每回合转伤、治疗守卫每回合光环回血
       DotaHookBus.RegisterAfterExecuteCommand("juggernaut.turn_ticks", Args =>
@@ -462,7 +430,7 @@ namespace Pathos.DotaHeroes.Heroes
         // 满级（Lv 4 / ★★★）剑刃风暴额外 +2 回合持续时间
         if (Args.Property == BladeFuryStatusProperty &&
             IsJuggernaut(Args.Target) &&
-            HeroSkillService.GetSkillLevel(Args.Target, SkillBladeFuryId) >= 4)
+            BladeFuryAbility.Level(Args.Target) >= 4)
         {
           int BaseTurns = Math.Max(1, (int)MathF.Round(Args.Duration.Average()));
           Args.Duration = Dice.Fixed(BaseTurns + 2);
@@ -648,9 +616,10 @@ namespace Pathos.DotaHeroes.Heroes
       }
     }
 
-    private void HandleBladeFuryCast(DotaHeroContext Ctx, SpellCastEventArgs Args)
+    private void HandleBladeFuryCast(DotaHeroContext Ctx, DotaAbilityCast Cast)
     {
-      var Caster = Args.Character;
+      var Args = Cast.Args;
+      var Caster = Cast.Caster;
       if (Caster == null)
         return;
 
@@ -671,7 +640,7 @@ namespace Pathos.DotaHeroes.Heroes
       if (Caster?.Square == null || Caster.Deceased)
         return;
 
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.evocation);
+      int Tier = BladeFuryAbility.Tier(Caster);
       int Dex = PathosEngineBridge.GetCurrentAbilityScore(Caster, "dexterity");
       int BladeformStacks = IsJuggernaut(Caster) ? GetBladeformState(Caster).Stacks : 0;
 
@@ -705,13 +674,14 @@ namespace Pathos.DotaHeroes.Heroes
       }
     }
 
-    private void HandleHealingWardCast(DotaHeroContext Ctx, SpellCastEventArgs Args)
+    private void HandleHealingWardCast(DotaHeroContext Ctx, DotaAbilityCast Cast)
     {
-      var Caster = Args.Character;
+      var Args = Cast.Args;
+      var Caster = Cast.Caster;
       if (Caster?.Square == null)
         return;
 
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.clerical);
+      int Tier = Cast.Tier;
       int Duration = GetHealingWardDurationByTier(Tier) + GetHealingWardExtraTurns(Caster);
       float HealPct = GetHealingWardHealPctByTier(Tier) + GetHealingWardExtraHealPct(Caster);
 
@@ -725,8 +695,7 @@ namespace Pathos.DotaHeroes.Heroes
       }
 
       // 2. 确定召唤落点：优先玩家通过全射程选格指示器指定的格子，否则回退至施法方向相邻空位或自身周围空位
-      var PendingTarget = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      var PlacementSq = DotaCombatHelper.ResolveOpenPointTarget(Caster, Args.Direction, PendingTarget);
+      var PlacementSq = Cast.ResolveOpenPointTarget();
       if (PlacementSq == null || HealingWardEntity == null)
         return;
 
@@ -802,32 +771,18 @@ namespace Pathos.DotaHeroes.Heroes
         PathosEngineBridge.DespawnSummon(Engine, Ward, "expired");
     }
 
-    private void HandleOmnislashCast(DotaHeroContext Ctx, SpellCastEventArgs Args)
+    private void HandleOmnislashCast(DotaHeroContext Ctx, DotaAbilityCast Cast)
     {
-      var Caster = Args.Character;
+      var Args = Cast.Args;
+      var Caster = Cast.Caster;
       if (Caster?.Square == null || Caster.Deceased)
         return;
 
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.transmutation);
-      int CastRange = GetOmnislashCastRange(Ctx, Caster);
-
-      // 优先使用 DOTA2 全射程选格指示器锁定的精确敌方目标（含 1 格智能吸附、方向射线与最近敌人回退）
-      var PendingTarget = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      var InitialTarget = DotaCombatHelper.ResolveHostileTarget(Caster, Args.Direction, CastRange, PendingTarget);
-
-      if (InitialTarget == null)
-      {
-        // 空大保护：未找到目标时按本次实际扣除的法力值返还（自动包含天赋折减）
-        DotaCombatHelper.RefundSpellCost(Args);
-
-        PathosEngineBridge.WriteInternalLog(
-          Args.Engine,
-          Caster,
-          OmnislashGlyph,
-          DotaLocalization.T("jugg.log.omni_no_target"));
+      // 优先使用 DOTA2 全射程选格指示器锁定的精确敌方目标（含 1 格智能吸附、方向射线与最近敌人回退）；空大按本次实际扣蓝返还
+      if (!Cast.TryResolveHostileTarget(out var InitialTarget, "jugg.log.omni_no_target"))
         return;
-      }
 
+      int Tier = Cast.Tier;
       int Dex = PathosEngineBridge.GetCurrentAbilityScore(Caster, "dexterity");
       int Str = PathosEngineBridge.GetCurrentAbilityScore(Caster, "strength");
       int BaseSlashes = Math.Clamp(4 + Tier + Math.Max(0, (Dex - 14) / 6), 5, 12);
@@ -990,78 +945,37 @@ namespace Pathos.DotaHeroes.Heroes
       return ActiveOmnislashSessions.TryGetValue(Character, out var Session) && Session.RemainingSlashes > 0;
     }
 
-    private static int GetOmnislashCastRangeByTier(int Tier) => Tier switch
-    {
-      1 => 4,
-      2 => 5,
-      3 => 5,
-      4 => 6,
-      _ => 7
-    };
-
-    private static int GetOmnislashCastRange(DotaHeroContext Ctx, Character Caster)
-      => GetOmnislashCastRangeByTier(DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.transmutation));
-
-    private static int GetHealingWardCastRangeByTier(int Tier) => Tier switch
-    {
-      1 => 3,
-      2 => 3,
-      3 => 4,
-      4 => 4,
-      _ => 5
-    };
-
-    private static int GetHealingWardCastRange(DotaHeroContext Ctx, Character Caster)
-      => GetHealingWardCastRangeByTier(DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.clerical));
+    // 5 阶熟练度数值表（1 Proficient .. 5 Champion）
+    private static readonly DotaTable<float> HealingWardDurationSeconds = DotaTable.Of(18.0f, 20.0f, 22.0f, 24.0f, 24.0f);
+    private static readonly DotaTable<float> HealingWardHealPctPerSecond = DotaTable.Of(0.02f, 0.03f, 0.04f, 0.05f, 0.065f);
+    private static readonly DotaTable<float> BladeFuryDurationSeconds = DotaTable.Of(5.0f, 5.0f, 5.0f, 5.0f, 6.0f); // Champion 对应 +1 秒天赋
 
     private static int GetHealingWardDurationByTier(int Tier)
-    {
-      float Seconds = Tier switch
-      {
-        1 => 18.0f,
-        2 => 20.0f,
-        3 => 22.0f,
-        _ => 24.0f
-      };
-      return DotaMechanicsMapper.MapDurationTurns(Seconds);
-    }
+      => DotaMechanicsMapper.MapDurationTurns(HealingWardDurationSeconds[Tier]);
 
     private static float GetHealingWardHealPctByTier(int Tier)
-    {
-      float HealPerSec = Tier switch
-      {
-        1 => 0.02f,
-        2 => 0.03f,
-        3 => 0.04f,
-        4 => 0.05f,
-        _ => 0.065f
-      };
-      return HealPerSec / DotaMechanicsMapper.TurnsPerSecond;
-    }
+      => HealingWardHealPctPerSecond[Tier] / DotaMechanicsMapper.TurnsPerSecond;
 
     private static int GetBladeFuryDurationByTier(int Tier)
-      => DotaMechanicsMapper.MapDurationTurns(Tier >= 5 ? 6.0f : 5.0f);
+      => DotaMechanicsMapper.MapDurationTurns(BladeFuryDurationSeconds[Tier]);
 
     private static float GetBladeFuryStarDamageMultiplier(Character Character)
-    {
-      int SkillLv = Math.Max(1, HeroSkillService.GetSkillLevel(Character, SkillBladeFuryId));
-      return 1.0f + (SkillLv - 1) * 0.15f;
-    }
+      => BladeFuryAbility.StarMultiplier(Character);
 
     private static int GetBladeFuryExtraTurns(Character Character)
-      => HeroSkillService.GetSkillLevel(Character, SkillBladeFuryId) >= 4 ? 2 : 0;
+      => BladeFuryAbility.Level(Character) >= 4 ? 2 : 0;
 
     private static int GetHealingWardExtraTurns(Character Character)
-      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillHealingWardId) - 1) * 4;
+      => HealingWardAbility.StarSteps(Character) * 4;
 
     private static float GetHealingWardExtraHealPct(Character Character)
-      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillHealingWardId) - 1) * 0.005f;
+      => HealingWardAbility.StarSteps(Character) * 0.005f;
 
     private static int GetOmnislashExtraSlashes(Character Character)
-      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillOmnislashId) - 1) * 2;
+      => OmnislashAbility.StarSteps(Character) * 2;
 
     private static int GetOmnislashExtraDamage(Character Character)
-      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillOmnislashId) - 1) * 2;
+      => OmnislashAbility.StarSteps(Character) * 2;
 
     private static float GetBladeDanceCritChanceByLevel(int SkillLevel) => SkillLevel switch
     {
@@ -1081,11 +995,11 @@ namespace Pathos.DotaHeroes.Heroes
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
         SpellName = BladeFurySpellName,
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation),
+        ResolveCurrentTier = BladeFuryAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation);
+          int Tier = BladeFuryAbility.Tier(Ch);
           int ExtraTurns = GetBladeFuryExtraTurns(Ch);
           int Turns = GetBladeFuryDurationByTier(Tier) + ExtraTurns;
           int Dex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
@@ -1183,12 +1097,12 @@ namespace Pathos.DotaHeroes.Heroes
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
         SpellName = HealingWardSpellName,
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.clerical),
+        ResolveCurrentTier = HealingWardAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.clerical);
-          int Range = GetHealingWardCastRangeByTier(Tier);
+          int Tier = HealingWardAbility.Tier(Ch);
+          int Range = HealingWardAbility.BaseRange(Tier);
           int ExtraTurns = GetHealingWardExtraTurns(Ch);
           float ExtraHealPct = GetHealingWardExtraHealPct(Ch);
           int Duration = GetHealingWardDurationByTier(Tier) + ExtraTurns;
@@ -1237,7 +1151,7 @@ namespace Pathos.DotaHeroes.Heroes
           var List = new List<DotaSpellHelpTier>(5);
           for (int Tier = 1; Tier <= 5; Tier++)
           {
-            int Range = GetHealingWardCastRangeByTier(Tier);
+            int Range = HealingWardAbility.BaseRange(Tier);
             int Duration = GetHealingWardDurationByTier(Tier);
             float HealPct = GetHealingWardHealPctByTier(Tier);
             List.Add(new DotaSpellHelpTier
@@ -1261,12 +1175,12 @@ namespace Pathos.DotaHeroes.Heroes
       DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
       {
         SpellName = OmnislashSpellName,
-        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        ResolveCurrentTier = OmnislashAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
-          int CastRange = GetOmnislashCastRangeByTier(Tier);
+          int Tier = OmnislashAbility.Tier(Ch);
+          int CastRange = OmnislashAbility.BaseRange(Tier);
           int Dex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
           int Str = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
 
@@ -1370,7 +1284,7 @@ namespace Pathos.DotaHeroes.Heroes
           var List = new List<DotaSpellHelpTier>(5);
           for (int Tier = 1; Tier <= 5; Tier++)
           {
-            int Range = GetOmnislashCastRangeByTier(Tier);
+            int Range = OmnislashAbility.BaseRange(Tier);
             int MinSlashes = Math.Clamp(4 + Tier, 5, 12);
             int BonusDmg = DotaMechanicsMapper.MapSkillDamage(OmnislashBonusDotaDamage[Tier - 1]);
             List.Add(new DotaSpellHelpTier
@@ -1438,89 +1352,61 @@ namespace Pathos.DotaHeroes.Heroes
       });
     }
 
-    private static Spell RegisterBladeFurySpell(DotaHeroContext Ctx, Glyph Icon, Property BladeFuryStatus)
+    private void RegisterAbilities(DotaHeroContext Ctx, Glyph BladeFuryIcon, Glyph HealingWardIcon, Glyph OmnislashIcon)
     {
-      return Ctx.Spells.Add(S =>
+      // Q：剑刃风暴（自身施放，声明式施加原生 blade fury Transient：DOTA2 全等级 5 秒，Champion 对应 +1 秒 -> 6 秒）
+      BladeFuryAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
-        S.Name = BladeFurySpellName;
-        S.Description = "Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.evocation;
-        S.Precept = new Precept(Purpose.Buff);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(BladeFuryManaCost);
-        S.Mana = BladeFuryManaCost;
+        SpellName = BladeFurySpellName,
+        Description = "Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
+        Icon = BladeFuryIcon,
+        School = Ctx.Schools.evocation,
+        Skill = Ctx.Skills.evocation,
+        Precept = new Precept(Purpose.Buff),
+        ManaCost = BladeFuryManaCost,
+        Targeting = DotaAbilityTargeting.Self,
+        SkillSlotId = SkillBladeFuryId,
+        ConfigureApply = (Tier, Apply) => Apply.ApplyTransient(BladeFuryStatusProperty, Dice.Fixed(GetBladeFuryDurationByTier(Tier))),
+        OnCast = Cast => HandleBladeFuryCast(Ctx, Cast)
+      });
 
-        void Configure(Qualification Qual, int Turns)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().SetTargetSelf(true);
-          Adept.Apply.ApplyTransient(BladeFuryStatus, Dice.Fixed(Turns));
-        }
+      // W：治疗守卫（点地召唤，3~5 格随牧师系熟练度；声明式射线仅触发选格与扣蓝，唯一召唤由 HandleHealingWardCast 精确执行）
+      HealingWardAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
+      {
+        SpellName = HealingWardSpellName,
+        DisplayTitle = "Healing Ward",
+        TitleResolver = () => DotaLocalization.T("jugg.skill.w.title"),
+        Description = "Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
+        Icon = HealingWardIcon,
+        School = Ctx.Schools.clerical,
+        Skill = Ctx.Skills.clerical,
+        Precept = new Precept(Purpose.Healing),
+        ManaCost = HealingWardManaCost,
+        Targeting = DotaAbilityTargeting.PointOpen,
+        Range = DotaTable.Of(3, 3, 4, 4, 5),
+        AllowSelfTarget = true,
+        SkillSlotId = SkillHealingWardId,
+        OnCast = Cast => HandleHealingWardCast(Ctx, Cast)
+      });
 
-        // 对应 DOTA2 剑刃风暴全等级 5 秒（Champion 对应 +1 秒天赋 -> 6 秒）
-        Configure(Ctx.Qualifications.proficient, DotaMechanicsMapper.MapDurationTurns(5.0f)); // 10
-        Configure(Ctx.Qualifications.specialist, DotaMechanicsMapper.MapDurationTurns(5.0f)); // 10
-        Configure(Ctx.Qualifications.expert, DotaMechanicsMapper.MapDurationTurns(5.0f));     // 10
-        Configure(Ctx.Qualifications.master, DotaMechanicsMapper.MapDurationTurns(5.0f));     // 10
-        Configure(Ctx.Qualifications.champion, DotaMechanicsMapper.MapDurationTurns(6.0f));   // 12
+      // R：无敌斩（指向敌方，4~7 格随变化系熟练度）
+      OmnislashAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
+      {
+        SpellName = OmnislashSpellName,
+        DisplayTitle = "Omnislash",
+        TitleResolver = () => DotaLocalization.T("jugg.skill.r.title"),
+        Description = "Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
+        Icon = OmnislashIcon,
+        School = Ctx.Schools.transmutation,
+        Skill = Ctx.Skills.transmutation,
+        Precept = new Precept(Purpose.Teleport),
+        ManaCost = OmnislashManaCost,
+        Targeting = DotaAbilityTargeting.UnitHostile,
+        Range = DotaTable.Of(4, 5, 5, 6, 7),
+        SkillSlotId = SkillOmnislashId,
+        OnCast = Cast => HandleOmnislashCast(Ctx, Cast)
       });
     }
-
-    private static Spell RegisterHealingWardSpell(DotaHeroContext Ctx, Glyph Icon, Entity HealingWardEntity)
-    {
-      return Ctx.Spells.Add(S =>
-      {
-        S.Name = HealingWardSpellName;
-        S.Description = "Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.clerical;
-        S.Precept = new Precept(Purpose.Healing);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(HealingWardManaCost);
-        S.Mana = HealingWardManaCost;
-
-        void Configure(Qualification Qual, int Range)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().Plain(Dice.Fixed(Range)).SetTargetSelf(true);
-          // 声明式保留射程外壳以触发全射程选格指示器，实际唯一召唤由 HandleHealingWardCast 精确执行（避免 Plain 射线每格重复召唤）
-          Adept.Apply.Nothing();
-        }
-
-        Configure(Ctx.Qualifications.proficient, 3);
-        Configure(Ctx.Qualifications.specialist, 3);
-        Configure(Ctx.Qualifications.expert, 4);
-        Configure(Ctx.Qualifications.master, 4);
-        Configure(Ctx.Qualifications.champion, 5);
-      });
-    }
-
-    private static Spell RegisterOmnislashSpell(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Spells.Add(S =>
-      {
-        S.Name = OmnislashSpellName;
-        S.Description = "Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.";
-        S.Glyph = Icon;
-        S.School = Ctx.Schools.transmutation;
-        S.Precept = new Precept(Purpose.Teleport);
-        S.Level = DotaMechanicsMapper.MapSpellLevel(OmnislashManaCost);
-        S.Mana = OmnislashManaCost;
-
-        void Configure(Qualification Qual, int Range)
-        {
-          var Adept = S.SetAdept(Qual);
-          Adept.SetCast().Plain(Dice.Fixed(Range));
-          Adept.Apply.Nothing();
-        }
-
-        Configure(Ctx.Qualifications.proficient, 4);
-        Configure(Ctx.Qualifications.specialist, 5);
-        Configure(Ctx.Qualifications.expert, 5);
-        Configure(Ctx.Qualifications.master, 6);
-        Configure(Ctx.Qualifications.champion, 7);
-      });
-    }
-
     private static Class RegisterJuggernautClass(
       DotaHeroContext Ctx,
       Glyph AvatarGlyph,

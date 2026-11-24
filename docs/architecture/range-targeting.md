@@ -35,6 +35,8 @@ sequenceDiagram
 
 ## 2. 注册方式与三种目标模式
 
+> **推荐**：用 `DotaAbility.Register`（见 [hook-system.md §8](hook-system.md)）声明技能，选格注册、射程表、声明式外壳与目标消费全部自动完成；以下为底层 API，仅在 `DotaAbility` 不适用时直接使用。
+
 在英雄的 `RegisterHooks` 中调用 `DotaRangeTargetingBridge.RegisterSpell(...)` 即可接入：
 
 ```csharp
@@ -58,7 +60,7 @@ DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
 
 ## 3. 目标消费与标准解析（`DotaCombatHelper`）
 
-在英雄的 `AfterCastSpell` Hook 中，先调用 `DotaRangeTargetingBridge.ConsumePendingTarget(Caster)` 取出玩家点击结果，再按技能类型调用 `DotaCombatHelper` 标准解析器：
+使用 `DotaAbility` 时，`OnCast` 中直接调用 `Cast.TryResolveHostileTarget(out var Target, "<no_target_log_key>")`（失败自动按实际扣蓝返还并写日志）或 `Cast.ResolveOpenPointTarget()`。底层等价流程：在 `AfterCastSpell` Hook 中先调用 `DotaRangeTargetingBridge.ConsumePendingTarget(Caster)` 取出玩家点击结果，再按技能类型调用 `DotaCombatHelper` 标准解析器：
 
 ### 3.1 指向性敌方技能（`UnitHostile`）
 ```csharp
@@ -66,8 +68,8 @@ var Pending = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
 var Target = DotaCombatHelper.ResolveHostileTarget(Caster, Args.Direction, CastRange, Pending);
 if (Target == null)
 {
-  // 空大保护：按实际折后蓝耗返还法力
-  DotaCombatHelper.RefundMana(Caster, ActualManaCost);
+  // 空大保护：按本次实际扣蓝返还法力（含天赋折减）
+  DotaCombatHelper.RefundSpellCost(Args);
   return;
 }
 ```
