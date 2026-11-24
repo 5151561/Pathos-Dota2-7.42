@@ -32,9 +32,16 @@ Resources/Heroes/antimage/
 
 新建 `Heroes/<HeroName>Hero.cs`，实现 [IDotaHeroDefinition](../../Framework/IDotaHeroDefinition.cs)，按以下标准结构直接接入框架基建：
 
-#### 2.1 数值常量推导（`DotaMechanicsMapper`）
-- 初始六维：`DotaMechanicsMapper.MapStartingStats(BaseStr, BaseAgi, BaseInt, Charisma: 10)`
-- 1 级职业蓝量基准：`DotaMechanicsMapper.ComputeClassManaBase(DotaBaseInt, RaceManaBase, StartingStats.Wis)`
+#### 2.1 数值常量推导（`DotaHeroProfile` + `DotaMechanicsMapper`）
+- 基础属性档案（每英雄一次，详见 [hook-system.md §10](../architecture/hook-system.md)）：
+  ```csharp
+  // DOTA2 7.42 <英雄>初始三维与成长：STR x (+g) / AGI y (+g) / INT z (+g)
+  private static readonly DotaHeroProfile Profile = new(HeroClassName,
+    BaseStr: 20, StrGain: 2.0f, BaseAgi: 32, AgiGain: 2.8f, BaseInt: 14, IntGain: 1.4f);
+  ```
+  自动推导 `Profile.StartingStats`（`MapStartingStats`）、`Profile.StatLimits`（`MapStatLimits`）与 1 级职业蓝量基准 `Profile.ComputeClassManaBase(raceManaBase)`。
+- 职业样板：在 `Ctx.Classes.Add(C => ...)` 中调用 `Profile.ConfigureClass(Ctx, C, Description, AvatarGlyph, LifeBase, LifeDice, RaceManaBase, ManaDice)`。
+- 属性读写：`DotaStats.Str(ch)` / `Dex(ch)` / `Limit(ch, DotaStat.Con)` / `SetPermanent(...)`，禁止传 `"strength"` 等裸字符串；最大生命联动用 `DotaLife.AdjustMax`（§9）。
 - 技能蓝耗：`DotaMechanicsMapper.MapSkillManaCost(dotaMana)` 与 `MapSpellLevel(manaCost)`
 - 技能伤害与持续时间：`MapSkillDamage` / `MapSkillDamageDice` / `MapDotDamageDicePerTurn` / `MapDurationTurns`
 - 天赋减冷却比例：`ComputeCooldownReductionRatio(reducedSec, refCooldownSec)`
@@ -70,16 +77,19 @@ Resources/Heroes/antimage/
    - 预设英雄一键注册：`Ctx.RegisterPresetHero("HeroName", race, heroClass, gender, glyph)`。
 5. **4 层天赋树**：
    - 使用 `HeroTalentTree.CreateStandard(...)` 定义 Lv 5/10/15/20（双修 Lv 22/23/24/25）共 8 个节点；减冷却天赋直接挂 `SpellManaReductionRule`，然后调用 `TalentRegistry.Register(Ctx, tree)`。
+   - 「+N 属性」天赋直接声明 `new TalentNode(...) { StatBonus = PathosStatLimits.Bonus(Str: 3, Con: 3) }`，上限拓宽、永久提升与 `+N × 6 HP` 由框架结算，不要手写 `OnLearn` 或 `RegisterHeroStatLimitBonus`（详见 [hook-system.md §9.3](../architecture/hook-system.md)）。
+6. **技能帮助面板**：`DotaSpellHelpBridge.RegisterSpell(...)` 中用 `DotaHelpFormat.Tiles/Turns/CastRangeSuffix/ActualMana` 与 `DotaSpellHelpBridge.Tiers(...)`；面板与施法共用的公式抽成英雄内 `ComputeXxx(ch, tier)`（详见 [hook-system.md §11](../architecture/hook-system.md)）。
 
 #### 2.3 `RegisterHooks(DotaHeroContext Ctx)` — 接入运行时基建
-1. **锁定固定初始六维**：
+1. **锁定固定初始六维与职业属性上限**：
    ```csharp
-   DotaMechanicsMapper.RegisterFixedStartingStats(HeroClassName, StartingStats);
+   Profile.RegisterStats();
    ```
 2. **全射程选格与施法分发**：由 `DotaAbility.Register` 自动完成，无需手动调用 `DotaRangeTargetingBridge.RegisterSpell` 或注册 `AfterCastSpell` + 比较法术名。
-3. **接入左上角状态栏叠层徽章**（若有叠层/充能/粘滞状态）：
+3. **接入左上角状态栏叠层徽章**（若有叠层/充能/粘滞状态，详见 [hook-system.md §12](../architecture/hook-system.md)）：
    ```csharp
-   DotaStatusBarBridge.RegisterProvider("<hero_id>.<stack_name>", Character => ...);
+   DotaStatusBarBridge.RegisterProvider("<hero_id>.<stack_name>", HeroClassName, Character =>
+     DotaStatusBadge.ForPassive("<hero_id>.<stack_name>", Glyph, PassiveProperty, "<hero_id>.status.<x>_fallback", Count: "...", Colour: Colour.Black));
    ```
 4. **订阅 `DotaHookBus` 并复用 `DotaCombatHelper` & `PathosEngineBridge`**：
    - Hook Key 统一命名 `<hero_id>.<feature>`。

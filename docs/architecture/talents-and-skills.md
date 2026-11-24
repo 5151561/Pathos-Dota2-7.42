@@ -55,7 +55,8 @@
 ### 1.3 声明式「减冷却 → 减蓝耗」与自定义效果
 
 - **减冷却转减蓝耗**：只需在 `TalentNode` 的 `ManaReductions` 中声明 `new SpellManaReductionRule(spellName, cdrRatio)`（`cdrRatio` 用 `DotaMechanicsMapper.ComputeCooldownReductionRatio(reducedSec, refCooldownSec)` 计算），`TalentService` 会通过 `SpellCostQuery` 自动接管 `Character.SpellCost`，**施法扣蓝与法术面板蓝耗显示自动同步**（多来源乘算叠加封顶 60%，正蓝耗保底 1 且至少 -1）。
-- **学习瞬间触发的一次性效果**：可传入 `OnLearn: (engine, character) => { ... }`（如永久加属性、授予专长等）。
+- **声明式属性天赋**：「+N 力量/敏捷」等天赋在节点上声明 `{ StatBonus = PathosStatLimits.Bonus(Str: 3, Con: 3) }`，框架自动拓宽属性上限、学习瞬间永久提升（夹取到新上限）并按 `DotaMechanicsMapper.HpPerStrengthPoint` 联动最大/当前生命（详见 [hook-system.md §9.3](hook-system.md)）。
+- **学习瞬间触发的其他一次性效果**：可传入 `OnLearn: (engine, character) => { ... }`（如授予专长等；在 `StatBonus` 结算之后执行）。
 - **持续/战斗期生效的天赋**：在对应 Hook 中直接调用 `TalentService.HasTalent(character, TalentId)` 分支判断。
 
 ---

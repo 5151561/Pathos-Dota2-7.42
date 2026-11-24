@@ -52,17 +52,11 @@ namespace Pathos.DotaHeroes.Heroes
     private const string StorageOneManArmyAppliedHpKey = "axe.oma_applied_hp";
 
     // DOTA2 7.42 斧王初始三维与成长：STR 25 (+2.7) / AGI 18 (+1.5, 7.42) / INT 18 (+1.6)
-    private const int DotaBaseStr = 25;
-    private const float DotaStrGain = 2.7f;
-    private const int DotaBaseAgi = 18;
-    private const float DotaAgiGain = 1.5f;
-    private const int DotaBaseInt = 18;
-    private const float DotaIntGain = 1.6f;
-
-    private static readonly PathosStartingStats StartingStats =
-      DotaMechanicsMapper.MapStartingStats(DotaBaseStr, DotaBaseAgi, DotaBaseInt, Charisma: 10);
-    private static readonly PathosStatLimits StatLimits =
-      DotaMechanicsMapper.MapStatLimits(DotaBaseStr, DotaStrGain, DotaBaseAgi, DotaAgiGain, DotaBaseInt, DotaIntGain, CharismaLimit: 20, StartingCha: 10);
+    private static readonly DotaHeroProfile Profile = new(
+      AxeClassName,
+      BaseStr: 25, StrGain: 2.7f,
+      BaseAgi: 18, AgiGain: 1.5f,
+      BaseInt: 18, IntGain: 1.6f);
 
     // 蓝耗（K_mana = 20）
     private static readonly int BerserkersCallManaCost = DotaMechanicsMapper.MapSkillManaCost(100); // 90/100/110/120 取中值 100 -> 5
@@ -100,9 +94,8 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly int[] CullingEliteArmorTenths = { 10, 15, 20 }; // +1.0 / +1.5 / +2.0 DOTA2 护甲
     private static readonly int[] CullingCreepArmorTenths = { 2, 3, 4 };    // +0.2 / +0.3 / +0.4 DOTA2 护甲
 
-    // T3 右天赋：7.42 +15 力量按 1:5 后期标尺 -> +3 STR/CON 与 +18 HP
+    // T3 右天赋：7.42 +15 力量按 1:5 后期标尺 -> +3 STR/CON 与 +18 HP（HP 按 DotaMechanicsMapper.HpPerStrengthPoint 联动）
     private const int TalentStrengthBonus = 3;
-    private const int HpPerStrengthPoint = 6;
 
     private sealed class AxeRuntimeState
     {
@@ -325,25 +318,11 @@ namespace Pathos.DotaHeroes.Heroes
         T3Right: new TalentNode(
           Id: TalentT3Strength,
           TitleResolver: () => DotaLocalization.T("axe.talent.t3r.title"),
-          DescriptionResolver: () => DotaLocalization.Format("axe.talent.t3r.desc", TalentStrengthBonus, TalentStrengthBonus * HpPerStrengthPoint),
-          OnLearn: (Engine, Ch) =>
-          {
-            if (Ch == null)
-              return;
-
-            int StrLimit = PathosEngineBridge.GetLimitAbilityScore(Ch, "strength");
-            int ConLimit = PathosEngineBridge.GetLimitAbilityScore(Ch, "constitution");
-            int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
-            int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
-            PathosEngineBridge.SetPermanentAbilityScore(Ch, "strength", Math.Min(StrLimit, CurStr + TalentStrengthBonus));
-            PathosEngineBridge.SetPermanentAbilityScore(Ch, "constitution", Math.Min(ConLimit, CurCon + TalentStrengthBonus));
-
-            if (Ch.Life != null)
-            {
-              int HpGain = TalentStrengthBonus * HpPerStrengthPoint;
-              PathosEngineBridge.SetMeter(Ch.Life, Ch.Life.Points + HpGain, Ch.Life.Total + HpGain);
-            }
-          }),
+          DescriptionResolver: () => DotaLocalization.Format("axe.talent.t3r.desc", TalentStrengthBonus, TalentStrengthBonus * DotaMechanicsMapper.HpPerStrengthPoint))
+        {
+          // 上限拓宽 / 永久提升 / 生命联动由天赋框架统一结算
+          StatBonus = PathosStatLimits.Bonus(Str: TalentStrengthBonus, Con: TalentStrengthBonus)
+        },
         T4Left: new TalentNode(
           Id: TalentT4CullingDamage,
           TitleResolver: () => DotaLocalization.T("axe.talent.t4l.title"),
@@ -356,18 +335,10 @@ namespace Pathos.DotaHeroes.Heroes
       TalentRegistry.Register(Ctx, Tree);
     }
 
-    private static PathosStatLimits GetTalentStatLimitBonus(Character Character)
-    {
-      int StrConBonus = TalentService.HasTalent(Character, TalentT3Strength) ? TalentStrengthBonus : 0;
-      return new PathosStatLimits(Str: StrConBonus, Dex: 0, Con: StrConBonus, Int: 0, Wis: 0, Cha: 0);
-    }
-
     public void RegisterHooks(DotaHeroContext Ctx)
     {
-      // 0. 锁定斧王固定初始六维、30 级职业属性上限与 T3 右力量上限加成
-      DotaMechanicsMapper.RegisterFixedStartingStats(AxeClassName, StartingStats);
-      DotaMechanicsMapper.RegisterHeroStatLimits(AxeClassName, StatLimits);
-      DotaMechanicsMapper.RegisterHeroStatLimitBonus(AxeClassName, GetTalentStatLimitBonus);
+      // 0. 锁定斧王固定初始六维与 30 级职业属性上限（T3 右力量上限加成由 TalentNode.StatBonus 自动叠加）
+      Profile.RegisterStats();
 
       // 开局立刻初始化先天「一人之军」数值，确保第 0 回合即可在状态栏看到加成
       DotaHookBus.RegisterAfterCreateActor("axe.init_one_man_army", Args =>
@@ -493,7 +464,7 @@ namespace Pathos.DotaHeroes.Heroes
             Args.Engine,
             Caster,
             BattleHungerGlyph,
-            DotaLocalization.Format("axe.log.hunger_dispelled", GetCharacterDisplayName(Killer)));
+            DotaLocalization.Format("axe.log.hunger_dispelled", DotaCombatHelper.GetDisplayName(Killer)));
         }
       });
     }
@@ -501,36 +472,26 @@ namespace Pathos.DotaHeroes.Heroes
     private void RegisterStatusBadges()
     {
       // 1. 先天：一人之军
-      DotaStatusBarBridge.RegisterProvider("axe.one_man_army", Ch =>
+      DotaStatusBarBridge.RegisterProvider("axe.one_man_army", AxeClassName, Ch =>
       {
-        if (!IsAxe(Ch) || Ch.Deceased)
-          return null;
-
         var State = GetAxeState(Ch);
         if (!State.OneManArmyActive || State.CachedOneManArmyBonusStr <= 0)
           return null;
 
-        return new DotaStatusBadge
-        {
-          Key = "axe.one_man_army",
-          Glyph = OneManArmyGlyph,
-          Text = (OneManArmyTalentProperty != null
-            ? PathosEngineBridge.GetLocalizedName(OneManArmyTalentProperty)
-            : DotaLocalization.T("axe.status.one_man_army")).ToUpper(),
-          Count = $"+{State.CachedOneManArmyBonusStr}",
-          Colour = State.OneManArmyLingerTurns > 0 ? Colour.DarkOrange : Colour.DarkRed,
-          HelpProperty = OneManArmyTalentProperty
-        };
+        return DotaStatusBadge.ForPassive(
+          "axe.one_man_army",
+          OneManArmyGlyph,
+          OneManArmyTalentProperty,
+          "axe.status.one_man_army",
+          Count: $"+{State.CachedOneManArmyBonusStr}",
+          Colour: State.OneManArmyLingerTurns > 0 ? Colour.DarkOrange : Colour.DarkRed);
       });
 
       // 2. Q 狂战士之吼高甲状态：由 CallArmorModifier 自动生成徽章（剩余回合）
 
       // 3. E 反击螺旋受击计数
-      DotaStatusBarBridge.RegisterProvider("axe.counter_helix", Ch =>
+      DotaStatusBarBridge.RegisterProvider("axe.counter_helix", AxeClassName, Ch =>
       {
-        if (!IsAxe(Ch) || Ch.Deceased)
-          return null;
-
         int HelixLv = HeroSkillService.GetSkillLevel(Ch, SkillHelixId);
         if (HelixLv <= 0)
           return null;
@@ -540,25 +501,18 @@ namespace Pathos.DotaHeroes.Heroes
           return null;
 
         int Need = GetHelixThresholdByLevel(HelixLv);
-        return new DotaStatusBadge
-        {
-          Key = "axe.counter_helix",
-          Glyph = CounterHelixGlyph,
-          Text = (CounterHelixTalentProperty != null
-            ? PathosEngineBridge.GetLocalizedName(CounterHelixTalentProperty)
-            : DotaLocalization.T("axe.status.helix")).ToUpper(),
-          Count = $"{State.HelixHitCounter}/{Need}",
-          Colour = State.HelixHitCounter >= Need - 1 ? Colour.DarkOrange : Colour.Black,
-          HelpProperty = CounterHelixTalentProperty
-        };
+        return DotaStatusBadge.ForPassive(
+          "axe.counter_helix",
+          CounterHelixGlyph,
+          CounterHelixTalentProperty,
+          "axe.status.helix",
+          Count: $"{State.HelixHitCounter}/{Need}",
+          Colour: State.HelixHitCounter >= Need - 1 ? Colour.DarkOrange : Colour.Black);
       });
 
       // 4. W 战斗饥渴活跃目标数
-      DotaStatusBarBridge.RegisterProvider("axe.battle_hunger", Ch =>
+      DotaStatusBarBridge.RegisterProvider("axe.battle_hunger", AxeClassName, Ch =>
       {
-        if (!IsAxe(Ch) || Ch.Deceased)
-          return null;
-
         int Active = DotaModifierService.CountAppliedBy(Ch, BattleHungerModifier);
         if (Active <= 0)
           return null;
@@ -567,14 +521,14 @@ namespace Pathos.DotaHeroes.Heroes
         {
           Key = "axe.battle_hunger",
           Glyph = BattleHungerGlyph,
-          Text = DotaLocalization.T("axe.status.hunger").ToUpper(),
+          Text = DotaStatusBadge.Title("axe.status.hunger"),
           Count = $"×{Active}",
           Colour = Colour.DarkRed,
           HelpSpell = HungerAbility.Spell
         };
       });
 
-      // 5. R 淘汰之刃永久护甲 / 战吼爆发
+      // 5. R 淘汰之刃永久护甲 / 战吼爆发（战吼也会施加给友军，故不按斧王职业过滤）
       DotaStatusBarBridge.RegisterProvider("axe.culling_blade", Ch =>
       {
         if (Ch == null || Ch.Deceased)
@@ -594,7 +548,7 @@ namespace Pathos.DotaHeroes.Heroes
         {
           Key = "axe.culling_blade",
           Glyph = CullingBladeGlyph,
-          Text = DotaLocalization.T("axe.status.culling").ToUpper(),
+          Text = DotaStatusBadge.Title("axe.status.culling"),
           Count = CountText,
           Colour = HasBuff ? Colour.Crimson : Colour.Black,
           HelpSpell = CullingAbility.Spell
@@ -609,16 +563,10 @@ namespace Pathos.DotaHeroes.Heroes
       if (Caster == null || Caster.Deceased || Caster.Square == null)
         return;
 
-      int SkillLv = CallAbility.Level(Caster, 4);
-      int Tier = Cast.Tier;
-      int ExtraTurns = Tier >= 5 ? 2 : (Tier >= 3 ? 1 : 0);
-      int DurationTurns = GetCallBaseDurationTurns(SkillLv) + ExtraTurns;
-
-      bool HasArmorTalent = TalentService.HasTalent(Caster, TalentT2CallArmor);
-      float DotaArmor = GetCallBaseArmor(SkillLv) + (HasArmorTalent ? CallTalentBonusArmor : 0.0f);
-      int BonusDef = DotaMechanicsMapper.MapArmorToDefence(DotaArmor, MaxPositiveCap: HasArmorTalent ? 10 : 8);
-
-      int Radius = TalentService.HasTalent(Caster, TalentT4CallAoe) ? 3 : 2;
+      var Call = ComputeCall(Caster, Cast.Tier);
+      int DurationTurns = Call.DurationTurns;
+      int BonusDef = Call.BonusDefence;
+      int Radius = Call.Radius;
 
       DotaModifierService.Apply(CallArmorModifier, Caster, Caster, DurationTurns, M => M.Defence = BonusDef);
 
@@ -657,12 +605,8 @@ namespace Pathos.DotaHeroes.Heroes
       if (!Cast.TryResolveHostileTarget(out var Target, "axe.log.hunger_no_target"))
         return;
 
-      int SkillLv = HungerAbility.Level(Caster, 4);
-      int Tier = Cast.Tier;
-      float BaseDps = GetHungerBaseDps(SkillLv) + (TalentService.HasTalent(Caster, TalentT2HungerDps) ? HungerTalentBonusDps : 0.0f);
-      float StarAndTierMult = HungerAbility.StarMultiplier(Caster) * (1.0f + (Tier - 1) * 0.08f);
-      float EffectiveDps = BaseDps * StarAndTierMult;
-      float Slow = GetHungerSlowRatio(SkillLv);
+      float EffectiveDps = ComputeHungerDps(Caster, Cast.Tier);
+      float Slow = GetHungerSlowRatio(HungerAbility.Level(Caster, 4));
 
       if (Target.Square != null)
         PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, Target.Square, BattleHungerStrike);
@@ -676,7 +620,7 @@ namespace Pathos.DotaHeroes.Heroes
       if (Hunger == null)
       {
         // 目标减益免疫 / 无敌：饥渴未生效
-        PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, BattleHungerGlyph, DotaLocalization.Format("axe.log.hunger_immune", GetCharacterDisplayName(Target)));
+        PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, BattleHungerGlyph, DotaLocalization.Format("axe.log.hunger_immune", DotaCombatHelper.GetDisplayName(Target)));
         return;
       }
 
@@ -688,7 +632,7 @@ namespace Pathos.DotaHeroes.Heroes
         Args.Engine,
         Caster,
         BattleHungerGlyph,
-        DotaLocalization.Format("axe.log.hunger_cast", GetCharacterDisplayName(Target), BattleHungerDurationTurns, $"{Slow * 100.0f:0}"));
+        DotaLocalization.Format("axe.log.hunger_cast", DotaCombatHelper.GetDisplayName(Target), BattleHungerDurationTurns, $"{Slow * 100.0f:0}"));
     }
 
     private void HandleCullingBladeCast(DotaAbilityCast Cast)
@@ -706,7 +650,7 @@ namespace Pathos.DotaHeroes.Heroes
       int Threshold = GetCullingEffectiveThreshold(Caster, SkillLv, Tier);
 
       var TargetSq = Target.Square;
-      string TargetName = GetCharacterDisplayName(Target);
+      string TargetName = DotaCombatHelper.GetDisplayName(Target);
       if (TargetSq != null)
         PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, TargetSq, CullingBladeStrike);
 
@@ -725,8 +669,8 @@ namespace Pathos.DotaHeroes.Heroes
         DotaCombatHelper.RefundSpellCost(Args);
 
         // 给予斧王及周围 4 格友军战吼增益（+25% 移速 + 护甲）
-        int BuffTurns = CullingBuffBaseTurns + (TalentService.HasTalent(Caster, TalentT1CullingBuffDuration) ? CullingBuffTalentExtraTurns : 0);
-        int BuffDef = DotaMechanicsMapper.MapArmorToDefence(CullingBuffDotaArmor[SkillLv - 1]);
+        int BuffTurns = GetCullingBuffTurns(Caster);
+        int BuffDef = GetCullingBuffDefence(SkillLv);
 
         void ApplyCullingBuff(Character Unit)
           => DotaModifierService.Apply(CullingBuffModifier, Caster, Unit, BuffTurns, M =>
@@ -829,7 +773,7 @@ namespace Pathos.DotaHeroes.Heroes
         State.CachedOneManArmyBonusStr = 0;
       }
 
-      int TargetBonusHp = State.OneManArmyActive ? State.CachedOneManArmyBonusStr * HpPerStrengthPoint : 0;
+      int TargetBonusHp = State.OneManArmyActive ? State.CachedOneManArmyBonusStr * DotaMechanicsMapper.HpPerStrengthPoint : 0;
       SyncOneManArmyBonusLife(Axe, TargetBonusHp);
     }
 
@@ -843,13 +787,7 @@ namespace Pathos.DotaHeroes.Heroes
       if (DeltaHp == 0)
         return;
 
-      int OldTotal = Axe.Life.Total;
-      int OldPoints = Axe.Life.Points;
-      int NewTotal = Math.Max(10, OldTotal + DeltaHp);
-      float Ratio = OldTotal > 0 ? Math.Clamp((float)OldPoints / OldTotal, 0.0f, 1.0f) : 1.0f;
-      int NewPoints = OldPoints <= 0 ? 0 : Math.Clamp((int)MathF.Round(NewTotal * Ratio), 1, NewTotal);
-
-      PathosEngineBridge.SetMeter(Axe.Life, NewPoints, NewTotal);
+      DotaLife.AdjustMax(Axe, DeltaHp, DotaLifeAdjustMode.KeepRatio);
       DotaCharacterStorage.SetCustomInt(Axe, StorageOneManArmyAppliedHpKey, TargetBonusHp);
     }
 
@@ -917,21 +855,13 @@ namespace Pathos.DotaHeroes.Heroes
         ResolveCurrentTier = CallAbility.Tier,
         BuildLiveStats = HelpCtx =>
         {
-          var Ch = HelpCtx.Character;
-          int SkillLv = CallAbility.Level(Ch, 4);
-          int Tier = CallAbility.Tier(Ch);
-          int ExtraTurns = Tier >= 5 ? 2 : (Tier >= 3 ? 1 : 0);
-          int Duration = GetCallBaseDurationTurns(SkillLv) + ExtraTurns;
-          bool HasArmorTalent = TalentService.HasTalent(Ch, TalentT2CallArmor);
-          float DotaArmor = GetCallBaseArmor(SkillLv) + (HasArmorTalent ? CallTalentBonusArmor : 0.0f);
-          int BonusDef = DotaMechanicsMapper.MapArmorToDefence(DotaArmor, MaxPositiveCap: HasArmorTalent ? 10 : 8);
-          int Radius = TalentService.HasTalent(Ch, TalentT4CallAoe) ? 3 : 2;
+          var Call = ComputeCall(HelpCtx.Character, CallAbility.Tier(HelpCtx.Character));
 
           return new (string Key, string Value)[]
           {
-            (DotaLocalization.T("axe.help.q.key_radius"), DotaHelpColor.Control(DotaLocalization.Format("axe.help.tiles_radius", Radius))),
-            (DotaLocalization.T("axe.help.q.key_duration"), DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", Duration))),
-            (DotaLocalization.T("axe.help.q.key_armor"), DotaHelpColor.Skill(DotaLocalization.Format("axe.help.q.val_armor", BonusDef, $"{DotaArmor:0}")))
+            (DotaLocalization.T("axe.help.q.key_radius"), DotaHelpColor.Control(DotaLocalization.Format("axe.help.tiles_radius", Call.Radius))),
+            (DotaLocalization.T("axe.help.q.key_duration"), DotaHelpColor.Control(DotaHelpFormat.Turns(Call.DurationTurns))),
+            (DotaLocalization.T("axe.help.q.key_armor"), DotaHelpColor.Skill(DotaLocalization.Format("axe.help.q.val_armor", Call.BonusDefence, $"{Call.DotaArmor:0}")))
           };
         },
         BuildMechanicsNotes = _ => new[]
@@ -939,21 +869,9 @@ namespace Pathos.DotaHeroes.Heroes
           DotaLocalization.T("axe.help.q.mech_1"),
           DotaLocalization.T("axe.help.q.mech_2")
         },
-        BuildTiers = _ =>
-        {
-          var List = new List<DotaSpellHelpTier>(5);
-          for (int Tier = 1; Tier <= 5; Tier++)
-          {
-            int Extra = Tier >= 5 ? 2 : (Tier >= 3 ? 1 : 0);
-            List.Add(new DotaSpellHelpTier
-            {
-              Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("axe.help.q.tier_suffix", Extra),
-              Bullets = new[] { DotaLocalization.Format("axe.help.q.tier_bullet", Extra) }
-            });
-          }
-          return List;
-        }
+        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+          Tier => DotaLocalization.Format("axe.help.q.tier_suffix", GetCallTierExtraTurns(Tier)),
+          Tier => DotaLocalization.Format("axe.help.q.tier_bullet", GetCallTierExtraTurns(Tier)))
       });
 
       // W：战斗饥渴帮助面板
@@ -964,18 +882,14 @@ namespace Pathos.DotaHeroes.Heroes
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int SkillLv = HungerAbility.Level(Ch, 4);
-          int Tier = HungerAbility.Tier(Ch);
           int Range = HungerAbility.Range(Ch);
-          float BaseDps = GetHungerBaseDps(SkillLv) + (TalentService.HasTalent(Ch, TalentT2HungerDps) ? HungerTalentBonusDps : 0.0f);
-          float Mult = HungerAbility.StarMultiplier(Ch) * (1.0f + (Tier - 1) * 0.08f);
-          float EffDps = BaseDps * Mult;
+          float EffDps = ComputeHungerDps(Ch, HungerAbility.Tier(Ch));
           int EstTotal = Math.Max(1, (int)MathF.Round((EffDps * 12.0f) / DotaMechanicsMapper.DamageScale));
-          float Slow = GetHungerSlowRatio(SkillLv) * 100.0f;
+          float Slow = GetHungerSlowRatio(HungerAbility.Level(Ch, 4)) * 100.0f;
 
           return new (string Key, string Value)[]
           {
-            (DotaLocalization.T("axe.help.w.key_range"), DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", Range))),
+            (DotaLocalization.T("axe.help.w.key_range"), DotaHelpColor.Control(DotaHelpFormat.Tiles(Range))),
             (DotaLocalization.T("axe.help.w.key_dot"), DotaHelpColor.Physical(DotaLocalization.Format("axe.help.w.val_dot", $"{EffDps:0.#}", EstTotal, BattleHungerDurationTurns))),
             (DotaLocalization.T("axe.help.w.key_slow"), DotaHelpColor.Control($"-{Slow:0}%"))
           };
@@ -985,22 +899,9 @@ namespace Pathos.DotaHeroes.Heroes
           DotaLocalization.T("axe.help.w.mech_1"),
           DotaLocalization.T("axe.help.w.mech_2")
         },
-        BuildTiers = _ =>
-        {
-          var List = new List<DotaSpellHelpTier>(5);
-          for (int Tier = 1; Tier <= 5; Tier++)
-          {
-            int Range = HungerAbility.BaseRange(Tier);
-            int BonusPct = (Tier - 1) * 8;
-            List.Add(new DotaSpellHelpTier
-            {
-              Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", Range),
-              Bullets = new[] { DotaLocalization.Format("axe.help.w.tier_bullet", BonusPct) }
-            });
-          }
-          return List;
-        }
+        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(HungerAbility.BaseRange(Tier)),
+          Tier => DotaLocalization.Format("axe.help.w.tier_bullet", (Tier - 1) * 8))
       });
 
       // R：淘汰之刃帮助面板
@@ -1014,8 +915,8 @@ namespace Pathos.DotaHeroes.Heroes
           int SkillLv = CullingAbility.Level(Ch, 3);
           int Tier = CullingAbility.Tier(Ch);
           int Threshold = GetCullingEffectiveThreshold(Ch, SkillLv, Tier);
-          int BuffTurns = CullingBuffBaseTurns + (TalentService.HasTalent(Ch, TalentT1CullingBuffDuration) ? CullingBuffTalentExtraTurns : 0);
-          int BuffDef = DotaMechanicsMapper.MapArmorToDefence(CullingBuffDotaArmor[SkillLv - 1]);
+          int BuffTurns = GetCullingBuffTurns(Ch);
+          int BuffDef = GetCullingBuffDefence(SkillLv);
           float PermArmor = DotaCharacterStorage.GetCustomInt(Ch, StorageCullingArmorTenthsKey) / 10.0f;
           int PermDef = DotaMechanicsMapper.MapUncappedArmorToDefence(PermArmor);
 
@@ -1031,21 +932,9 @@ namespace Pathos.DotaHeroes.Heroes
           DotaLocalization.T("axe.help.r.mech_1"),
           DotaLocalization.T("axe.help.r.mech_2")
         },
-        BuildTiers = _ =>
-        {
-          var List = new List<DotaSpellHelpTier>(5);
-          for (int Tier = 1; Tier <= 5; Tier++)
-          {
-            int BonusHp = (Tier - 1) * 2;
-            List.Add(new DotaSpellHelpTier
-            {
-              Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", CullingAbility.BaseRange(Tier)),
-              Bullets = new[] { DotaLocalization.Format("axe.help.r.tier_bullet", BonusHp) }
-            });
-          }
-          return List;
-        }
+        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(CullingAbility.BaseRange(Tier)),
+          Tier => DotaLocalization.Format("axe.help.r.tier_bullet", GetCullingMasteryBonusHp(Tier)))
       });
     }
 
@@ -1107,12 +996,15 @@ namespace Pathos.DotaHeroes.Heroes
     {
       return Ctx.Classes.Add(C =>
       {
-        C.Name = AxeClassName;
-        C.Description = "A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.";
-        C.Backpack = Ctx.Items.Backpack;
-        C.LifeAdvancement.Set(16, 1.d12());
-        int ClassManaBase = DotaMechanicsMapper.ComputeClassManaBase(DotaBaseInt, RaceManaBase: 1, StartingStats.Wis);
-        C.ManaAdvancement.Set(ClassManaBase, 1.d2());
+        Profile.ConfigureClass(
+          Ctx,
+          C,
+          Description: "A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",
+          AvatarGlyph: AvatarGlyph,
+          LifeBase: 16,
+          LifeDice: 1.d12(),
+          RaceManaBase: 1,
+          ManaDice: 1.d2());
 
         C.SetDistribution(
           Ctx.Attributes.strength,
@@ -1121,8 +1013,6 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Attributes.wisdom,
           Ctx.Attributes.intelligence,
           Ctx.Attributes.charisma);
-
-        Ctx.AddClassAvatars(C, AvatarGlyph);
 
         C.AddFeat(1, OneManArmyTalent);
         C.AddFeat(4, Ctx.Properties.free_action);
@@ -1174,10 +1064,52 @@ namespace Pathos.DotaHeroes.Heroes
     private static float GetCullingBaseDotaThreshold(int SkillLevel)
       => CullingDotaThresholds[Math.Clamp(SkillLevel - 1, 0, 2)];
 
+    // ---- 施法结算与帮助面板共用的数值计算（单一来源，防止两处公式漂移） ----
+
+    private readonly record struct CallStats(int DurationTurns, float DotaArmor, int BonusDefence, int Radius);
+
+    /// <summary>Q 熟练度额外持续回合（Expert +1 / Champion +2）。</summary>
+    private static int GetCallTierExtraTurns(int Tier)
+      => Tier >= 5 ? 2 : (Tier >= 3 ? 1 : 0);
+
+    /// <summary>Q 狂战士之吼：持续回合、DOTA2 护甲、Pathos 防御加成与嘲讽半径。</summary>
+    private CallStats ComputeCall(Character Caster, int Tier)
+    {
+      int SkillLv = CallAbility.Level(Caster, 4);
+      bool HasArmorTalent = TalentService.HasTalent(Caster, TalentT2CallArmor);
+      float DotaArmor = GetCallBaseArmor(SkillLv) + (HasArmorTalent ? CallTalentBonusArmor : 0.0f);
+      return new CallStats(
+        DurationTurns: GetCallBaseDurationTurns(SkillLv) + GetCallTierExtraTurns(Tier),
+        DotaArmor: DotaArmor,
+        BonusDefence: DotaMechanicsMapper.MapArmorToDefence(DotaArmor, MaxPositiveCap: HasArmorTalent ? 10 : 8),
+        Radius: TalentService.HasTalent(Caster, TalentT4CallAoe) ? 3 : 2);
+    }
+
+    /// <summary>W 战斗饥渴：(基础 DPS + T2 右天赋) × 升星倍率 × 熟练度倍率（每阶 +8%）。</summary>
+    private float ComputeHungerDps(Character Caster, int Tier)
+    {
+      int SkillLv = HungerAbility.Level(Caster, 4);
+      float BaseDps = GetHungerBaseDps(SkillLv) + (TalentService.HasTalent(Caster, TalentT2HungerDps) ? HungerTalentBonusDps : 0.0f);
+      float StarAndTierMult = HungerAbility.StarMultiplier(Caster) * (1.0f + (Tier - 1) * 0.08f);
+      return BaseDps * StarAndTierMult;
+    }
+
+    /// <summary>R 淘汰之刃战吼持续回合（T1 右天赋 +6 回合）。</summary>
+    private static int GetCullingBuffTurns(Character Caster)
+      => CullingBuffBaseTurns + (TalentService.HasTalent(Caster, TalentT1CullingBuffDuration) ? CullingBuffTalentExtraTurns : 0);
+
+    /// <summary>R 淘汰之刃战吼防御加成（按技能等级 1~3）。</summary>
+    private static int GetCullingBuffDefence(int SkillLevel)
+      => DotaMechanicsMapper.MapArmorToDefence(CullingBuffDotaArmor[Math.Clamp(SkillLevel - 1, 0, 2)]);
+
+    /// <summary>R 淘汰之刃熟练度额外斩杀线（每阶 +2 HP）。</summary>
+    private static int GetCullingMasteryBonusHp(int Tier)
+      => Math.Max(0, Tier - 1) * 2;
+
     private static int GetCullingEffectiveThreshold(Character Caster, int SkillLevel, int Tier)
     {
       int BaseHp = DotaMechanicsMapper.MapSkillDamage(GetCullingBaseDotaThreshold(SkillLevel));
-      int MasteryBonus = Math.Max(0, Tier - 1) * 2;
+      int MasteryBonus = GetCullingMasteryBonusHp(Tier);
       int TalentBonus = TalentService.HasTalent(Caster, TalentT4CullingDamage)
         ? DotaMechanicsMapper.MapSkillDamage(CullingTalentBonusDotaDamage)
         : 0;
@@ -1208,20 +1140,6 @@ namespace Pathos.DotaHeroes.Heroes
       {
         IsInsideDefenceQuery = false;
       }
-    }
-
-    private static string GetCharacterDisplayName(Character Character)
-    {
-      if (Character == null)
-        return DotaLocalization.T("axe.target_fallback");
-
-      if (!string.IsNullOrWhiteSpace(Character.Name))
-        return Character.Name;
-
-      if (Character.Entity != null)
-        return PathosEngineBridge.GetLocalizedName(Character.Entity);
-
-      return DotaLocalization.T("axe.target_fallback");
     }
 
     private static Speed ScaleSpeed(Speed BaseSpeed, float Multiplier)

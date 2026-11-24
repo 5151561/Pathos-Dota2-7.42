@@ -61,7 +61,7 @@
 ## 4. 框架基建接入与 Hook 清单
 
 ### 接入的公共基建
-- **固定初始六维与职业上限**：`DotaMechanicsMapper.RegisterFixedStartingStats`、`RegisterHeroStatLimits`、`RegisterHeroStatLimitBonus`
+- **固定初始六维与职业上限**：`DotaHeroProfile.RegisterStats`（`RegisterFixedStartingStats` + `RegisterHeroStatLimits`）；T3 右 +3 STR/CON 由 `TalentNode.StatBonus` 声明式结算
 - **零 `Property` 持久化**：淘汰之刃永久护甲层数通过 `DotaCharacterStorage.AddCustomInt(..., "axe.cull_armor_x10", ...)` 随存档持久化
 - **全射程选格（`DotaRangeTargetingBridge`）**：`battle hunger`（`UnitHostile`, `4~7` 格）、`culling blade`（`UnitHostile`, `2` 格）
 - **左上角状态栏徽章（`DotaStatusBarBridge`）**：`axe.one_man_army`、`axe.counter_helix`、`axe.battle_hunger`（活跃目标数）、`axe.culling_blade`（永久护甲 + 战吼合并），以及 Modifier 自动生成的 `modifier.axe.berserkers_call`

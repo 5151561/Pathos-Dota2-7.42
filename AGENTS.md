@@ -57,6 +57,11 @@ docs/                          # 完整架构、基建、指南与英雄 7.42 �
 - **战斗与目标工具**：直接复用 `DotaCombatHelper`（`IsClass`、`IsEntity`、`GetSkillTier`、`IsHostile`、`IsFriendly`、`DispelNegativeDebuffs`、`IsNegativeDebuff`、`ResolveHostileTarget`、`ResolveOpenPointTarget`、`RefundSpellCost`、`PlayBeamTrail`）；空放返蓝一律 `RefundSpellCost(Args)`。
 - **技能声明（`DotaAbility`）**：主动技能**必须**用 `DotaAbility.Register` 声明（法术外壳、射程表、全射程选格、施法分发一次完成），施法逻辑写在 `OnCast`，目标解析用 `Cast.TryResolveHostileTarget` / `ResolveOpenPointTarget`；熟练度/等级/升星/射程用 `Ability.Tier/Level/StarMultiplier/Range`，按阶数值表用 `DotaTable`。禁止手写 5 阶 `Configure(Qualification)`、手动 `DotaRangeTargetingBridge.RegisterSpell`、或 `AfterCastSpell` + 比较法术名。详见 [hook-system.md §8](docs/architecture/hook-system.md)。
 - **伤害结算（`DotaDamage`）**：技能伤害**必须**用 `DotaDamage.Strike` / `Harm` 并传入 `DotaDamageInfo.Physical/Magical/Pure(...)`，禁止裸调 `PathosEngineBridge.StrikeCharacter` / `HarmCharacter`；暴击用 `DotaDamage.RegisterCritSource`（取最高不叠加），魔抗/魔法减伤用 `DotaDamage.RegisterMagicResist`（乘算叠加），禁止在 `BeforeDamage` 里手写暴击或按 `ActiveAttack`/`ActiveSpellCast` 推断伤害类型。详见 [hook-system.md §7](docs/architecture/hook-system.md)。
+- **英雄档案**：DOTA2 Base/Gain 三维只在 `DotaHeroProfile` 声明一次；`RegisterHooks` 调 `Profile.RegisterStats()`，职业样板（名称/描述/背包/生命与蓝量成长/头像）用 `Profile.ConfigureClass(...)`。
+- **属性与生命**：读写属性用 `DotaStats.Str/Dex/Con/Get/Limit/SetPermanent`（`DotaStat` 枚举），**禁止**向 `PathosEngineBridge.*AbilityScore` 传 `"strength"` 等裸字符串；最大生命联动用 `DotaLife.AdjustMax(ch, delta, KeepRatio/RaiseBoth/ClampCurrent)`，力量 → 生命系数统一为 `DotaMechanicsMapper.HpPerStrengthPoint`。
+- **属性类天赋**：「+N 属性」天赋只声明 `TalentNode { StatBonus = PathosStatLimits.Bonus(...) }`，上限拓宽、永久提升与生命联动由天赋框架结算；不要手写 `OnLearn` 或 `RegisterHeroStatLimitBonus`。
+- **技能帮助面板**：数值文本用 `DotaHelpFormat.Tiles/Turns/CastRangeSuffix/Dex`，真实蓝耗用 `DotaHelpFormat.ActualMana(ch, ability)`（禁止手算 `MapCooldownReductionToManaCost`），5 阶明细用 `DotaSpellHelpBridge.Tiers(...)`；面板与施法共用的公式必须抽成英雄内单一 `ComputeXxx(ch, tier)`。日志目标名用 `DotaCombatHelper.GetDisplayName(ch[, fallbackKey])`。
+- **状态栏徽章**：职业专属徽章用 `DotaStatusBarBridge.RegisterProvider(key, className, ch => ...)`（自动过滤职业 + 存活），先天/被动 Property 徽章用 `DotaStatusBadge.ForPassive(...)`；带剩余回合的状态走 `DotaModifierSpec.Badge*`。
 - **自定义像素 VFX**：使用 `Ctx.RegisterStrikeVfx`、`Ctx.RegisterBeamVfx`、`Ctx.RegisterExplosion3x3Vfx`，配合 `PathosEngineBridge.Story*` 播放。
 - **客户端补丁**：若需新增 `Pathos.dll` 反射或补丁，复用 `PathosClientReflection`。
 
@@ -81,7 +86,8 @@ docs/                          # 完整架构、基建、指南与英雄 7.42 �
    - 英雄形象、召唤物、技能图标与天赋/状态图标等各种素材，**必须严格按照 DOTA2 官方 Wiki（Liquipedia / 刀塔百科）的官方原图与造型制作或获取**，严禁凭想象乱画。
    - 技能视觉特效（VFX，如弹道、斩击、爆炸、光环等），可参考官方 Wiki 页面中的技能演示图/动图与配色风格来绘制。
    - 单份 `128x128` 透明 PNG 放在 `Resources/Heroes/<hero_id>/`，**不要手动修改 `Atlases/`**（构建期清空重建且已 `.gitignore`）。文件名必须全局唯一且不与官方内置 Glyph 冲突（如主宰用 `yurnero.png` 避开内置怪物 `juggernaut`）。
-6. **角色私有运行时状态**：必须用 `ConditionalWeakTable<Character, TState>` 绑定，避免内存泄漏；Hook Key 统一 `<hero_id>.<feature>` 保证幂等覆盖。
+6. **角色私有运行时状态**：必须用 `ConditionalWeakTable<Character, TState>` 绑定，避免内存泄漏；Hook Key 统一 `<hero_id>.<feature>` 保证幂等覆盖（Hook Key 仅存在于内存，历史英雄沿用 `juggernaut.*` / `morphling.*` 全名前缀，新英雄与之保持一致即可）。
+   - **持久化/内容标识禁止改名**：技能槽 ID（`axe.q.*` / `jugg.q.*` / `morph.q.*`，使用短前缀）、天赋 ID、`DotaCharacterStorage` 键、法术/实体/物品/职业/种族/贴图名与本地化 Key 会写入存档或资源字典，重构时一律保持原样。
 7. **客户端与引擎双可见**：凡通过 Hook 结算伤害的技能，必须在法术 `Description` 中明确写出伤害骰与倍率。
 
 ---

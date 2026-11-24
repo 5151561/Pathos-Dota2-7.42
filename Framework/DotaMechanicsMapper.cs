@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Skills;
+using Pathos.DotaHeroes.Framework.Talents;
 
 namespace Pathos.DotaHeroes.Framework
 {
@@ -50,6 +51,16 @@ namespace Pathos.DotaHeroes.Framework
     public int Int { get; }
     public int Wis { get; }
     public int Cha { get; }
+
+    /// <summary>六项均为 0（如未声明属性加成的天赋节点）。</summary>
+    public bool IsZero => Str == 0 && Dex == 0 && Con == 0 && Int == 0 && Wis == 0 && Cha == 0;
+
+    /// <summary>以具名可选参数构造属性加成（未写的属性默认为 0），如 <c>PathosStatLimits.Bonus(Str: 3, Con: 3)</c>。</summary>
+    public static PathosStatLimits Bonus(int Str = 0, int Dex = 0, int Con = 0, int Int = 0, int Wis = 0, int Cha = 0)
+      => new(Str, Dex, Con, Int, Wis, Cha);
+
+    public static PathosStatLimits operator +(PathosStatLimits A, PathosStatLimits B)
+      => new(A.Str + B.Str, A.Dex + B.Dex, A.Con + B.Con, A.Int + B.Int, A.Wis + B.Wis, A.Cha + B.Cha);
   }
 
   /// <summary>
@@ -66,6 +77,11 @@ namespace Pathos.DotaHeroes.Framework
     public const float TurnsPerSecond = 2.0f; // 1 秒 DOTA2 时间 = 2 回合 Pathos
     public const int DotaBaseMana = 75;
     public const int DotaManaPerInt = 12;
+
+    /// <summary>
+    /// 力量（STR/CON）每变动 1 点联动的最大生命值（全英雄统一：斧王一人之军 / +力量天赋、水人属性转换 / +力量天赋）。
+    /// </summary>
+    public const int HpPerStrengthPoint = 6;
 
     private static readonly ConcurrentDictionary<string, PathosStartingStats> FixedClassStats =
       new(StringComparer.OrdinalIgnoreCase);
@@ -425,6 +441,15 @@ namespace Pathos.DotaHeroes.Framework
         Cha += Bonus.Cha;
       }
 
+      // 天赋树声明式属性加成（TalentNode.StatBonus，已学节点自动拓宽上限）
+      var TalentBonus = TalentService.GetLearnedStatBonus(Character);
+      Str += TalentBonus.Str;
+      Dex += TalentBonus.Dex;
+      Con += TalentBonus.Con;
+      Int += TalentBonus.Int;
+      Wis += TalentBonus.Wis;
+      Cha += TalentBonus.Cha;
+
       var YellowBonus = HeroSkillService.GetAttributeBonusStatLimits(Character);
       Str += YellowBonus.Str;
       Dex += YellowBonus.Dex;
@@ -461,16 +486,16 @@ namespace Pathos.DotaHeroes.Framework
       if (!FixedClassStats.TryGetValue(ClassName, out var Stats))
         return;
 
-      ApplyStatClamped(Character, "strength", Stats.Str);
-      ApplyStatClamped(Character, "dexterity", Stats.Dex);
-      ApplyStatClamped(Character, "constitution", Stats.Con);
-      ApplyStatClamped(Character, "intelligence", Stats.Int);
-      ApplyStatClamped(Character, "wisdom", Stats.Wis);
-      ApplyStatClamped(Character, "charisma", Stats.Cha);
+      ApplyStatClamped(Character, DotaStat.Str, Stats.Str);
+      ApplyStatClamped(Character, DotaStat.Dex, Stats.Dex);
+      ApplyStatClamped(Character, DotaStat.Con, Stats.Con);
+      ApplyStatClamped(Character, DotaStat.Int, Stats.Int);
+      ApplyStatClamped(Character, DotaStat.Wis, Stats.Wis);
+      ApplyStatClamped(Character, DotaStat.Cha, Stats.Cha);
 
       // 按 Pathos 原生公式重算 1 级初始 Life 与 Mana，消除摇骰子残留的旧 CON/WIS 修正
-      int FinalCon = PathosEngineBridge.GetCurrentAbilityScore(Character, "constitution");
-      int FinalWis = PathosEngineBridge.GetCurrentAbilityScore(Character, "wisdom");
+      int FinalCon = DotaStats.Get(Character, DotaStat.Con);
+      int FinalWis = DotaStats.Get(Character, DotaStat.Wis);
 
       int ClassLifeBase = Character.Class?.LifeAdvancement?.HardBase ?? 10;
       int RaceLifeBase = Character.Entity?.LifeAdvancement?.HardBase ?? 0;
@@ -487,11 +512,11 @@ namespace Pathos.DotaHeroes.Framework
         PathosEngineBridge.SetMeter(Character.Mana, InitialMana, InitialMana);
     }
 
-    private static void ApplyStatClamped(Character Character, string AttributeName, int TargetScore)
+    private static void ApplyStatClamped(Character Character, DotaStat Stat, int TargetScore)
     {
-      int Limit = PathosEngineBridge.GetLimitAbilityScore(Character, AttributeName);
+      int Limit = DotaStats.Limit(Character, Stat);
       int Clamped = Math.Clamp(TargetScore, 3, Math.Max(3, Limit));
-      PathosEngineBridge.SetPermanentAbilityScore(Character, AttributeName, Clamped);
+      DotaStats.SetPermanent(Character, Stat, Clamped);
     }
   }
 }

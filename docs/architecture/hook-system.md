@@ -63,8 +63,9 @@
 
 | 分类 | 方法 | 说明 |
 | :--- | :--- | :--- |
-| **属性与资源** | `GetCurrentAbilityScore` / `GetLimitAbilityScore` / `SetPermanentAbilityScore` / `SyncMaximumFormScores` | 同步读写 `CurrentForm` 与 `MaximumForm`，确保属性守恒不被药水/复活白嫖。 |
-| | `SetMeter` / `SetMeterPoints` | 直接调整 `Life` / `Mana` 上限与当前值（用于开局重算、水人血量联动、空大返蓝）。 |
+| **属性与资源** | `GetCurrentAbilityScore` / `GetLimitAbilityScore` / `SetPermanentAbilityScore` / `SyncMaximumFormScores` | 同步读写 `CurrentForm` 与 `MaximumForm`，确保属性守恒不被药水/复活白嫖。**英雄代码请用强类型 `DotaStats`（§9）**。 |
+| | `SetMeter` / `SetMeterPoints` | 直接调整 `Life` / `Mana` 上限与当前值（用于开局重算、空大返蓝）；最大生命联动请用 `DotaLife.AdjustMax`（§9）。 |
+| | `GetSpellManaCost(ch, spell, skill)` | 原生 `Character.SpellCost` 真实蓝耗（含天赋减耗），帮助面板经 `DotaHelpFormat.ActualMana` 调用。 |
 | | `GetQualification` | 查询角色在指定 `Skill` 上的熟练度。 |
 | **战斗与治疗** | `HarmCharacter` / `StrikeCharacter` / `HealCharacter` / `GetMeleeDamageDice` | 走 Pathos 原生伤害/治疗结算（自动触发 `BeforeDamage`、暴击、元素抗性与日志）。 |
 | **位移与状态** | `TeleportCharacter` / `ApplyTransient` / `RemoveTransient` / `HasTransient` | 瞬移、施加/移除/检测短期状态（`Transient`）。 |
@@ -242,3 +243,115 @@ HungerAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
 ### 8.4 `DotaTable`
 
 `DotaTable.Of(a, b, c, ...)[n]` 为 1 起始、越界自动夹取的数值表，统一替代 `Arr[Math.Clamp(n - 1, 0, Len - 1)]`：5 阶熟练度表用 `[tier]`，技能等级表用 `[skillLevel]`；全阶同值用 `DotaTable.Uniform(v)`。
+
+---
+
+## 9. 属性与生命：`DotaStats` / `DotaLife` / `TalentNode.StatBonus`
+
+### 9.1 `DotaStats`（强类型六维）
+
+[DotaStats.cs](../../Framework/DotaStats.cs) 以 `DotaStat` 枚举替代 `"strength"` / `"dexterity"` 等裸字符串（底层仍转发 `PathosEngineBridge` 的按名称接口）：
+
+| 方法 | 说明 |
+| :--- | :--- |
+| `DotaStats.Str(ch)` / `Dex(ch)` / `Con(ch)` / `Get(ch, DotaStat.X)` | `CurrentForm` 当前值 |
+| `DotaStats.Limit(ch, DotaStat.X)` | `LimitForm` 上限（含职业上限、天赋 `StatBonus`、7 级黄点） |
+| `DotaStats.SetPermanent(ch, DotaStat.X, score)` | 同步写入 `CurrentForm` 与 `MaximumForm` |
+| `DotaStats.RaisePermanentClamped(ch, DotaStat.X, delta)` | 写入 `Min(上限, 当前 + delta)` |
+
+### 9.2 `DotaLife.AdjustMax`（最大生命联动）
+
+[DotaLife.cs](../../Framework/DotaLife.cs) 收敛三种既有写法，力量 → 生命统一使用 `DotaMechanicsMapper.HpPerStrengthPoint = 6`：
+
+| 模式 | 规则 | 使用者 |
+| :--- | :--- | :--- |
+| `KeepRatio` | 新上限 `Max(10, 上限 + Δ)`，当前值按原百分比缩放并夹取到 `[1, 新上限]`（已死亡保持 0） | 斧王「一人之军」 |
+| `RaiseBoth` | 新上限 `上限 + Δ`，当前值 `Min(新上限, 当前 + Δ)` | 水人转力、+力量天赋 |
+| `ClampCurrent` | 新上限 `Max(10, 上限 + Δ)`，当前值仅夹取到 `[1, 新上限]` | 水人转敏 |
+
+`DotaLife.AdjustMaxByStrength(ch, strDelta, mode)` 自动乘以 `HpPerStrengthPoint`。
+
+### 9.3 声明式属性天赋 `TalentNode.StatBonus`
+
+```csharp
+T3Right: new TalentNode(
+  Id: TalentT3Strength,
+  TitleResolver: () => DotaLocalization.T("axe.talent.t3r.title"),
+  DescriptionResolver: () => DotaLocalization.Format("axe.talent.t3r.desc", 3, 3 * DotaMechanicsMapper.HpPerStrengthPoint))
+{
+  StatBonus = PathosStatLimits.Bonus(Str: 3, Con: 3)
+},
+```
+
+天赋框架自动完成：
+
+1. **上限拓宽**：`DotaMechanicsMapper` 的属性上限查询叠加 `TalentService.GetLearnedStatBonus(ch)`（已学节点之和），无需再写 `RegisterHeroStatLimitBonus`。
+2. **学习瞬间永久提升**：节点写入存档后（新上限已生效）按 `Min(上限, 当前 + 加成)` 写入；在 `OnLearn` 之前执行。
+3. **生命联动**：`StatBonus.Str > 0` 时按 `DotaLifeAdjustMode.RaiseBoth` 提升 `Str × HpPerStrengthPoint` 的最大与当前生命。
+
+> 迁移说明：旧版斧王 T3 右直接 `SetMeter(Points + 18, Total + 18)`，水人 T4 左则 `Min(Total + 42, Points + 42)`；二者在当前生命不超上限时完全等价，现统一为后者（`RaiseBoth`）。
+
+---
+
+## 10. 英雄档案 `DotaHeroProfile`
+
+[DotaHeroProfile.cs](../../Framework/DotaHeroProfile.cs) 每个英雄声明一次 DOTA2 7.42 初始三维与成长，统一推导初始六维、职业上限与蓝量基准：
+
+```csharp
+// DOTA2 7.42 斧王初始三维与成长：STR 25 (+2.7) / AGI 18 (+1.5) / INT 18 (+1.6)
+private static readonly DotaHeroProfile Profile = new(
+  AxeClassName,
+  BaseStr: 25, StrGain: 2.7f,
+  BaseAgi: 18, AgiGain: 1.5f,
+  BaseInt: 18, IntGain: 1.6f);   // 可选 Charisma: 10 / CharismaLimit: 20
+
+// RegisterHooks：固定初始六维 + 职业属性上限
+Profile.RegisterStats();
+
+// 职业注册：Name / Description / Backpack / 生命成长 / 蓝量成长（按种族蓝量反推）/ 全性别头像
+Ctx.Classes.Add(C =>
+{
+  Profile.ConfigureClass(Ctx, C, Description: "...", AvatarGlyph: Glyph,
+    LifeBase: 16, LifeDice: 1.d12(), RaceManaBase: 1, ManaDice: 1.d2());
+  C.SetDistribution(...);   // 属性分配、专长、熟练度与开局物品仍由英雄声明
+});
+```
+
+`Profile.StartingStats` / `Profile.StatLimits` 可直接用于自定义种族的 `DefaultForm` / `LimitForm`（如水人 waterkin）。
+
+---
+
+## 11. 技能帮助面板辅助：`DotaHelpFormat` / `DotaSpellHelpBridge.Tiers`
+
+| API | 说明 |
+| :--- | :--- |
+| `DotaHelpFormat.Tiles(n)` / `Turns(n)` / `Dex(n)` | 共享 `ui.help.tiles_val` / `turns_val` / `dex_val`（参数为 object，可传 `"1~4"` 区间文本） |
+| `DotaHelpFormat.CastRangeSuffix(n)` | 熟练度阶梯标题后缀（`ui.help.cast_range_suffix`） |
+| `DotaHelpFormat.ActualMana(ch, ability)` | 真实蓝耗：`PathosEngineBridge.GetSpellManaCost` → 原生 `Character.SpellCost`（含天赋减耗），与实际扣蓝一致；**禁止**在面板中手动重算 `MapCooldownReductionToManaCost` |
+| `DotaSpellHelpBridge.Tiers(tier => header, tier => bullet)` | 生成 5 阶熟练度明细（单条说明的常见形态） |
+| `DotaSpellHelpBridge.Tiers(tier => new DotaSpellHelpTier { ... })` | 多条说明的通用形态（`Tier` 字段自动填写） |
+| `DotaCombatHelper.GetDisplayName(ch, fallbackKey = "ui.target_fallback")` | 战斗日志目标名：`Character.Name` → 本地化实体名 → 回退词 |
+
+**施法与面板同源**：凡帮助面板展示的数值与施法结算使用同一公式（如斧王战斗饥渴 DPS、主宰剑刃风暴旋转骰 / 无敌斩斩数与单斩构成、水人变体打击爆发与眩晕），必须抽成英雄内一个 `ComputeXxx(ch, tier)` 方法供两处调用（示例：`AxeHero.ComputeCall` / `ComputeHungerDps`、`JuggernautHero.ComputeBladeFurySpin` / `ComputeOmnislash`、`MorphlingHero.ComputeAdaptiveStrike`），避免改了施法忘了面板。
+
+---
+
+## 12. 状态栏徽章辅助
+
+```csharp
+// 仅对指定职业的存活角色调用 Provider（替代 if (!IsX(ch) || ch.Deceased) return null;）
+DotaStatusBarBridge.RegisterProvider("juggernaut.bladeform", JuggernautClassName, Ch =>
+{
+  var State = GetBladeformState(Ch);
+  if (State.Stacks <= 0)
+    return null;
+
+  // 标题 = Property 本地化名（缺失时回退 Key）并大写；点击查看该 Property
+  return DotaStatusBadge.ForPassive("juggernaut.bladeform", BladeformGlyph, BladeformTalentProperty,
+    "jugg.status.bladeform_fallback", Count: $"×{State.Stacks}", Colour: Colour.Black);
+});
+```
+
+- `DotaStatusBadge.TitleFrom(property, fallbackKey)` / `DotaStatusBadge.Title(key)`：只需标题时使用（如 `HelpSpell` 类徽章）。
+- 会施加给友军的徽章（如斧王淘汰战吼）不要用职业过滤重载。
+- 带剩余回合的增益/减益优先用 `DotaModifierSpec.Badge*` 自动生成徽章（见 §6）。

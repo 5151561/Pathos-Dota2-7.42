@@ -69,6 +69,32 @@ namespace Pathos.DotaHeroes.Framework.UI
   }
 
   /// <summary>
+  /// 技能帮助面板常用数值文本（共享 <c>ui.help.*</c> 本地化 Key，避免各英雄重复拼接 Format）。
+  /// 参数为 object，可直接传入区间文本（如 <c>"1~4"</c>）。
+  /// </summary>
+  public static class DotaHelpFormat
+  {
+    /// <summary>「N 格」</summary>
+    public static string Tiles(object Value) => DotaLocalization.Format("ui.help.tiles_val", Value);
+
+    /// <summary>「N 回合」</summary>
+    public static string Turns(object Value) => DotaLocalization.Format("ui.help.turns_val", Value);
+
+    /// <summary>熟练度阶梯标题后缀「施法距离 N」。</summary>
+    public static string CastRangeSuffix(object Range) => DotaLocalization.Format("ui.help.cast_range_suffix", Range);
+
+    /// <summary>「敏捷 N」</summary>
+    public static string Dex(object Value) => DotaLocalization.Format("ui.help.dex_val", Value);
+
+    /// <summary>
+    /// 施法者释放该技能的真实蓝耗（原生 Character.SpellCost，含天赋「减冷却 → 减蓝耗」），
+    /// 与实际扣蓝及原生法术面板一致；切勿在英雄代码中手动重算 MapCooldownReductionToManaCost。
+    /// </summary>
+    public static int ActualMana(Character Character, DotaAbility Ability)
+      => Ability == null ? 0 : PathosEngineBridge.GetSpellManaCost(Character, Ability.Spell, Ability.Spec.Skill);
+  }
+
+  /// <summary>
   /// Pathos 技能帮助面板（HelpContext.CompileSpell）桥接层：
   /// 解决 Hook 驱动的 DOTA2 技能在原生帮助面板中显示「什么也不发生」或缺失实际伤害/斩数/缩放数值的问题。
   /// - 保留原生头部（技能描述、学派、等级、基础蓝耗）。
@@ -159,6 +185,38 @@ namespace Pathos.DotaHeroes.Framework.UI
 
       Specs[Spec.SpellName] = Spec;
     }
+
+    /// <summary>熟练度阶数（1 Proficient .. 5 Champion）。</summary>
+    public const int TierCount = 5;
+
+    /// <summary>
+    /// 构建 5 阶熟练度明细（Tier 字段由本方法填写，<paramref name="Build"/> 中无需再设置）。
+    /// </summary>
+    public static IReadOnlyList<DotaSpellHelpTier> Tiers(Func<int, DotaSpellHelpTier> Build)
+    {
+      var List = new List<DotaSpellHelpTier>(TierCount);
+      for (int Tier = 1; Tier <= TierCount; Tier++)
+      {
+        var Entry = Build(Tier);
+        List.Add(new DotaSpellHelpTier
+        {
+          Tier = Tier,
+          HeaderSuffix = Entry?.HeaderSuffix ?? string.Empty,
+          Bullets = Entry?.Bullets ?? Array.Empty<string>()
+        });
+      }
+      return List;
+    }
+
+    /// <summary>
+    /// 构建 5 阶熟练度明细的常见形态：每阶 1 个标题后缀 + 1 条说明。
+    /// </summary>
+    public static IReadOnlyList<DotaSpellHelpTier> Tiers(Func<int, string> HeaderSuffix, Func<int, string> Bullet)
+      => Tiers(Tier => new DotaSpellHelpTier
+      {
+        HeaderSuffix = HeaderSuffix?.Invoke(Tier) ?? string.Empty,
+        Bullets = new[] { Bullet(Tier) }
+      });
 
     /// <summary>
     /// 计算 Dice 的最小可能点数（Number * 1 + Bonus）。

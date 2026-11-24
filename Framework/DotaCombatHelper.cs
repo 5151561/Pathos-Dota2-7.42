@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Localization;
 using Pathos.DotaHeroes.Framework.Targeting;
 
 namespace Pathos.DotaHeroes.Framework
@@ -29,6 +30,24 @@ namespace Pathos.DotaHeroes.Framework
       return Character?.Entity != null &&
              !string.IsNullOrEmpty(EntityName) &&
              string.Equals(Character.Entity.Name, EntityName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// 战斗日志用的角色显示名：自定义名（Character.Name）→ 本地化实体名 → 本地化回退词（默认 <c>ui.target_fallback</c>）。
+    /// 需要带语法格（如俄语与格）的句子可传入英雄自己的回退 Key。
+    /// </summary>
+    public static string GetDisplayName(Character Character, string FallbackKey = "ui.target_fallback")
+    {
+      if (Character != null)
+      {
+        if (!string.IsNullOrWhiteSpace(Character.Name))
+          return Character.Name;
+
+        if (Character.Entity != null)
+          return PathosEngineBridge.GetLocalizedName(Character.Entity);
+      }
+
+      return DotaLocalization.T(FallbackKey);
     }
 
     /// <summary>

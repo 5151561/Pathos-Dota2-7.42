@@ -97,6 +97,15 @@ namespace Pathos.DotaHeroes.Framework.Talents
     public Action<object, Character> OnLearn { get; }
 
     /// <summary>
+    /// 声明式属性加成（如 +3 力量 → <c>PathosStatLimits.Bonus(Str: 3, Con: 3)</c>），由天赋框架自动结算：
+    /// 1. 已学后同步拓宽 LimitForm 属性上限（经 DotaMechanicsMapper 上限查询自动叠加）；
+    /// 2. 学习瞬间永久提升对应属性（夹取到新上限）；
+    /// 3. 力量加成按 <see cref="DotaMechanicsMapper.HpPerStrengthPoint"/> 同步提升最大与当前生命。
+    /// 在 <see cref="OnLearn"/> 之前执行；无需再手写 OnLearn 或 RegisterHeroStatLimitBonus。
+    /// </summary>
+    public PathosStatLimits StatBonus { get; init; }
+
+    /// <summary>
     /// 对应 Pathos 原生 Codex.Properties 的内部标记（用于随 Character.AcquiredTalentSet 自动存档与读档）。
     /// </summary>
     internal Property BackingProperty { get; set; }

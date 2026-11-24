@@ -25,11 +25,14 @@ $$\text{Map}(x) = \text{Clamp}\Big(\text{Round}\big(12 + (x - 20) \times 0.45\bi
 - `CHA` 默认 `10`（可按背景人设微调 ±2）
 
 ### 运行时锁定方式
-在英雄 `RegisterHooks` 中调用两行即可同时锁定初始六维与职业专属属性上限：
+每个英雄声明一次 `DotaHeroProfile`（DOTA2 7.42 Base/Gain），在 `RegisterHooks` 中一行即可同时锁定初始六维与职业专属属性上限：
 ```csharp
-DotaMechanicsMapper.RegisterFixedStartingStats(ClassName, StartingStats);
-DotaMechanicsMapper.RegisterHeroStatLimits(ClassName, StatLimits);
+private static readonly DotaHeroProfile Profile = new(ClassName,
+  BaseStr: 25, StrGain: 2.7f, BaseAgi: 18, AgiGain: 1.5f, BaseInt: 18, IntGain: 1.6f);
+
+Profile.RegisterStats(); // = RegisterFixedStartingStats + RegisterHeroStatLimits
 ```
+「+N 属性」天赋通过 `TalentNode.StatBonus` 声明，框架自动叠加上限并按 `DotaMechanicsMapper.HpPerStrengthPoint = 6` 联动生命（见 [hook-system.md §9](hook-system.md)）。
 框架会在 `Engine.CreateActor` 与 `Engine.RerollActor` 的 Postfix 中自动覆写 `CurrentForm` / `MaximumForm`，并按 Pathos 原生公式重算 1 级初始 `Life` 与 `Mana`。
 
 ### 英雄属性上限映射（种族管风味，职业管上限）

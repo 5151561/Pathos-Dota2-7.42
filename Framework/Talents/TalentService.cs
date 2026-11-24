@@ -102,6 +102,15 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
       try
       {
+        ApplyStatBonus(Character, Node.StatBonus);
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"Talent '{Node.Id}' StatBonus failed: {Ex}");
+      }
+
+      try
+      {
         Node.OnLearn?.Invoke(Engine, Character);
       }
       catch (Exception Ex)
@@ -120,6 +129,46 @@ namespace Pathos.DotaHeroes.Framework.Talents
         DotaLocalization.Format("ui.talent.log.learned", Tier.UnlockLevel, Detail));
 
       return true;
+    }
+
+    /// <summary>
+    /// 汇总角色已学天赋节点的声明式属性加成（<see cref="TalentNode.StatBonus"/>），供属性上限查询叠加。
+    /// </summary>
+    public static PathosStatLimits GetLearnedStatBonus(Character Character)
+    {
+      var Total = default(PathosStatLimits);
+      if (Character == null || !TalentRegistry.TryGetTree(Character, out var Tree))
+        return Total;
+
+      foreach (var Tier in Tree.Tiers)
+      {
+        if (!Tier.Left.StatBonus.IsZero && HasTalent(Character, Tier.Left.Id))
+          Total += Tier.Left.StatBonus;
+        if (!Tier.Right.StatBonus.IsZero && HasTalent(Character, Tier.Right.Id))
+          Total += Tier.Right.StatBonus;
+      }
+
+      return Total;
+    }
+
+    /// <summary>
+    /// 学习瞬间结算属性加成：此时节点已写入存档，上限已包含本次加成，属性按 Min(上限, 当前 + 加成) 永久提升；
+    /// 力量加成按每点 <see cref="DotaMechanicsMapper.HpPerStrengthPoint"/> HP 同步提升最大与当前生命（当前值夹取到新上限）。
+    /// </summary>
+    private static void ApplyStatBonus(Character Character, PathosStatLimits Bonus)
+    {
+      if (Character == null || Bonus.IsZero)
+        return;
+
+      DotaStats.RaisePermanentClamped(Character, DotaStat.Str, Bonus.Str);
+      DotaStats.RaisePermanentClamped(Character, DotaStat.Dex, Bonus.Dex);
+      DotaStats.RaisePermanentClamped(Character, DotaStat.Con, Bonus.Con);
+      DotaStats.RaisePermanentClamped(Character, DotaStat.Int, Bonus.Int);
+      DotaStats.RaisePermanentClamped(Character, DotaStat.Wis, Bonus.Wis);
+      DotaStats.RaisePermanentClamped(Character, DotaStat.Cha, Bonus.Cha);
+
+      if (Bonus.Str > 0)
+        DotaLife.AdjustMaxByStrength(Character, Bonus.Str, DotaLifeAdjustMode.RaiseBoth);
     }
 
     private static void HandleSpellCostQuery(SpellCostQueryEventArgs Args)

@@ -336,6 +336,7 @@
   "ui.skill.status.no_points": "无点数",
   "ui.skill.status.req_lv": "需 Lv {0}",
   "ui.skill.unlearned": "未学习 (0/{0})",
+  "ui.target_fallback": "目标",
   "ui.talent.click_tag": "点击学习",
   "ui.talent.learned_tag": "✓ 已学习",
   "ui.talent.log.learned": "学会天赋 [Lv {0}]：{1}",

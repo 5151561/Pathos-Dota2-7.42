@@ -51,8 +51,7 @@ namespace Pathos.DotaHeroes.Heroes
     private const string TalentT4WaveformMana = "morph.t4.waveform_mana";
 
     private const int MinAttributeScore = 3;
-    private const int MinMaxLifePoints = 10;
-    private const int HpPerShiftedPoint = 6;
+    // 属性转换每点联动的生命值统一为 DotaMechanicsMapper.HpPerStrengthPoint；转敏后最大生命保底为 DotaLife.MinMaxLife
     private const int TalentMorphDefenceBonus = 2;
     private const int TalentAttackRangeBonus = 1;
     private const int TalentWaveformRangeBonus = 2;
@@ -60,16 +59,11 @@ namespace Pathos.DotaHeroes.Heroes
     private const int TalentStrengthBonus = 7;  // 7.42 +35 力量按 1:5 后期属性标尺 -> +7 STR/CON 与 +42 HP（同步拓宽上限）
 
     // DOTA2 7.42 变体精灵初始三维与成长：STR 16 (+2.8) / AGI 33 (+4.2) / INT 19 (+2.0)
-    private const int DotaBaseStr = 16;
-    private const float DotaStrGain = 2.8f;
-    private const int DotaBaseAgi = 33;
-    private const float DotaAgiGain = 4.2f;
-    private const int DotaBaseInt = 19;
-    private const float DotaIntGain = 2.0f;
-    private static readonly PathosStartingStats StartingStats =
-      DotaMechanicsMapper.MapStartingStats(DotaBaseStr, DotaBaseAgi, DotaBaseInt, Charisma: 10);
-    private static readonly PathosStatLimits StatLimits =
-      DotaMechanicsMapper.MapStatLimits(DotaBaseStr, DotaStrGain, DotaBaseAgi, DotaAgiGain, DotaBaseInt, DotaIntGain, CharismaLimit: 20, StartingCha: 10);
+    private static readonly DotaHeroProfile Profile = new(
+      MorphlingClassName,
+      BaseStr: 16, StrGain: 2.8f,
+      BaseAgi: 33, AgiGain: 4.2f,
+      BaseInt: 19, IntGain: 2.0f);
 
     private static readonly int WaveformManaCost = DotaMechanicsMapper.MapSkillManaCost(115);      // 6
     private static readonly int AdaptiveStrikeManaCost = DotaMechanicsMapper.MapSkillManaCost(70); // 7.42 满级 70 蓝 -> 4
@@ -292,14 +286,10 @@ namespace Pathos.DotaHeroes.Heroes
         T3Left: new TalentNode(
           Id: TalentT3Agility,
           TitleResolver: () => DotaLocalization.T("morph.talent.t3l.title"),
-          DescriptionResolver: () => DotaLocalization.Format("morph.talent.t3l.desc", TalentAgilityBonus),
-          OnLearn: (Engine, Ch) =>
-          {
-            int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
-            int MaxDex = PathosEngineBridge.GetLimitAbilityScore(Ch, "dexterity");
-            int NextDex = Math.Min(MaxDex, CurDex + TalentAgilityBonus);
-            PathosEngineBridge.SetPermanentAbilityScore(Ch, "dexterity", NextDex);
-          }),
+          DescriptionResolver: () => DotaLocalization.Format("morph.talent.t3l.desc", TalentAgilityBonus))
+        {
+          StatBonus = PathosStatLimits.Bonus(Dex: TalentAgilityBonus)
+        },
         T3Right: new TalentNode(
           Id: TalentT3AdaptiveStrikeMana,
           TitleResolver: () => DotaLocalization.T("morph.talent.t3r.title"),
@@ -308,20 +298,11 @@ namespace Pathos.DotaHeroes.Heroes
         T4Left: new TalentNode(
           Id: TalentT4Strength,
           TitleResolver: () => DotaLocalization.T("morph.talent.t4l.title"),
-          DescriptionResolver: () => DotaLocalization.Format("morph.talent.t4l.desc", TalentStrengthBonus, TalentStrengthBonus * HpPerShiftedPoint),
-          OnLearn: (Engine, Ch) =>
-          {
-            int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
-            int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
-            int MaxStr = PathosEngineBridge.GetLimitAbilityScore(Ch, "strength");
-            int MaxCon = PathosEngineBridge.GetLimitAbilityScore(Ch, "constitution");
-            PathosEngineBridge.SetPermanentAbilityScore(Ch, "strength", Math.Min(MaxStr, CurStr + TalentStrengthBonus));
-            PathosEngineBridge.SetPermanentAbilityScore(Ch, "constitution", Math.Min(MaxCon, CurCon + TalentStrengthBonus));
-
-            int HpGain = TalentStrengthBonus * HpPerShiftedPoint;
-            if (Ch.Life != null)
-              PathosEngineBridge.SetMeter(Ch.Life, Math.Min(Ch.Life.Total + HpGain, Ch.Life.Points + HpGain), Ch.Life.Total + HpGain);
-          }),
+          DescriptionResolver: () => DotaLocalization.Format("morph.talent.t4l.desc", TalentStrengthBonus, TalentStrengthBonus * DotaMechanicsMapper.HpPerStrengthPoint))
+        {
+          // 上限拓宽 / 永久提升 / +42 HP 生命联动由天赋框架统一结算
+          StatBonus = PathosStatLimits.Bonus(Str: TalentStrengthBonus, Con: TalentStrengthBonus)
+        },
         T4Right: new TalentNode(
           Id: TalentT4WaveformMana,
           TitleResolver: () => DotaLocalization.T("morph.talent.t4r.title"),
@@ -331,30 +312,18 @@ namespace Pathos.DotaHeroes.Heroes
       TalentRegistry.Register(Ctx, Tree);
     }
 
-    private static PathosStatLimits GetTalentStatLimitBonus(Character Character)
-    {
-      int DexBonus = TalentService.HasTalent(Character, TalentT3Agility) ? TalentAgilityBonus : 0;
-      int StrConBonus = TalentService.HasTalent(Character, TalentT4Strength) ? TalentStrengthBonus : 0;
-      return new PathosStatLimits(Str: StrConBonus, Dex: DexBonus, Con: StrConBonus, Int: 0, Wis: 0, Cha: 0);
-    }
-
     public void RegisterHooks(DotaHeroContext Ctx)
     {
       // 0. 锁定变体精灵固定初始六维（STR 10 / DEX 18 / CON 10 / INT 12 / WIS 12 / CHA 10）、1 级初始蓝量（15）与 30 级职业属性上限（27 / 34 / 27 / 25 / 25 / 20）
-      //    同时注册动态属性上限加成（Lv 20 +15 敏捷 -> DEX+3 上限；Lv 25 +35 力量 -> STR/CON+7 上限）
-      DotaMechanicsMapper.RegisterFixedStartingStats(MorphlingClassName, StartingStats);
-      DotaMechanicsMapper.RegisterHeroStatLimits(MorphlingClassName, StatLimits);
-      DotaMechanicsMapper.RegisterHeroStatLimitBonus(MorphlingClassName, GetTalentStatLimitBonus);
+      //    天赋属性上限加成（Lv 20 +15 敏捷 -> DEX+3 上限；Lv 25 +35 力量 -> STR/CON+7 上限）由 TalentNode.StatBonus 自动叠加
+      Profile.RegisterStats();
 
       // 0.1 全射程选格与施法分发由 DotaAbility 自动注册（波浪形态点任意格 / 变体打击 / 变形选敌；属性转换与解除变形自身施放）
       // 0.2 注册左上角状态栏动态徽章：先天「潮涨潮落」实时倾向 & 变形状态
-      DotaStatusBarBridge.RegisterProvider("morphling.ebb_flow", Character =>
+      DotaStatusBarBridge.RegisterProvider("morphling.ebb_flow", MorphlingClassName, Character =>
       {
-        if (!IsMorphling(Character) || Character.Deceased)
-          return null;
-
-        int Dex = PathosEngineBridge.GetCurrentAbilityScore(Character, "dexterity");
-        int Str = PathosEngineBridge.GetCurrentAbilityScore(Character, "strength");
+        int Dex = DotaStats.Dex(Character);
+        int Str = DotaStats.Str(Character);
         if (Dex <= 10 && Str <= 10)
           return null;
 
@@ -364,22 +333,18 @@ namespace Pathos.DotaHeroes.Heroes
             ? Colour.DarkRed
             : Colour.Black;
 
-        return new DotaStatusBadge
-        {
-          Key = "morphling.ebb_flow",
-          Glyph = EbbAndFlowGlyph ?? MorphlingGlyph,
-          Text = (EbbAndFlowTalentProperty != null
-            ? PathosEngineBridge.GetLocalizedName(EbbAndFlowTalentProperty)
-            : DotaLocalization.T("morph.status.ebb_fallback")).ToUpper(),
-          Count = DotaLocalization.Format("morph.status.ebb_count", Dex, Str),
-          Colour = BadgeColour,
-          HelpProperty = EbbAndFlowTalentProperty
-        };
+        return DotaStatusBadge.ForPassive(
+          "morphling.ebb_flow",
+          EbbAndFlowGlyph ?? MorphlingGlyph,
+          EbbAndFlowTalentProperty,
+          "morph.status.ebb_fallback",
+          Count: DotaLocalization.Format("morph.status.ebb_count", Dex, Str),
+          Colour: BadgeColour);
       });
 
-      DotaStatusBarBridge.RegisterProvider("morphling.morphed", Character =>
+      DotaStatusBarBridge.RegisterProvider("morphling.morphed", MorphlingClassName, Character =>
       {
-        if (!IsMorphling(Character) || Character.Deceased || !PathosEngineBridge.IsPolymorphed(Character))
+        if (!PathosEngineBridge.IsPolymorphed(Character))
           return null;
 
         bool HasMorphTalent = TalentService.HasTalent(Character, TalentT1MorphDuration);
@@ -387,7 +352,7 @@ namespace Pathos.DotaHeroes.Heroes
         {
           Key = "morphling.morphed",
           Glyph = MorphGlyph ?? MorphlingGlyph,
-          Text = DotaLocalization.T("morph.status.morphed").ToUpper(),
+          Text = DotaStatusBadge.Title("morph.status.morphed"),
           Count = HasMorphTalent ? $"+{TalentMorphDefenceBonus} DEF" : string.Empty,
           Colour = HasMorphTalent ? Colour.DarkBlue : Colour.Black,
           HelpProperty = EbbAndFlowTalentProperty
@@ -427,7 +392,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (!IsMorphling(Args.Character))
           return;
 
-        int Dex = PathosEngineBridge.GetCurrentAbilityScore(Args.Character, "dexterity");
+        int Dex = DotaStats.Dex(Args.Character);
         if (Dex <= 10)
           return;
 
@@ -441,7 +406,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (!IsMorphling(Args.Character))
           return;
 
-        int Dex = PathosEngineBridge.GetCurrentAbilityScore(Args.Character, "dexterity");
+        int Dex = DotaStats.Dex(Args.Character);
         int BonusRange = Math.Max(0, (Dex - 10) / 5);
         if (TalentService.HasTalent(Args.Character, TalentT2AttackRange))
           BonusRange += TalentAttackRangeBonus;
@@ -456,7 +421,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (!IsMorphling(Args.Character))
           return;
 
-        int Str = PathosEngineBridge.GetCurrentAbilityScore(Args.Character, "strength");
+        int Str = DotaStats.Str(Args.Character);
         int BonusRange = Math.Max(0, (Str - 10) / 5);
         if (BonusRange > 0)
           Args.BonusRange += BonusRange;
@@ -467,7 +432,7 @@ namespace Pathos.DotaHeroes.Heroes
       {
         if (Args.Property == Ctx.Properties.slowness && IsMorphling(Args.Target))
         {
-          int Str = PathosEngineBridge.GetCurrentAbilityScore(Args.Target, "strength");
+          int Str = DotaStats.Str(Args.Target);
           if (Str >= 24)
           {
             Args.Cancel = true;
@@ -572,10 +537,9 @@ namespace Pathos.DotaHeroes.Heroes
         DestSquare = Caster.Square;
 
       int Tier = Cast.Tier;
-      int Idx = Math.Clamp(Tier - 1, 0, WaveformDotaDamages.Length - 1);
-      int Radius = WaveformRadii[Idx];
-      int EvasionTurns = WaveformEvasionTurns[Idx];
-      Dice BaseDice = DotaMechanicsMapper.MapSkillDamageDice(WaveformDotaDamages[Idx]);
+      int Radius = GetWaveformRadius(Tier);
+      int EvasionTurns = GetWaveformEvasionTurns(Tier);
+      Dice BaseDice = GetWaveformDice(Tier);
       float StarMult = GetWaveformStarDamageMultiplier(Caster);
 
       // 施加短暂穿墙与幻影闪避
@@ -670,19 +634,11 @@ namespace Pathos.DotaHeroes.Heroes
       if (!Cast.TryResolveHostileTarget(out var Target, "morph.log.adaptive_no_target"))
         return;
 
-      int Tier = Cast.Tier;
-      int Idx = Math.Clamp(Tier - 1, 0, AdaptiveStrikeDotaDamages.Length - 1);
-      int Dex = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(Caster, "dexterity"));
-      int Str = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(Caster, "strength"));
+      var StrikeStats = ComputeAdaptiveStrike(Caster, Cast.Tier);
 
       // 1. 基础水伤骰 + 敏捷比缩放爆发伤害（叠加升星增幅）
-      Dice BaseDice = DotaMechanicsMapper.MapSkillDamageDice(AdaptiveStrikeDotaDamages[Idx]);
-      int BaseRoll = DotaCombatHelper.RollDice(BaseDice);
-      float DexScale = Math.Clamp((Dex / (float)Str - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
-      float MaxAgiMult = GetAdaptiveStrikeMaxAgiMultiplier(Tier);
-      float StarMult = GetAdaptiveStrikeStarDamageMultiplier(Caster);
-      int BonusDamage = (int)MathF.Round(Dex * (AdaptiveStrikeMinAgiMult + (MaxAgiMult - AdaptiveStrikeMinAgiMult) * DexScale) * StarMult);
-      int TotalDamage = Math.Max(1, BaseRoll + BonusDamage);
+      int BaseRoll = DotaCombatHelper.RollDice(StrikeStats.BaseDice);
+      int TotalDamage = Math.Max(1, BaseRoll + StrikeStats.BonusDamage);
 
       Direction HitDir = Caster.Square.AsDirection(Target.Square);
       PathosEngineBridge.StoryEmitting(Args.Engine, Target.Square, Ctx.Sonics.water_splash, Audibility: 7);
@@ -693,13 +649,10 @@ namespace Pathos.DotaHeroes.Heroes
         return;
 
       // 2. 力量比动态缩放眩晕（仅对敌方 Target 生效，绝不会眩晕施法者自己）
-      float StrScale = Math.Clamp((Str / (float)Dex - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
-      int MaxStun = GetAdaptiveStrikeBaseMaxStunTurns(Tier) + GetAdaptiveStrikeExtraMaxStun(Caster);
-      int FinalStun = Math.Max(1, (int)MathF.Round(1.0f + (MaxStun - 1.0f) * StrScale));
-      PathosEngineBridge.ApplyTransient(Args.Engine, Caster, Target, Ctx.Properties.stunned, Dice.Fixed(FinalStun));
+      PathosEngineBridge.ApplyTransient(Args.Engine, Caster, Target, Ctx.Properties.stunned, Dice.Fixed(StrikeStats.FinalStun));
 
       // 3. 单体安全击退（低力推 1 格，高力推 2 格，仅推入空地）
-      int KnockSteps = StrScale >= 0.60f ? 2 : 1;
+      int KnockSteps = StrikeStats.StrScale >= 0.60f ? 2 : 1;
       for (int Step = 0; Step < KnockSteps; Step++)
       {
         var NextSq = Target.Square?.Adjacent(HitDir, 1);
@@ -743,13 +696,13 @@ namespace Pathos.DotaHeroes.Heroes
 
       int Step = Cast.Tier + GetAttributeShiftExtraStep(Character);
 
-      int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Character, "strength");
-      int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Character, "constitution");
-      int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Character, "dexterity");
+      int CurStr = DotaStats.Str(Character);
+      int CurCon = DotaStats.Con(Character);
+      int CurDex = DotaStats.Dex(Character);
 
-      int MaxStr = PathosEngineBridge.GetLimitAbilityScore(Character, "strength");
-      int MaxCon = PathosEngineBridge.GetLimitAbilityScore(Character, "constitution");
-      int MaxDex = PathosEngineBridge.GetLimitAbilityScore(Character, "dexterity");
+      int MaxStr = DotaStats.Limit(Character, DotaStat.Str);
+      int MaxCon = DotaStats.Limit(Character, DotaStat.Con);
+      int MaxDex = DotaStats.Limit(Character, DotaStat.Dex);
 
       int Shift;
       if (ToAgility)
@@ -768,19 +721,13 @@ namespace Pathos.DotaHeroes.Heroes
           return;
         }
 
-        PathosEngineBridge.SetPermanentAbilityScore(Character, "dexterity", CurDex + Shift);
-        PathosEngineBridge.SetPermanentAbilityScore(Character, "strength", CurStr - Shift);
-        PathosEngineBridge.SetPermanentAbilityScore(Character, "constitution", CurCon - Shift);
+        DotaStats.SetPermanent(Character, DotaStat.Dex, CurDex + Shift);
+        DotaStats.SetPermanent(Character, DotaStat.Str, CurStr - Shift);
+        DotaStats.SetPermanent(Character, DotaStat.Con, CurCon - Shift);
 
         // 血量联动：转敏仅降低最大生命值，当前生命值保持不变（仅在超过新上限时截断）
-        int HpDelta = Shift * HpPerShiftedPoint;
-        var Life = Character.Life;
-        if (Life != null)
-        {
-          int NewTotal = Math.Max(MinMaxLifePoints, Life.Total - HpDelta);
-          int NewPoints = Math.Clamp(Life.Points, 1, NewTotal);
-          PathosEngineBridge.SetMeter(Life, NewPoints, NewTotal);
-        }
+        int HpDelta = Shift * DotaMechanicsMapper.HpPerStrengthPoint;
+        DotaLife.AdjustMax(Character, -HpDelta, DotaLifeAdjustMode.ClampCurrent);
 
         if (Character.Square != null)
         {
@@ -810,19 +757,13 @@ namespace Pathos.DotaHeroes.Heroes
           return;
         }
 
-        PathosEngineBridge.SetPermanentAbilityScore(Character, "strength", CurStr + Shift);
-        PathosEngineBridge.SetPermanentAbilityScore(Character, "constitution", CurCon + Shift);
-        PathosEngineBridge.SetPermanentAbilityScore(Character, "dexterity", CurDex - Shift);
+        DotaStats.SetPermanent(Character, DotaStat.Str, CurStr + Shift);
+        DotaStats.SetPermanent(Character, DotaStat.Con, CurCon + Shift);
+        DotaStats.SetPermanent(Character, DotaStat.Dex, CurDex - Shift);
 
         // DOTA2 血量联动：转力同步提升最大生命与当前生命（1 血极限转力反杀）
-        int HpDelta = Shift * HpPerShiftedPoint;
-        var Life = Character.Life;
-        if (Life != null)
-        {
-          int NewTotal = Life.Total + HpDelta;
-          int NewPoints = Math.Min(NewTotal, Life.Points + HpDelta);
-          PathosEngineBridge.SetMeter(Life, NewPoints, NewTotal);
-        }
+        int HpDelta = Shift * DotaMechanicsMapper.HpPerStrengthPoint;
+        DotaLife.AdjustMax(Character, HpDelta, DotaLifeAdjustMode.RaiseBoth);
 
         if (Character.Square != null)
         {
@@ -842,7 +783,7 @@ namespace Pathos.DotaHeroes.Heroes
     {
       if (!IsMorphling(Character))
         return 0;
-      int Str = PathosEngineBridge.GetCurrentAbilityScore(Character, "strength");
+      int Str = DotaStats.Str(Character);
       return Math.Max(0, (Str - 10) / 5);
     }
 
@@ -886,6 +827,42 @@ namespace Pathos.DotaHeroes.Heroes
     private static int GetAdaptiveStrikeBaseMaxStunTurns(int Tier)
       => DotaMechanicsMapper.MapDurationTurns(AdaptiveStrikeMaxStunSeconds[Math.Clamp(Tier - 1, 0, AdaptiveStrikeMaxStunSeconds.Length - 1)]);
 
+    // ---- 施法结算与帮助面板共用的数值计算（单一来源，防止两处公式漂移） ----
+
+    private static int WaveformIndex(int Tier) => Math.Clamp(Tier - 1, 0, WaveformDotaDamages.Length - 1);
+
+    /// <summary>Q 波浪形态基础水伤骰（DOTA2 75/150/225/300/360 → K_dmg = 15）。</summary>
+    private static Dice GetWaveformDice(int Tier) => DotaMechanicsMapper.MapSkillDamageDice(WaveformDotaDamages[WaveformIndex(Tier)]);
+
+    private static int GetWaveformRadius(int Tier) => WaveformRadii[WaveformIndex(Tier)];
+
+    private static int GetWaveformEvasionTurns(int Tier) => WaveformEvasionTurns[WaveformIndex(Tier)];
+
+    private static Dice GetAdaptiveStrikeBaseDice(int Tier)
+      => DotaMechanicsMapper.MapSkillDamageDice(AdaptiveStrikeDotaDamages[Math.Clamp(Tier - 1, 0, AdaptiveStrikeDotaDamages.Length - 1)]);
+
+    private readonly record struct AdaptiveStrikeStats(int Dex, int Str, Dice BaseDice, int BonusDamage, float StrScale, int MaxStun, int FinalStun);
+
+    /// <summary>
+    /// W 变体打击：基础水伤骰 + 敏捷比缩放爆发（0.35× ~ 熟练度上限倍率 × 升星）与力量比缩放眩晕（1 ~ 最长眩晕回合）。
+    /// </summary>
+    private static AdaptiveStrikeStats ComputeAdaptiveStrike(Character Caster, int Tier)
+    {
+      int Dex = Math.Max(1, DotaStats.Dex(Caster));
+      int Str = Math.Max(1, DotaStats.Str(Caster));
+
+      float DexScale = Math.Clamp((Dex / (float)Str - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
+      float MaxAgiMult = GetAdaptiveStrikeMaxAgiMultiplier(Tier);
+      float StarMult = GetAdaptiveStrikeStarDamageMultiplier(Caster);
+      int BonusDamage = (int)MathF.Round(Dex * (AdaptiveStrikeMinAgiMult + (MaxAgiMult - AdaptiveStrikeMinAgiMult) * DexScale) * StarMult);
+
+      float StrScale = Math.Clamp((Str / (float)Dex - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
+      int MaxStun = GetAdaptiveStrikeBaseMaxStunTurns(Tier) + GetAdaptiveStrikeExtraMaxStun(Caster);
+      int FinalStun = Math.Max(1, (int)MathF.Round(1.0f + (MaxStun - 1.0f) * StrScale));
+
+      return new AdaptiveStrikeStats(Dex, Str, GetAdaptiveStrikeBaseDice(Tier), BonusDamage, StrScale, MaxStun, FinalStun);
+    }
+
     private static void RegisterSpellHelpSpecs(DotaHeroContext Ctx)
     {
       // 1. Q：波浪形态
@@ -897,15 +874,14 @@ namespace Pathos.DotaHeroes.Heroes
         {
           var Ch = HelpCtx.Character;
           int Tier = WaveformAbility.Tier(Ch);
-          int Idx = Math.Clamp(Tier - 1, 0, 4);
           int BaseRange = WaveformAbility.BaseRange(Tier);
           int StrBonus = GetStrRangeBonus(Ch);
           int StarRange = GetWaveformExtraRange(Ch);
           int TalentRange = GetWaveformTalentRangeBonus(Ch);
           float StarMult = GetWaveformStarDamageMultiplier(Ch);
-          Dice WaveDice = DotaMechanicsMapper.MapSkillDamageDice(WaveformDotaDamages[Idx]);
-          int Radius = WaveformRadii[Idx];
-          int Evasion = WaveformEvasionTurns[Idx];
+          Dice WaveDice = GetWaveformDice(Tier);
+          int Radius = GetWaveformRadius(Tier);
+          int Evasion = GetWaveformEvasionTurns(Tier);
           int TotalRange = BaseRange + StrBonus + StarRange + TalentRange;
           string ExtraTags =
             (StrBonus > 0 ? $" + {DotaHelpColor.Passive(DotaLocalization.Format("morph.help.ebb_tag", StrBonus))}" : string.Empty) +
@@ -914,11 +890,11 @@ namespace Pathos.DotaHeroes.Heroes
           string RangeDetail = !string.IsNullOrEmpty(ExtraTags)
             ? DotaLocalization.Format(
                 "morph.help.range_detail",
-                DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", TotalRange)),
+                DotaHelpColor.Control(DotaHelpFormat.Tiles(TotalRange)),
                 BaseRange,
                 ExtraTags,
                 string.Empty)
-            : DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", BaseRange));
+            : DotaHelpColor.Control(DotaHelpFormat.Tiles(BaseRange));
           string StarDmgNote = StarMult > 1.001f
             ? DotaLocalization.Format("ui.common.comma_item", DotaHelpColor.Skill(DotaLocalization.Format("ui.help.tag_star_mult", $"{StarMult:0.00}")))
             : string.Empty;
@@ -931,39 +907,23 @@ namespace Pathos.DotaHeroes.Heroes
               DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice)),
               DotaHelpColor.Magic($"{WaveDice.Average() * StarMult:0.#}"),
               StarDmgNote,
-              DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", Radius)))),
+              DotaHelpColor.Control(DotaHelpFormat.Tiles(Radius)))),
             (DotaLocalization.T("morph.help.q.key_mobility"), DotaLocalization.Format(
               "morph.help.q.val_mobility",
-              DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", Evasion))))
+              DotaHelpColor.Control(DotaHelpFormat.Turns(Evasion))))
           };
         },
         BuildMechanicsNotes = _ => new[]
         {
           DotaLocalization.Format("morph.help.q.mech_1", DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
         },
-        BuildTiers = _ =>
-        {
-          var List = new List<DotaSpellHelpTier>(5);
-          for (int Tier = 1; Tier <= 5; Tier++)
-          {
-            int Idx = Tier - 1;
-            Dice WaveDice = DotaMechanicsMapper.MapSkillDamageDice(WaveformDotaDamages[Idx]);
-            List.Add(new DotaSpellHelpTier
-            {
-              Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", WaveformAbility.BaseRange(Tier)),
-              Bullets = new[]
-              {
-                DotaLocalization.Format(
-                  "morph.help.q.tier_bullet",
-                  DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice)),
-                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", WaveformRadii[Idx])),
-                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", WaveformEvasionTurns[Idx])))
-              }
-            });
-          }
-          return List;
-        }
+        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(WaveformAbility.BaseRange(Tier)),
+          Tier => DotaLocalization.Format(
+            "morph.help.q.tier_bullet",
+            DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(GetWaveformDice(Tier))),
+            DotaHelpColor.Control(DotaHelpFormat.Tiles(GetWaveformRadius(Tier))),
+            DotaHelpColor.Control(DotaHelpFormat.Turns(GetWaveformEvasionTurns(Tier)))))
       });
 
       // 2. W：变体打击
@@ -975,22 +935,16 @@ namespace Pathos.DotaHeroes.Heroes
         {
           var Ch = HelpCtx.Character;
           int Tier = AdaptiveStrikeAbility.Tier(Ch);
-          int Idx = Math.Clamp(Tier - 1, 0, 4);
           int BaseRange = AdaptiveStrikeAbility.BaseRange(Tier);
           int StrBonus = GetStrRangeBonus(Ch);
-          Dice BaseDice = DotaMechanicsMapper.MapSkillDamageDice(AdaptiveStrikeDotaDamages[Idx]);
 
-          int Dex = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity"));
-          int Str = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength"));
-
-          float DexScale = Math.Clamp((Dex / (float)Str - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
-          float MaxAgiMult = GetAdaptiveStrikeMaxAgiMultiplier(Tier);
-          float AdaptiveStarMult = GetAdaptiveStrikeStarDamageMultiplier(Ch);
-          int BonusDmg = (int)MathF.Round(Dex * (AdaptiveStrikeMinAgiMult + (MaxAgiMult - AdaptiveStrikeMinAgiMult) * DexScale) * AdaptiveStarMult);
-
-          float StrScale = Math.Clamp((Str / (float)Dex - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
-          int MaxStun = GetAdaptiveStrikeBaseMaxStunTurns(Tier) + GetAdaptiveStrikeExtraMaxStun(Ch);
-          int FinalStun = Math.Max(1, (int)MathF.Round(1.0f + (MaxStun - 1.0f) * StrScale));
+          var StrikeStats = ComputeAdaptiveStrike(Ch, Tier);
+          Dice BaseDice = StrikeStats.BaseDice;
+          int Dex = StrikeStats.Dex;
+          int Str = StrikeStats.Str;
+          int BonusDmg = StrikeStats.BonusDamage;
+          int MaxStun = StrikeStats.MaxStun;
+          int FinalStun = StrikeStats.FinalStun;
 
           int TotalMin = DotaSpellHelpBridge.GetDiceMin(BaseDice) + BonusDmg;
           int TotalMax = DotaSpellHelpBridge.GetDiceMax(BaseDice) + BonusDmg;
@@ -1001,11 +955,11 @@ namespace Pathos.DotaHeroes.Heroes
             (DotaLocalization.T("morph.help.w.key_range"), StrBonus > 0
               ? DotaLocalization.Format(
                   "morph.help.range_detail",
-                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", BaseRange + StrBonus)),
+                  DotaHelpColor.Control(DotaHelpFormat.Tiles(BaseRange + StrBonus)),
                   BaseRange,
                   $" + {DotaHelpColor.Passive(DotaLocalization.Format("morph.help.ebb_tag", StrBonus))}",
                   string.Empty)
-              : DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", BaseRange))),
+              : DotaHelpColor.Control(DotaHelpFormat.Tiles(BaseRange))),
             (DotaLocalization.T("morph.help.w.key_dmg"), DotaLocalization.Format(
               "morph.help.w.val_dmg",
               DotaHelpColor.Magic($"{TotalMin}~{TotalMax}"),
@@ -1014,11 +968,11 @@ namespace Pathos.DotaHeroes.Heroes
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.w.agi_bonus", BonusDmg)))),
             (DotaLocalization.T("morph.help.w.key_stun"), DotaLocalization.Format(
               "morph.help.w.val_stun",
-              DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", FinalStun)),
-              DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", MaxStun)))),
+              DotaHelpColor.Control(DotaHelpFormat.Turns(FinalStun)),
+              DotaHelpColor.Control(DotaHelpFormat.Turns(MaxStun)))),
             (DotaLocalization.T("morph.help.w.key_ratio"), DotaLocalization.Format(
               "morph.help.w.val_ratio",
-              DotaHelpColor.Stat(DotaLocalization.Format("ui.help.dex_val", Dex)),
+              DotaHelpColor.Stat(DotaHelpFormat.Dex(Dex)),
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", Str))))
           };
         },
@@ -1030,29 +984,12 @@ namespace Pathos.DotaHeroes.Heroes
             DotaHelpColor.Stat(DotaLocalization.T("morph.help.w.tag_agi_scale")),
             DotaHelpColor.Control(DotaLocalization.T("morph.help.w.tag_str_stun")))
         },
-        BuildTiers = _ =>
-        {
-          var List = new List<DotaSpellHelpTier>(5);
-          for (int Tier = 1; Tier <= 5; Tier++)
-          {
-            int Idx = Tier - 1;
-            Dice BaseDice = DotaMechanicsMapper.MapSkillDamageDice(AdaptiveStrikeDotaDamages[Idx]);
-            int MaxStun = GetAdaptiveStrikeBaseMaxStunTurns(Tier);
-            List.Add(new DotaSpellHelpTier
-            {
-              Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", AdaptiveStrikeAbility.BaseRange(Tier)),
-              Bullets = new[]
-              {
-                DotaLocalization.Format(
-                  "morph.help.w.tier_bullet",
-                  DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice)),
-                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", $"1~{MaxStun}")))
-              }
-            });
-          }
-          return List;
-        }
+        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(AdaptiveStrikeAbility.BaseRange(Tier)),
+          Tier => DotaLocalization.Format(
+            "morph.help.w.tier_bullet",
+            DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(GetAdaptiveStrikeBaseDice(Tier))),
+            DotaHelpColor.Control(DotaHelpFormat.Turns($"1~{GetAdaptiveStrikeBaseMaxStunTurns(Tier)}"))))
       });
 
       // 3. E1：属性转换·敏捷
@@ -1064,10 +1001,10 @@ namespace Pathos.DotaHeroes.Heroes
         {
           var Ch = HelpCtx.Character;
           int Step = MorphAgilityAbility.Tier(Ch) + GetAttributeShiftExtraStep(Ch);
-          int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
-          int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
-          int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
-          int MaxDex = PathosEngineBridge.GetLimitAbilityScore(Ch, "dexterity");
+          int CurStr = DotaStats.Str(Ch);
+          int CurCon = DotaStats.Con(Ch);
+          int CurDex = DotaStats.Dex(Ch);
+          int MaxDex = DotaStats.Limit(Ch, DotaStat.Dex);
 
           return new List<(string, string)>
           {
@@ -1075,11 +1012,11 @@ namespace Pathos.DotaHeroes.Heroes
               $"{DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e1.str_con_minus", Step))} → {DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e1.agi_plus", Step))} ({DotaHelpColor.Mana(DotaLocalization.T("morph.help.e.zero_mana"))})"),
             (DotaLocalization.T("morph.help.e.key_hp"), DotaLocalization.Format(
               "morph.help.e1.val_hp",
-              DotaHelpColor.Physical($"-{Step * HpPerShiftedPoint} HP"))),
+              DotaHelpColor.Physical($"-{Step * DotaMechanicsMapper.HpPerStrengthPoint} HP"))),
             (DotaLocalization.T("morph.help.e.key_attrs"), DotaLocalization.Format(
               "morph.help.e1.val_attrs",
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", CurStr)),
-              DotaHelpColor.Stat(DotaLocalization.Format("ui.help.dex_val", CurDex)),
+              DotaHelpColor.Stat(DotaHelpFormat.Dex(CurDex)),
               MaxDex,
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.con_val", CurCon)),
               MinAttributeScore))
@@ -1087,28 +1024,14 @@ namespace Pathos.DotaHeroes.Heroes
         },
         BuildMechanicsNotes = _ => new[]
         {
-          DotaLocalization.Format("morph.help.e1.mech_1", MinAttributeScore, MinMaxLifePoints)
+          DotaLocalization.Format("morph.help.e1.mech_1", MinAttributeScore, DotaLife.MinMaxLife)
         },
-        BuildTiers = _ =>
-        {
-          var List = new List<DotaSpellHelpTier>(5);
-          for (int Tier = 1; Tier <= 5; Tier++)
-          {
-            List.Add(new DotaSpellHelpTier
-            {
-              Tier = Tier,
-              HeaderSuffix = DotaLocalization.T("morph.help.self_zero_mana"),
-              Bullets = new[]
-              {
-                DotaLocalization.Format(
-                  "morph.help.e1.tier_bullet",
-                  DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Tier)),
-                  DotaHelpColor.Physical($"-{Tier * HpPerShiftedPoint} HP"))
-              }
-            });
-          }
-          return List;
-        }
+        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+          _ => DotaLocalization.T("morph.help.self_zero_mana"),
+          Tier => DotaLocalization.Format(
+            "morph.help.e1.tier_bullet",
+            DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Tier)),
+            DotaHelpColor.Physical($"-{Tier * DotaMechanicsMapper.HpPerStrengthPoint} HP")))
       });
 
       // 4. E2：属性转换·力量
@@ -1120,10 +1043,10 @@ namespace Pathos.DotaHeroes.Heroes
         {
           var Ch = HelpCtx.Character;
           int Step = MorphStrengthAbility.Tier(Ch) + GetAttributeShiftExtraStep(Ch);
-          int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
-          int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
-          int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
-          int MaxStr = PathosEngineBridge.GetLimitAbilityScore(Ch, "strength");
+          int CurStr = DotaStats.Str(Ch);
+          int CurCon = DotaStats.Con(Ch);
+          int CurDex = DotaStats.Dex(Ch);
+          int MaxStr = DotaStats.Limit(Ch, DotaStat.Str);
 
           return new List<(string, string)>
           {
@@ -1131,12 +1054,12 @@ namespace Pathos.DotaHeroes.Heroes
               $"{DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e2.agi_minus", Step))} → {DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e2.str_con_plus", Step))} ({DotaHelpColor.Mana(DotaLocalization.T("morph.help.e.zero_mana"))})"),
             (DotaLocalization.T("morph.help.e.key_hp"), DotaLocalization.Format(
               "morph.help.e2.val_hp",
-              DotaHelpColor.Heal($"+{Step * HpPerShiftedPoint} HP"))),
+              DotaHelpColor.Heal($"+{Step * DotaMechanicsMapper.HpPerStrengthPoint} HP"))),
             (DotaLocalization.T("morph.help.e.key_attrs"), DotaLocalization.Format(
               "morph.help.e2.val_attrs",
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", CurStr)),
               MaxStr,
-              DotaHelpColor.Stat(DotaLocalization.Format("ui.help.dex_val", CurDex)),
+              DotaHelpColor.Stat(DotaHelpFormat.Dex(CurDex)),
               MinAttributeScore,
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.con_val", CurCon))))
           };
@@ -1145,26 +1068,12 @@ namespace Pathos.DotaHeroes.Heroes
         {
           DotaLocalization.Format("morph.help.e2.mech_1", MinAttributeScore)
         },
-        BuildTiers = _ =>
-        {
-          var List = new List<DotaSpellHelpTier>(5);
-          for (int Tier = 1; Tier <= 5; Tier++)
-          {
-            List.Add(new DotaSpellHelpTier
-            {
-              Tier = Tier,
-              HeaderSuffix = DotaLocalization.T("morph.help.self_zero_mana"),
-              Bullets = new[]
-              {
-                DotaLocalization.Format(
-                  "morph.help.e2.tier_bullet",
-                  DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Tier)),
-                  DotaHelpColor.Heal($"+{Tier * HpPerShiftedPoint} HP"))
-              }
-            });
-          }
-          return List;
-        }
+        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+          _ => DotaLocalization.T("morph.help.self_zero_mana"),
+          Tier => DotaLocalization.Format(
+            "morph.help.e2.tier_bullet",
+            DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Tier)),
+            DotaHelpColor.Heal($"+{Tier * DotaMechanicsMapper.HpPerStrengthPoint} HP")))
       });
 
       // 5. R1：变形
@@ -1186,11 +1095,11 @@ namespace Pathos.DotaHeroes.Heroes
             (DotaLocalization.T("morph.help.r.key_range"), (StrBonus > 0 || StarRange > 0)
               ? DotaLocalization.Format(
                   "morph.help.range_detail",
-                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", TotalRange)),
+                  DotaHelpColor.Control(DotaHelpFormat.Tiles(TotalRange)),
                   BaseRange,
                   StrBonus > 0 ? $" + {DotaHelpColor.Passive(DotaLocalization.Format("morph.help.ebb_tag", StrBonus))}" : string.Empty,
                   StarRange > 0 ? $" + {DotaHelpColor.Skill(DotaLocalization.Format("morph.help.star_range_tag", StarRange))}" : string.Empty)
-              : DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", BaseRange))),
+              : DotaHelpColor.Control(DotaHelpFormat.Tiles(BaseRange))),
             (DotaLocalization.T("morph.help.r.key_mech"), DotaLocalization.Format(
               "morph.help.r.val_mech",
               DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name"))))
@@ -1200,26 +1109,12 @@ namespace Pathos.DotaHeroes.Heroes
         {
           DotaLocalization.Format("morph.help.r.mech_1", DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
         },
-        BuildTiers = _ =>
-        {
-          var List = new List<DotaSpellHelpTier>(5);
-          for (int Tier = 1; Tier <= 5; Tier++)
-          {
-            List.Add(new DotaSpellHelpTier
-            {
-              Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", MorphAbility.BaseRange(Tier)),
-              Bullets = new[]
-              {
-                DotaLocalization.Format(
-                  "morph.help.r.tier_bullet",
-                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", MorphAbility.BaseRange(Tier))),
-                  DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
-              }
-            });
-          }
-          return List;
-        }
+        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(MorphAbility.BaseRange(Tier)),
+          Tier => DotaLocalization.Format(
+            "morph.help.r.tier_bullet",
+            DotaHelpColor.Control(DotaHelpFormat.Tiles(MorphAbility.BaseRange(Tier))),
+            DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name"))))
       });
     }
 
@@ -1456,20 +1351,20 @@ namespace Pathos.DotaHeroes.Heroes
 
         Ctx.SetFormScores(
           E.DefaultForm,
-          Str: StartingStats.Str,
-          Dex: StartingStats.Dex,
-          Con: StartingStats.Con,
-          Int: StartingStats.Int,
-          Wis: StartingStats.Wis,
-          Cha: StartingStats.Cha);
+          Str: Profile.StartingStats.Str,
+          Dex: Profile.StartingStats.Dex,
+          Con: Profile.StartingStats.Con,
+          Int: Profile.StartingStats.Int,
+          Wis: Profile.StartingStats.Wis,
+          Cha: Profile.StartingStats.Cha);
         Ctx.SetFormScores(
           E.LimitForm,
-          Str: StatLimits.Str,
-          Dex: StatLimits.Dex,
-          Con: StatLimits.Con,
-          Int: StatLimits.Int,
-          Wis: StatLimits.Wis,
-          Cha: StatLimits.Cha);
+          Str: Profile.StatLimits.Str,
+          Dex: Profile.StatLimits.Dex,
+          Con: Profile.StatLimits.Con,
+          Int: Profile.StatLimits.Int,
+          Wis: Profile.StatLimits.Wis,
+          Cha: Profile.StatLimits.Cha);
 
         E.LifeAdvancement.Set(0, Dice.Zero);
         E.ManaAdvancement.Set(2, Dice.Fixed(2));
@@ -1519,12 +1414,15 @@ namespace Pathos.DotaHeroes.Heroes
     {
       return Ctx.Classes.Add(C =>
       {
-        C.Name = MorphlingClassName;
-        C.Description = "A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.";
-        C.Backpack = Ctx.Items.Backpack;
-        C.LifeAdvancement.Set(12, 1.d8());
-        int ClassManaBase = DotaMechanicsMapper.ComputeClassManaBase(DotaBaseInt, RaceManaBase: 2, StartingStats.Wis);
-        C.ManaAdvancement.Set(ClassManaBase, new Dice(1, 3, 0));
+        Profile.ConfigureClass(
+          Ctx,
+          C,
+          Description: "A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
+          AvatarGlyph: AvatarGlyph,
+          LifeBase: 12,
+          LifeDice: 1.d8(),
+          RaceManaBase: 2,
+          ManaDice: new Dice(1, 3, 0));
 
         C.SetDistribution(
           Ctx.Attributes.dexterity,
@@ -1533,8 +1431,6 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Attributes.constitution,
           Ctx.Attributes.wisdom,
           Ctx.Attributes.charisma);
-
-        Ctx.AddClassAvatars(C, AvatarGlyph);
 
         // Lv 1 先天技能天赋：在角色天赋栏与选人职业专长中直观显示（且变形期间依然保留）
         C.AddFeat(1, EbbAndFlowTalent);

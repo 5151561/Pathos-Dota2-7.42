@@ -145,6 +145,10 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       typeof(Character).GetMethod("GetMastery", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Spell) }, null);
 
+    private static readonly MethodInfo CharacterSpellCostMethod =
+      MasteryType == null ? null : typeof(Character).GetMethod("SpellCost", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { MasteryType, typeof(Qualification) }, null);
+
     private static readonly MethodInfo EngineGainTalentMethod =
       EngineType?.GetMethod("GainTalent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character), typeof(Character), typeof(Property) }, null);
@@ -373,6 +377,34 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       {
         return 0;
       }
+    }
+
+    /// <summary>
+    /// 查询角色施放指定法术的真实蓝耗（原生 Character.SpellCost(Mastery, Qualification)，含 SpellCostQuery Hook 的天赋减耗），
+    /// 与施法实际扣蓝、原生法术面板显示保持一致。
+    /// 未学会该法术（无 Mastery）或反射失败时，回退为以 Spell.Mana 为基准直接派发 SpellCostQuery。
+    /// </summary>
+    public static int GetSpellManaCost(Character Character, Spell Spell, Skill Skill)
+    {
+      if (Character == null || Spell == null)
+        return Spell?.Mana ?? 0;
+
+      var Qualification = GetQualification(Character, Skill);
+      try
+      {
+        var Mastery = CharacterGetMasteryMethod?.Invoke(Character, new object[] { Spell });
+        if (Mastery != null && CharacterSpellCostMethod != null &&
+            CharacterSpellCostMethod.Invoke(Character, new[] { Mastery, Qualification }) is int Cost)
+          return Cost;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteDebug($"GetSpellManaCost('{Spell.Name}') fell back to SpellCostQuery: {Ex.Message}");
+      }
+
+      var Args = new SpellCostQueryEventArgs(Character, Spell, null, Qualification, Spell.Mana);
+      DotaHookBus.DispatchSpellCostQuery(Args);
+      return Math.Max(0, Args.ManaCost);
     }
 
     /// <summary>

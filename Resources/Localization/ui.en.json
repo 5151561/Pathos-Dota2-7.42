@@ -336,6 +336,7 @@
   "ui.skill.status.no_points": "No Pts",
   "ui.skill.status.req_lv": "Req Lv {0}",
   "ui.skill.unlearned": "Unlearned (0/{0})",
+  "ui.target_fallback": "target",
   "ui.talent.click_tag": "Click to Learn",
   "ui.talent.learned_tag": "✓ Learned",
   "ui.talent.log.learned": "Learned Talent [Lv {0}]: {1}",

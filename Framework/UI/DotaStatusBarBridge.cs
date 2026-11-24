@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using HarmonyLib;
 using Inv;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Localization;
 
 namespace Pathos.DotaHeroes.Framework.UI
 {
@@ -24,6 +25,31 @@ namespace Pathos.DotaHeroes.Framework.UI
     public Colour Colour { get; init; } = Colour.Black;
     public Property HelpProperty { get; init; }
     public Spell HelpSpell { get; init; }
+
+    /// <summary>
+    /// 徽章标题：优先取 Property 的原生本地化名，缺失时回退到本地化 Key；统一大写（与原生 StatusIcon 风格一致）。
+    /// </summary>
+    public static string TitleFrom(Property Property, string FallbackKey)
+      => (Property != null
+        ? PathosEngineBridge.GetLocalizedName(Property)
+        : DotaLocalization.T(FallbackKey)).ToUpper();
+
+    /// <summary>徽章标题：本地化 Key 的大写文本。</summary>
+    public static string Title(string Key) => DotaLocalization.T(Key).ToUpper();
+
+    /// <summary>
+    /// 先天 / 被动 Property 徽章：标题取 Property 本地化名（回退 <paramref name="FallbackKey"/>），点击查看该 Property 说明。
+    /// </summary>
+    public static DotaStatusBadge ForPassive(string Key, Glyph Glyph, Property Property, string FallbackKey, string Count, Colour Colour)
+      => new()
+      {
+        Key = Key,
+        Glyph = Glyph,
+        Text = TitleFrom(Property, FallbackKey),
+        Count = Count,
+        Colour = Colour,
+        HelpProperty = Property
+      };
   }
 
   /// <summary>
@@ -68,6 +94,18 @@ namespace Pathos.DotaHeroes.Framework.UI
         return;
 
       Providers[Key] = Provider;
+    }
+
+    /// <summary>
+    /// 注册仅对指定职业、且存活角色生效的状态栏提供器（统一替代各英雄 <c>if (!IsX(Ch) || Ch.Deceased) return null;</c> 样板）。
+    /// </summary>
+    public static void RegisterProvider(string Key, string ClassName, Func<Character, DotaStatusBadge> Provider)
+    {
+      if (Provider == null)
+        return;
+
+      RegisterProvider(Key, Ch =>
+        Ch != null && !Ch.Deceased && DotaCombatHelper.IsClass(Ch, ClassName) ? Provider(Ch) : null);
     }
 
     internal static void ApplyPatches(Harmony Harmony)

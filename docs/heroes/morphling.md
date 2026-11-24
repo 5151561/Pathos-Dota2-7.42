@@ -12,7 +12,7 @@
 ### 专属种族：`变体水灵 (waterkin)`
 - **水元素之躯**：天生水系与寒冰抗性、湿滑（Slippery）、精通游泳、水上通行；弱点为电系（Shock）。
 - **生态交互**：遇水回血回蓝、遇火蒸发少量法力；饮用水药水或从喷泉汲取可恢复生命与法力。
-- **属性上限**：由 DOTA2 7.42 三维成长统一推导为 `STR 27 / DEX 34 / CON 27 / INT 25 / WIS 25 / CHA 20`（`waterkin` 声明式上限与职业 Hook 上限同步；学习 Lv 20/25 属性天赋后通过 `DotaMechanicsMapper.RegisterHeroStatLimitBonus` 动态拓宽上限）。
+- **属性上限**：由 DOTA2 7.42 三维成长统一推导为 `STR 27 / DEX 34 / CON 27 / INT 25 / WIS 25 / CHA 20`（`waterkin` 声明式上限与职业 Hook 上限同步；学习 Lv 20/25 属性天赋后通过 `TalentNode.StatBonus` 声明式拓宽上限）。
 - **开局远程武器**：无限远程弹药 **潮汐水弹 (`tidal orb`)**。
 
 ### 专属职业：`变体精灵 (morphling)`
@@ -92,7 +92,7 @@
 ## 5. 框架基建接入与 Hook 清单
 
 ### 接入的公共基建
-- **固定初始六维与动态上限**：`DotaMechanicsMapper.RegisterFixedStartingStats`、`RegisterHeroStatLimits`、`RegisterHeroStatLimitBonus`
+- **固定初始六维与动态上限**：`DotaHeroProfile.RegisterStats`（`RegisterFixedStartingStats` + `RegisterHeroStatLimits`）；Lv 20/25 属性天赋由 `TalentNode.StatBonus` 声明式拓宽上限
 - **长效天赋**：`ebb and flow`（`Ctx.RegisterPassiveProperty`，不新增额外 `Codex.Properties`）
 - **四层双修天赋树**：`TalentRegistry.Register`
 - **左上角状态栏徽章**：`DotaStatusBarBridge`（`morphling.ebb_flow`、`morphling.morphed`）
