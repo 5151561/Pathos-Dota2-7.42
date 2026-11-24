@@ -582,6 +582,7 @@ namespace Pathos.DotaHeroes.Heroes
             {
               PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, Args.Defender.Square, BladeDanceCritStrike ?? Ctx.Strikes.flame);
               PathosEngineBridge.StoryCaption(Args.Engine, Args.Defender.Square, Colour.OrangeRed, DotaLocalization.T("ui.caption.crit"), Delayed: false);
+              PathosEngineBridge.StoryEmitting(Args.Engine, Args.Defender.Square, Ctx.Sonics.sever, Audibility: 6);
             }
 
             string SourceTag = IsOmnislash
@@ -665,6 +666,10 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 基础驱散自身常见负面状态
       DotaCombatHelper.DispelNegativeDebuffs(Ctx, Args.Engine, Caster);
+
+      // 仅在开转瞬间播放一次利刃破风声，避免每回合持续旋转重复噪音
+      if (Caster.Square != null)
+        PathosEngineBridge.StoryEmitting(Args.Engine, Caster.Square, Ctx.Sonics.sever, Audibility: 8);
 
       // 施法当回合立即结算一次旋转伤害，并标记跳过同一指令的 Postfix 重复结算
       SkipNextBladeFuryTick.Add(Caster);
@@ -760,6 +765,10 @@ namespace Pathos.DotaHeroes.Heroes
 
       if (NewWard == null)
         return;
+
+      // 仅在召唤瞬间轻播一次风铃提示音（守卫实体本身静音，避免每回合移动或环境音反复响动）
+      if (NewWard.Square != null)
+        PathosEngineBridge.StoryEmitting(Args.Engine, NewWard.Square, Ctx.Sonics.chime, Audibility: 6);
 
       WardStates.AddOrUpdate(NewWard, new HealingWardState
       {
@@ -936,7 +945,8 @@ namespace Pathos.DotaHeroes.Heroes
         if (DestSquare != null && DestSquare != Caster.Square)
         {
           DotaCombatHelper.PlayBeamTrail(Engine, FromSq, DestSquare, OmnislashDashBeam, BaseDelay: Delay.FromTurns(10), StepIncrementTurns: 1);
-          PathosEngineBridge.TeleportCharacter(Engine, Caster, DestSquare, MasterMode: false);
+          // 使用静音突进位移，彻底避免 Engine.TeleportCharacter 每刀反复播放刺耳的传送音效
+          PathosEngineBridge.DashCharacter(Engine, Caster, DestSquare);
         }
         else if (FromSq != TargetSq)
         {
@@ -968,7 +978,10 @@ namespace Pathos.DotaHeroes.Heroes
             : (OmnislashStrike ?? Ctx.Strikes.sever));
 
         if (LastOmnislashStrikeCritted)
+        {
           PathosEngineBridge.StoryCaption(Engine, TargetSq, Colour.OrangeRed, DotaLocalization.T("ui.caption.crit"), Delayed: false);
+          PathosEngineBridge.StoryEmitting(Engine, TargetSq, Ctx.Sonics.sever, Audibility: 6);
+        }
 
         Session.SlashesDone++;
         Session.RemainingSlashes = Math.Max(0, Session.RemainingSlashes - 1);
@@ -1439,7 +1452,7 @@ namespace Pathos.DotaHeroes.Heroes
         E.Weight = Weight.Zero;
         E.Defence = new Defence(10, 0, 0, 0);
         E.Strategy = Strategy.Attack;
-        E.Sonic = Ctx.Sonics.chime;
+        // 保持召唤物实体本身静音（仅在召唤瞬间播放一次柔和风铃音），避免每回合移动/环境音持续吵闹
 
         E.SetCorpse(Chance.Never, null, null);
         E.SetDiet(Ctx.Diets.inediate);

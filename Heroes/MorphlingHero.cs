@@ -242,9 +242,11 @@ namespace Pathos.DotaHeroes.Heroes
               Pending.TargetSquare.Map == Caster.Square.Map &&
               DotaCombatHelper.IsOpenSquare(Pending.TargetSquare))
           {
-            PathosEngineBridge.TeleportCharacter(Args.Engine, Caster, Pending.TargetSquare, MasterMode: false);
+            // 使用静音突进校准落点，避免叠播刺耳的传送音效
+            PathosEngineBridge.DashCharacter(Args.Engine, Caster, Pending.TargetSquare);
           }
 
+          PathosEngineBridge.StoryEmitting(Args.Engine, Caster.Square, Ctx.Sonics.water_splash, Audibility: 8);
           PathosEngineBridge.StoryExploding(Args.Engine, Delay.HalfSecond, Caster.Square, Ctx.Explosions.watery);
         }
         else if (string.Equals(SpellName, "adaptive strike", StringComparison.OrdinalIgnoreCase) ||

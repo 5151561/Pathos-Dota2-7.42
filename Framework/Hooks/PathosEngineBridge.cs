@@ -118,6 +118,10 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       StoryType?.GetMethod("Caption", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Square), typeof(Colour), typeof(string), typeof(bool) }, null);
 
+    private static readonly MethodInfo StoryEmittingMethod =
+      StoryType?.GetMethod("Emitting", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Square), typeof(Sonic), typeof(int), typeof(bool), typeof(bool) }, null);
+
     private static readonly FieldInfo DirectorEngineField =
       DirectorType?.GetField("Engine", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
@@ -188,6 +192,18 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly MethodInfo EngineTeleportCharacterMethod =
       EngineType?.GetMethod("TeleportCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character), typeof(Square), typeof(bool) }, null);
+
+    private static readonly MethodInfo EngineMoveCharacterMethod =
+      EngineType?.GetMethod("MoveCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Square) }, null);
+
+    private static readonly MethodInfo EngineUnstuckCharacterMethod =
+      EngineType?.GetMethod("UnstuckCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character) }, null);
+
+    private static readonly MethodInfo EngineRevealCharacterMethod =
+      EngineType?.GetMethod("RevealCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character) }, null);
 
     private static readonly MethodInfo EngineRemoveTransientMethod =
       EngineType?.GetMethod("RemoveTransient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
@@ -422,6 +438,28 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         return;
 
       EngineTeleportCharacterMethod.Invoke(Engine, new object[] { Character, TargetSquare, MasterMode });
+    }
+
+    /// <summary>
+    /// 静音瞬移/突进位移（用于无敌斩、波浪形态等高频或专属特效位移）：
+    /// 直接调用 Engine.MoveCharacter + UnstuckCharacter + RevealCharacter，
+    /// 避免触发 Engine.TeleportCharacter 硬编码的刺耳传送音效（Manifest.Sonics.Teleport）与传送闪烁动画。
+    /// </summary>
+    public static void DashCharacter(object Engine, Character Character, Square TargetSquare)
+    {
+      if (Engine == null || Character == null || TargetSquare == null || Character.Deceased)
+        return;
+
+      if (EngineMoveCharacterMethod != null)
+      {
+        EngineMoveCharacterMethod.Invoke(Engine, new object[] { Character, TargetSquare });
+        EngineUnstuckCharacterMethod?.Invoke(Engine, new object[] { Character });
+        EngineRevealCharacterMethod?.Invoke(Engine, new object[] { Character });
+      }
+      else
+      {
+        TeleportCharacter(Engine, Character, TargetSquare, MasterMode: false);
+      }
     }
 
     public static void RemoveTransient(object Engine, Character Remover, Character Target, Property Property)
@@ -871,6 +909,25 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       var Story = EngineStoryProp.GetValue(Engine);
       if (Story != null)
         StoryCaptionMethod.Invoke(Story, new object[] { Square, Colour, Text, Delayed });
+    }
+
+    /// <summary>
+    /// 调用 Pathos 原生 Story.Emitting 在指定格子播放指定 Sonic 音效。
+    /// </summary>
+    public static void StoryEmitting(
+      object Engine,
+      Square Square,
+      Sonic Sonic,
+      int Audibility = 10,
+      bool Delayed = false,
+      bool Exclamation = false)
+    {
+      if (Engine == null || Square == null || Sonic == null || EngineStoryProp == null || StoryEmittingMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StoryEmittingMethod.Invoke(Story, new object[] { Square, Sonic, Audibility, Delayed, Exclamation });
     }
 
     /// <summary>
