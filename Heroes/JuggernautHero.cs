@@ -1005,6 +1005,11 @@ namespace Pathos.DotaHeroes.Heroes
           };
           return Rows;
         },
+        BuildMechanicsNotes = _ => new[]
+        {
+          $"基础驱散自身负面状态，期间减益免疫并获得 {DotaHelpColor.Control("80% 魔法/元素减伤")}",
+          $"周围 {DotaHelpColor.Control("3×3 格")}每回合造成魔法伤害（随{DotaHelpColor.Stat("敏捷")}与{DotaHelpColor.Passive("剑心犹在")}攻速频率缩放），可触发{DotaHelpColor.Passive("剑舞暴击")}；期间普攻不造成常规伤害"
+        },
         BuildTiers = _ =>
         {
           var List = new List<DotaSpellHelpTier>(5);
@@ -1018,9 +1023,7 @@ namespace Pathos.DotaHeroes.Heroes
               HeaderSuffix = $"自身施法 持续 {Turns} 回合",
               Bullets = new[]
               {
-                $"基础每回合伤害：{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice))} 魔法伤害（周围 {DotaHelpColor.Control("3×3 格")}，随{DotaHelpColor.Stat("敏捷")}与{DotaHelpColor.Passive("剑心犹在")}攻速频率缩放）",
-                $"基础驱散自身负面状态，期间减益免疫并获得 {DotaHelpColor.Control("80% 魔法/元素减伤")}",
-                $"旋转伤害可触发{DotaHelpColor.Passive("剑舞暴击")}；期间普通物理普攻不造成常规伤害"
+                $"基础每回合伤害：{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice))} 魔法伤害"
               }
             });
           }
@@ -1059,6 +1062,10 @@ namespace Pathos.DotaHeroes.Heroes
           };
           return Rows;
         },
+        BuildMechanicsNotes = _ => new[]
+        {
+          $"召唤 1 HP 可移动治疗守卫（同时上限 1 个），每回合治疗周围 {DotaHelpColor.Control("2 格")}所有友军（最低 {DotaHelpColor.Heal("1 HP")}）"
+        },
         BuildTiers = _ =>
         {
           var List = new List<DotaSpellHelpTier>(5);
@@ -1073,8 +1080,7 @@ namespace Pathos.DotaHeroes.Heroes
               HeaderSuffix = $"施咒 范围 {Range}",
               Bullets = new[]
               {
-                $"召唤 1 HP 可移动治疗守卫（同时上限 1 个），持续 {DotaHelpColor.Control($"{Duration} 回合")}",
-                $"每回合为周围 {DotaHelpColor.Control("2 格")}所有友军回复 {DotaHelpColor.Heal($"{HealPct * 100:0.##}% 最大生命值")}（最低 {DotaHelpColor.Heal("1 HP")}）"
+                $"持续 {DotaHelpColor.Control($"{Duration} 回合")}，每回合回复 {DotaHelpColor.Heal($"{HealPct * 100:0.##}% 最大生命值")}"
               }
             });
           }
@@ -1147,6 +1153,12 @@ namespace Pathos.DotaHeroes.Heroes
           };
           return Rows;
         },
+        BuildMechanicsNotes = _ => new[]
+        {
+          $"单斩伤害 = {DotaHelpColor.Physical("装备武器骰")} + {DotaHelpColor.Stat("力/敏高者修正")} + {DotaHelpColor.Skill("技能额外攻击力")}（跳斩半径 {DotaHelpColor.Control("3 格")}）",
+          $"每超出 14 点{DotaHelpColor.Stat("敏捷")} 6 点额外 {DotaHelpColor.Stat("+1 斩")}（基础上限 12 斩，{DotaHelpColor.Talent("T4 天赋 +3 斩")}）",
+          $"全程免疫一切伤害与负面状态，每斩可触发{DotaHelpColor.Passive("剑舞暴击")}与{DotaHelpColor.Passive("剑心犹在")}加成"
+        },
         BuildTiers = _ =>
         {
           var List = new List<DotaSpellHelpTier>(5);
@@ -1161,9 +1173,7 @@ namespace Pathos.DotaHeroes.Heroes
               HeaderSuffix = $"施咒 范围 {Range}",
               Bullets = new[]
               {
-                $"连续斩击：{DotaHelpColor.Skill($"{MinSlashes}~12 斩")}（每超出 14 点{DotaHelpColor.Stat("敏捷")} 6 点额外 {DotaHelpColor.Stat("+1 斩")}，{DotaHelpColor.Talent("T4 天赋 +3 斩")}）",
-                $"单斩伤害：{DotaHelpColor.Physical("装备武器骰")} + {DotaHelpColor.Stat("力/敏高者修正")} + {DotaHelpColor.Skill($"{BonusDmg} 额外攻击力")}（跳斩半径 {DotaHelpColor.Control("3 格")}）",
-                $"全程免疫一切伤害与负面状态，每斩均可触发{DotaHelpColor.Passive("剑舞暴击")}与{DotaHelpColor.Passive("剑心犹在")}加成"
+                $"基础斩数 {DotaHelpColor.Skill($"{MinSlashes}~12 斩")}，单斩额外攻击力 {DotaHelpColor.Skill($"+{BonusDmg}")}"
               }
             });
           }

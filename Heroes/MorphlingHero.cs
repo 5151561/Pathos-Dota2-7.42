@@ -434,6 +434,10 @@ namespace Pathos.DotaHeroes.Heroes
             ("位移与生存", $"瞬移至目标格，获得穿墙与闪避位移 {DotaHelpColor.Control($"{Evasion} 回合")}")
           };
         },
+        BuildMechanicsNotes = _ => new[]
+        {
+          $"瞬移至射程内目标空地，落地对周围造成水系伤害并获得短暂穿墙与闪避位移（射程受{DotaHelpColor.Passive("潮涨潮落")}力量加成）"
+        },
         BuildTiers = _ =>
         {
           var List = new List<DotaSpellHelpTier>(5);
@@ -447,8 +451,7 @@ namespace Pathos.DotaHeroes.Heroes
               HeaderSuffix = $"施咒 范围 {WaveformBaseRanges[Idx]}",
               Bullets = new[]
               {
-                $"瞬移突进至目标空地，落地对周围 {DotaHelpColor.Control($"{WaveformRadii[Idx]} 格")}造成 {DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice))} 水系伤害",
-                $"获得穿墙与闪避位移 {DotaHelpColor.Control($"{WaveformEvasionTurns[Idx]} 回合")}"
+                $"水波伤害 {DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice))}（半径 {DotaHelpColor.Control($"{WaveformRadii[Idx]} 格")}），穿墙与闪避 {DotaHelpColor.Control($"{WaveformEvasionTurns[Idx]} 回合")}"
               }
             });
           }
@@ -494,6 +497,10 @@ namespace Pathos.DotaHeroes.Heroes
             ("当前力敏比", $"{DotaHelpColor.Stat($"敏捷 {Dex}")} / {DotaHelpColor.Stat($"力量 {Str}")}（敏≥1.5×力达满额伤害；力≥1.5×敏达满额眩晕）")
           };
         },
+        BuildMechanicsNotes = _ => new[]
+        {
+          $"总伤害 = {DotaHelpColor.Magic("基础水伤")} + {DotaHelpColor.Stat("0.35× ~ 1.50× 敏捷")}（随敏/力比动态缩放），附带击退与{DotaHelpColor.Control("力量比眩晕")}"
+        },
         BuildTiers = _ =>
         {
           var List = new List<DotaSpellHelpTier>(5);
@@ -508,8 +515,7 @@ namespace Pathos.DotaHeroes.Heroes
               HeaderSuffix = $"施咒 范围 {AdaptiveStrikeBaseRanges[Idx]}",
               Bullets = new[]
               {
-                $"基础水系伤害：{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice))} + {DotaHelpColor.Stat("敏捷爆发追加（0.35× ~ 1.50× 敏捷")}，随敏/力比缩放）",
-                $"击退目标并眩晕 {DotaHelpColor.Control($"1~{MaxStun} 回合")}（随{DotaHelpColor.Stat("力/敏比")}缩放）"
+                $"基础水伤 {DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice))}，眩晕 {DotaHelpColor.Control($"1~{MaxStun} 回合")}"
               }
             });
           }
@@ -538,6 +544,10 @@ namespace Pathos.DotaHeroes.Heroes
             ("当前属性", $"{DotaHelpColor.Stat($"力量 {CurStr}")} / {DotaHelpColor.Stat($"敏捷 {CurDex}")}（上限 {MaxDex}）/ {DotaHelpColor.Stat($"体质 {CurCon}")}（最低保留 {MinAttributeScore}）")
           };
         },
+        BuildMechanicsNotes = _ => new[]
+        {
+          $"总量守恒（力量/体质最低保留 {MinAttributeScore}），最大生命最低保留 {MinMaxLifePoints} HP，当前生命不主动扣减"
+        },
         BuildTiers = _ =>
         {
           var List = new List<DotaSpellHelpTier>(5);
@@ -549,8 +559,7 @@ namespace Pathos.DotaHeroes.Heroes
               HeaderSuffix = "自身施法 0 蓝耗",
               Bullets = new[]
               {
-                $"将 {DotaHelpColor.Stat($"{Tier} 点力量与体质")}转换为 {DotaHelpColor.Stat($"{Tier} 点敏捷")}（总量守恒，力量/体质最低保留 {MinAttributeScore}）",
-                $"最大生命 {DotaHelpColor.Physical($"-{Tier * HpPerShiftedPoint} HP")}（最低保留 {MinMaxLifePoints} HP），当前生命不扣减"
+                $"单次转换 {DotaHelpColor.Stat($"{Tier} 点")}（最大生命 {DotaHelpColor.Physical($"-{Tier * HpPerShiftedPoint} HP")}）"
               }
             });
           }
@@ -579,6 +588,10 @@ namespace Pathos.DotaHeroes.Heroes
             ("当前属性", $"{DotaHelpColor.Stat($"力量 {CurStr}")}（上限 {MaxStr}）/ {DotaHelpColor.Stat($"敏捷 {CurDex}")}（最低保留 {MinAttributeScore}）/ {DotaHelpColor.Stat($"体质 {CurCon}")}")
           };
         },
+        BuildMechanicsNotes = _ => new[]
+        {
+          $"总量守恒（敏捷最低保留 {MinAttributeScore}），转力同时提升最大生命与当前生命"
+        },
         BuildTiers = _ =>
         {
           var List = new List<DotaSpellHelpTier>(5);
@@ -590,8 +603,7 @@ namespace Pathos.DotaHeroes.Heroes
               HeaderSuffix = "自身施法 0 蓝耗",
               Bullets = new[]
               {
-                $"将 {DotaHelpColor.Stat($"{Tier} 点敏捷")}转换为 {DotaHelpColor.Stat($"{Tier} 点力量与体质")}（总量守恒，敏捷最低保留 {MinAttributeScore}）",
-                $"最大生命与当前生命同步 {DotaHelpColor.Heal($"+{Tier * HpPerShiftedPoint} HP")}"
+                $"单次转换 {DotaHelpColor.Stat($"{Tier} 点")}（最大与当前生命同步 {DotaHelpColor.Heal($"+{Tier * HpPerShiftedPoint} HP")}）"
               }
             });
           }
@@ -619,6 +631,10 @@ namespace Pathos.DotaHeroes.Heroes
             ("变形机制", $"化身目标敌方生物，复制其外形、属性、技能与法术，且全程保留先天{DotaHelpColor.Passive("「潮涨潮落」")}")
           };
         },
+        BuildMechanicsNotes = _ => new[]
+        {
+          $"复制目标外形、属性、技能与法术，全程保留先天{DotaHelpColor.Passive("「潮涨潮落」")}，可随时「解除变形」恢复本体"
+        },
         BuildTiers = _ =>
         {
           var List = new List<DotaSpellHelpTier>(5);
@@ -630,8 +646,7 @@ namespace Pathos.DotaHeroes.Heroes
               HeaderSuffix = $"施咒 范围 {MorphBaseRanges[Tier - 1]}",
               Bullets = new[]
               {
-                "化身目标生物，复制其外形、属性、技能与法术",
-                $"变形期间持续保留先天技能{DotaHelpColor.Passive("「潮涨潮落」")}，可随时施放「解除变形」恢复本体"
+                $"基础施法范围 {DotaHelpColor.Control($"{MorphBaseRanges[Tier - 1]} 格")}（受{DotaHelpColor.Passive("潮涨潮落")}力量加成）"
               }
             });
           }

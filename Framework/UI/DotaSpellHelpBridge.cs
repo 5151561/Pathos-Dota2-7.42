@@ -37,6 +37,7 @@ namespace Pathos.DotaHeroes.Framework.UI
     public string SpellName { get; init; }
     public Func<Character, int> ResolveCurrentTier { get; init; }
     public Func<DotaSpellHelpContext, IReadOnlyList<(string Key, string Value)>> BuildLiveStats { get; init; }
+    public Func<DotaSpellHelpContext, IReadOnlyList<string>> BuildMechanicsNotes { get; init; }
     public Func<DotaSpellHelpContext, IReadOnlyList<DotaSpellHelpTier>> BuildTiers { get; init; }
   }
 
@@ -80,6 +81,11 @@ namespace Pathos.DotaHeroes.Framework.UI
     private const char ColorOpen = '\u27E6';  // ⟦
     private const char ColorClose = '\u27E7'; // ⟧
 
+    private const string LayoutSectionPrefix = "\u27E8S\u27E9"; // ⟨S⟩ 区块/当前阶高亮横条（段间距）
+    private const string LayoutLiveRowPrefix = "\u27E8L\u27E9"; // ⟨L⟩ 实时面板属性行（左缩进 + 行间距）
+    private const string LayoutTierHdrPrefix = "\u27E8T\u27E9"; // ⟨T⟩ 非当前阶梯/小节标题（段间距）
+    private const string LayoutBulletPrefix = "\u27E8B\u27E9";  // ⟨B⟩ 缩进列表项（左缩进 + 行间距）
+
     private static readonly Dictionary<string, Colour> SemanticPalette = new(StringComparer.Ordinal)
     {
       ["phys"] = Colour.Coral,
@@ -109,6 +115,8 @@ namespace Pathos.DotaHeroes.Framework.UI
     private static PropertyInfo HelpPropertyKeyProp;
     private static PropertyInfo HelpPropertyValueProp;
     private static PropertyInfo HelpBlockBaseProp;
+    private static PropertyInfo HelpBlockMarginProp;
+    private static PropertyInfo HelpBlockPaddingProp;
     private static MethodInfo HelpBlockRemoveRunsMethod;
     private static MethodInfo HelpBlockAddRunMethod;
 
@@ -258,6 +266,8 @@ namespace Pathos.DotaHeroes.Framework.UI
           HelpPropertyKeyProp = HelpPropertyType.GetProperty("Key", AnyInstance);
           HelpPropertyValueProp = HelpPropertyType.GetProperty("Value", AnyInstance);
           HelpBlockBaseProp = HelpBlockType.GetProperty("Base", AnyInstance);
+          HelpBlockMarginProp = HelpBlockType.GetProperty("Margin", AnyInstance);
+          HelpBlockPaddingProp = HelpBlockType.GetProperty("Padding", AnyInstance);
           HelpBlockRemoveRunsMethod = HelpBlockType.GetMethod("RemoveRuns", AnyInstance, null, Type.EmptyTypes, null);
           HelpBlockAddRunMethod = HelpBlockType.GetMethod(
             "AddRun",
@@ -265,6 +275,15 @@ namespace Pathos.DotaHeroes.Framework.UI
             null,
             new[] { typeof(string), HelpSearchType, typeof(Action<Inv.Font>) },
             null);
+
+          PathosClientReflection.PatchSafe(
+            Harmony,
+            HelpRenderType,
+            "Highlight",
+            new[] { typeof(string), typeof(Colour) },
+            typeof(DotaSpellHelpBridge),
+            Postfix: nameof(HelpRenderHighlightPostfix),
+            Tag: "SpellHelpLayoutHighlight");
 
           PathosClientReflection.PatchSafe(
             Harmony,
@@ -291,6 +310,33 @@ namespace Pathos.DotaHeroes.Framework.UI
       }
     }
 
+    private static void HelpRenderHighlightPostfix(object __instance, string Text, Colour Colour, object __result)
+    {
+      if (__result == null || string.IsNullOrEmpty(Text) || !Text.StartsWith(LayoutSectionPrefix, StringComparison.Ordinal))
+        return;
+
+      if (HelpBlockRemoveRunsMethod == null || HelpBlockAddRunMethod == null)
+        return;
+
+      try
+      {
+        string CleanText = Text.Substring(LayoutSectionPrefix.Length);
+        Colour DefaultColour = ExtractFirstSpanColour(__result, Colour.Black);
+        object Search = HelpRenderSearchField?.GetValue(__instance);
+
+        HelpBlockRemoveRunsMethod.Invoke(__result, null);
+        AppendParsedColorRuns(__result, CleanText, Search, DefaultColour);
+
+        // 区块/当前阶横条：明显段间距 + 内边距呼吸感
+        ApplyBlockMargin(__result, Left: 0, Top: 14, Right: 0, Bottom: 6);
+        ApplyBlockPadding(__result, Left: 8, Top: 4, Right: 8, Bottom: 4);
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"DotaSpellHelpBridge.HelpRenderHighlightPostfix failed: {Ex}");
+      }
+    }
+
     private static void HelpRenderPropertyPostfix(object __instance, object Property, object __result)
     {
       if (__result == null || Property == null || HelpBlockRemoveRunsMethod == null || HelpBlockAddRunMethod == null)
@@ -300,8 +346,19 @@ namespace Pathos.DotaHeroes.Framework.UI
       {
         string Key = HelpPropertyKeyProp?.GetValue(Property) as string;
         string Value = HelpPropertyValueProp?.GetValue(Property) as string;
-        if (string.IsNullOrEmpty(Value) || Value.IndexOf(ColorOpen) < 0)
+
+        bool IsLiveRow = !string.IsNullOrEmpty(Key) && Key.StartsWith(LayoutLiveRowPrefix, StringComparison.Ordinal);
+        bool IsTierHeader = !string.IsNullOrEmpty(Key) && Key.StartsWith(LayoutTierHdrPrefix, StringComparison.Ordinal);
+        bool HasColor = !string.IsNullOrEmpty(Value) && Value.IndexOf(ColorOpen) >= 0;
+
+        if (!IsLiveRow && !IsTierHeader && !HasColor)
           return;
+
+        string CleanKey = IsLiveRow
+          ? Key.Substring(LayoutLiveRowPrefix.Length)
+          : IsTierHeader
+            ? Key.Substring(LayoutTierHdrPrefix.Length)
+            : Key;
 
         Colour KeyColour = ExtractFirstSpanColour(__result, Colour.CornflowerBlue);
         Colour DefaultValueColour = ExtractSpanColour(__result, 1, Colour.WhiteSmoke);
@@ -309,10 +366,22 @@ namespace Pathos.DotaHeroes.Framework.UI
 
         HelpBlockRemoveRunsMethod.Invoke(__result, null);
 
-        if (!string.IsNullOrEmpty(Key))
-          AddColoredRun(__result, Key + " ", Search, KeyColour);
+        if (!string.IsNullOrEmpty(CleanKey))
+          AddColoredRun(__result, CleanKey + " ", Search, KeyColour);
 
-        AppendParsedColorRuns(__result, Value, Search, DefaultValueColour);
+        if (!string.IsNullOrEmpty(Value))
+          AppendParsedColorRuns(__result, Value, Search, DefaultValueColour);
+
+        if (IsLiveRow)
+        {
+          // 实时面板条目：左缩进 12px + 舒适行间距
+          ApplyBlockMargin(__result, Left: 12, Top: 3, Right: 0, Bottom: 3);
+        }
+        else if (IsTierHeader)
+        {
+          // 阶梯/小节标题：上段间距 12px + 下间距 4px
+          ApplyBlockMargin(__result, Left: 0, Top: 12, Right: 0, Bottom: 4);
+        }
       }
       catch (Exception Ex)
       {
@@ -322,7 +391,12 @@ namespace Pathos.DotaHeroes.Framework.UI
 
     private static void HelpRenderInformationPostfix(object __instance, string Text, object __result)
     {
-      if (__result == null || string.IsNullOrEmpty(Text) || Text.IndexOf(ColorOpen) < 0)
+      if (__result == null || string.IsNullOrEmpty(Text))
+        return;
+
+      bool IsBullet = Text.StartsWith(LayoutBulletPrefix, StringComparison.Ordinal);
+      bool HasColor = Text.IndexOf(ColorOpen) >= 0;
+      if (!IsBullet && !HasColor)
         return;
 
       if (HelpBlockRemoveRunsMethod == null || HelpBlockAddRunMethod == null)
@@ -330,16 +404,35 @@ namespace Pathos.DotaHeroes.Framework.UI
 
       try
       {
+        string CleanText = IsBullet ? Text.Substring(LayoutBulletPrefix.Length) : Text;
         Colour DefaultColour = ExtractFirstSpanColour(__result, Colour.WhiteSmoke);
         object Search = HelpRenderSearchField?.GetValue(__instance);
 
         HelpBlockRemoveRunsMethod.Invoke(__result, null);
-        AppendParsedColorRuns(__result, Text, Search, DefaultColour);
+        AppendParsedColorRuns(__result, CleanText, Search, DefaultColour);
+
+        if (IsBullet)
+        {
+          // 缩进列表项：左缩进 14px + 舒适行间距
+          ApplyBlockMargin(__result, Left: 14, Top: 2, Right: 0, Bottom: 4);
+        }
       }
       catch (Exception Ex)
       {
         HookBootstrap.WriteError($"DotaSpellHelpBridge.HelpRenderInformationPostfix failed: {Ex}");
       }
+    }
+
+    private static void ApplyBlockMargin(object HelpBlock, int Left, int Top, int Right, int Bottom)
+    {
+      if (HelpBlockMarginProp?.GetValue(HelpBlock) is Inv.Edge Edge)
+        Edge.Set(Left, Top, Right, Bottom);
+    }
+
+    private static void ApplyBlockPadding(object HelpBlock, int Left, int Top, int Right, int Bottom)
+    {
+      if (HelpBlockPaddingProp?.GetValue(HelpBlock) is Inv.Edge Edge)
+        Edge.Set(Left, Top, Right, Bottom);
     }
 
     private static Colour ExtractFirstSpanColour(object HelpBlock, Colour Fallback)
@@ -448,11 +541,26 @@ namespace Pathos.DotaHeroes.Framework.UI
           var LiveRows = Spec.BuildLiveStats(HelpCtx);
           if (LiveRows != null && LiveRows.Count > 0)
           {
-            InvokeHighlight(__result, "当前实时面板", Colour.Gold);
+            InvokeHighlight(__result, LayoutSectionPrefix + "当前实时面板", Colour.Gold);
             foreach (var (Key, Value) in LiveRows)
             {
               if (!string.IsNullOrEmpty(Key) && !string.IsNullOrEmpty(Value))
-                InvokeProperty(__result, Key, Value);
+                InvokeProperty(__result, LayoutLiveRowPrefix + Key, Value);
+            }
+          }
+        }
+
+        // 2.5 渲染跨阶共享的「技能机制」区块（避免在 5 阶熟练度中重复刷屏长句）
+        if (Spec.BuildMechanicsNotes != null)
+        {
+          var Notes = Spec.BuildMechanicsNotes(HelpCtx);
+          if (Notes != null && Notes.Count > 0)
+          {
+            InvokeProperty(__result, LayoutTierHdrPrefix + "技能机制", "全阶通用");
+            foreach (var Note in Notes)
+            {
+              if (!string.IsNullOrWhiteSpace(Note))
+                InvokeInformation(__result, $"{LayoutBulletPrefix}· {Note}");
             }
           }
         }
@@ -482,11 +590,11 @@ namespace Pathos.DotaHeroes.Framework.UI
             string HighlightHeader = string.IsNullOrEmpty(Suffix)
               ? $"{TierName}（当前）"
               : $"{TierName} {Suffix}（当前）";
-            InvokeHighlight(__result, HighlightHeader, Colour.DarkOrange);
+            InvokeHighlight(__result, LayoutSectionPrefix + HighlightHeader, Colour.DarkOrange);
           }
           else
           {
-            InvokeProperty(__result, TierName, string.IsNullOrEmpty(Suffix) ? "效果" : Suffix);
+            InvokeProperty(__result, LayoutTierHdrPrefix + TierName, string.IsNullOrEmpty(Suffix) ? "效果" : Suffix);
           }
 
           if (Tier.Bullets != null)
@@ -494,7 +602,7 @@ namespace Pathos.DotaHeroes.Framework.UI
             foreach (var Bullet in Tier.Bullets)
             {
               if (!string.IsNullOrWhiteSpace(Bullet))
-                InvokeInformation(__result, $"· {Bullet}");
+                InvokeInformation(__result, $"{LayoutBulletPrefix}· {Bullet}");
             }
           }
         }
