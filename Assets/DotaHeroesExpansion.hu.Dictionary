@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,omnislash roham
+BeamName,waveform dash,
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Változékony DOTA2 hős, aki tajtékzó hullámokat ural, szabadon váltogat az Erő és az Ügyesség között, az Apály és dagály révén erősödik, és felveszi ellenségei alakját."
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,gyógyító totem
 EntityName,waterkin,vízlény
 ExplosionName,blade fury spin,pengeharag örvény
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Élő árapályvízből sűrített gömb, amely végtelen távolsági lőszerként lőhető ki parittyából."
 ItemName,tidal orb,árapálygömb
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Veleszületett (Pengealak): Szerezz 1 jelzőt minden 4 sebzés nélkül töltött kör után (legfeljebb 10 jelző). Minden jelző +1% mozgási sebességet és +2,5% ügyességi csapáserőt valamint támadási sebességet ad; sebzés elszenvedése után még 4 körig megmarad."
@@ -47,6 +49,7 @@ SpellName,morph revert,átváltozás feloldása
 SpellName,morph strength,átváltás erőre
 SpellName,omnislash,omnislash
 SpellName,waveform,hullámalak
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,pengetánc kritikus
 StrikeName,healing ward pulse,gyógyító totem pulzus
 StrikeName,omnislash slash,omnislash vágás

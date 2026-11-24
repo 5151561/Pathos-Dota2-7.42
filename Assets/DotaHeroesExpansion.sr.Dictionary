@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,nalet omnislasha
+BeamName,waveform dash,
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Fluidni heroj iz DOTA2 koji zapoveda uzburkanim talasima, slobodno preliva Snagu i Okretnost, jača kroz Plimu i oseku i poprima oblik neprijatelja."
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,totem isceljenja
 EntityName,waterkin,vodeni duh
 ExplosionName,blade fury spin,vrtlog besa sečiva
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Zgusnuta sfera žive plimske vode koja se ispaljuje iz praćke kao beskonačna dalekometna municija.
 ItemName,tidal orb,sfera plime
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Urođeno (Oblik sečiva): Stičite po 1 naslagu svaka 4 poteza bez primljene štete (do 10 naslaga). Svaka naslaga daje +1% brzine kretanja i +2,5% snage udarca od okretnosti i brzine napada; traje 4 poteza nakon primanja štete."
@@ -47,6 +49,7 @@ SpellName,morph revert,poništavanje preobražaja
 SpellName,morph strength,preliv u snagu
 SpellName,omnislash,omnislash
 SpellName,waveform,talasni oblik
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,kritični ples sečiva
 StrikeName,healing ward pulse,puls totema isceljenja
 StrikeName,omnislash slash,rez omnislasha

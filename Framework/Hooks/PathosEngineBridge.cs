@@ -217,6 +217,18 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       EngineType?.GetMethod("DismissAlly", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character) }, null);
 
+    private static readonly MethodInfo EngineImpersonateCharacterMethod =
+      EngineType?.GetMethod("ImpersonateCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Character) }, null);
+
+    private static readonly MethodInfo EnginePolymorphCharacterMethod =
+      EngineType?.GetMethod("PolymorphCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Entity) }, null);
+
+    private static readonly MethodInfo EngineUnpolymorphCharacterMethod =
+      EngineType?.GetMethod("UnpolymorphCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(bool) }, null);
+
     private static readonly MethodInfo EngineKillCharacterMethod =
       EngineType?.GetMethod("KillCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character), typeof(Character), typeof(string) }, null);
@@ -265,6 +277,28 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     private static readonly MethodInfo CharacterIsTameAlliedMethod =
       typeof(Character).GetMethod("IsTameAllied", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Character) }, null);
+
+    private static readonly PropertyInfo CharacterActorProp =
+      typeof(Character).GetProperty("Actor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo ActorPlayerProp =
+      typeof(Actor).GetProperty("Player", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly Type PlayerType = EngineAsm.GetType("Pathos.Player");
+    private static readonly Type MemoryType = EngineAsm.GetType("Pathos.Memory");
+
+    private static readonly MethodInfo PlayerGetMemoryMethod =
+      PlayerType?.GetMethod("GetMemory", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Map) }, null);
+
+    private static readonly MethodInfo MemoryHasLocationMethod =
+      MemoryType?.GetMethod("HasLocation", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Square) }, null);
+
+    private static readonly MethodInfo SquareIsObservableMethod =
+      typeof(Square).GetMethod("IsObservable", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(Square) }, null);
+
+    private static readonly MethodInfo EngineIsObservableCharacterMethod =
+      EngineType?.GetMethod("IsObservableCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Character) }, null);
 
     public static object GetDirectorEngine(object Director)
     {
@@ -486,6 +520,57 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       EngineDismissAllyMethod.Invoke(Engine, new object[] { Ally });
     }
 
+    public static bool ImpersonateCharacter(object Engine, Character Character, Character Target)
+    {
+      if (Engine == null || Character == null || Target == null || EngineImpersonateCharacterMethod == null)
+        return false;
+
+      try
+      {
+        EngineImpersonateCharacterMethod.Invoke(Engine, new object[] { Character, Target });
+        return true;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"ImpersonateCharacter failed: {Ex}");
+        return false;
+      }
+    }
+
+    public static bool PolymorphCharacter(object Engine, Character Character, Entity Entity)
+    {
+      if (Engine == null || Character == null || Entity == null || EnginePolymorphCharacterMethod == null)
+        return false;
+
+      try
+      {
+        EnginePolymorphCharacterMethod.Invoke(Engine, new object[] { Character, Entity });
+        return true;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"PolymorphCharacter failed: {Ex}");
+        return false;
+      }
+    }
+
+    public static bool UnpolymorphCharacter(object Engine, Character Character, bool Restore = false)
+    {
+      if (Engine == null || Character == null || EngineUnpolymorphCharacterMethod == null)
+        return false;
+
+      try
+      {
+        EngineUnpolymorphCharacterMethod.Invoke(Engine, new object[] { Character, Restore });
+        return true;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"UnpolymorphCharacter failed: {Ex}");
+        return false;
+      }
+    }
+
     /// <summary>
     /// 通过 Pathos 原生 Reactor.SummonEntity 管线在指定格子精确召唤 1 个友方随从
     /// （避免 Plain(Range) 射线在路径每个空格上重复执行 SummonEntity 导致一次召唤多个）。
@@ -602,6 +687,78 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         return true;
 
       return false;
+    }
+
+    /// <summary>
+    /// 判断指定格子是否已被玩家探索过（存在于 Player.GetMemory(Map).HasLocation(Square) 中，或当前视线可见）。
+    /// 未探索的黑色战争迷雾区域返回 false，彻底防止技能指示器泄露未探索地形。
+    /// </summary>
+    public static bool IsSquareExplored(Character Viewer, Square Square)
+    {
+      if (Square == null)
+        return false;
+
+      if (Viewer?.Square != null && IsSquareObservable(Viewer.Square, Square))
+        return true;
+
+      if (Viewer == null || Square.Map == null || CharacterActorProp == null || ActorPlayerProp == null ||
+          PlayerGetMemoryMethod == null || MemoryHasLocationMethod == null)
+        return true;
+
+      try
+      {
+        var Actor = CharacterActorProp.GetValue(Viewer);
+        var Player = Actor != null ? ActorPlayerProp.GetValue(Actor) : null;
+        var Memory = Player != null ? PlayerGetMemoryMethod.Invoke(Player, new object[] { Square.Map }) : null;
+        if (Memory == null)
+          return false;
+
+        return MemoryHasLocationMethod.Invoke(Memory, new object[] { Square }) is bool HasLoc && HasLoc;
+      }
+      catch
+      {
+        return true;
+      }
+    }
+
+    /// <summary>
+    /// 判断目标格对施法者所在格是否视线通畅（未被墙体/闭门阻挡）。
+    /// </summary>
+    public static bool IsSquareObservable(Square FromSquare, Square TargetSquare)
+    {
+      if (FromSquare == null || TargetSquare == null)
+        return false;
+      if (FromSquare == TargetSquare)
+        return true;
+      if (SquareIsObservableMethod == null)
+        return true;
+
+      return SquareIsObservableMethod.Invoke(TargetSquare, new object[] { FromSquare }) is bool B && B;
+    }
+
+    /// <summary>
+    /// 通过 Pathos 原生 Engine.IsObservableCharacter 判断观察者当前是否能看见目标角色
+    /// （综合视线、黑暗、隐身与心灵感应等原生视野规则）。
+    /// </summary>
+    public static bool IsObservableCharacter(object Engine, Character Viewer, Character Target)
+    {
+      if (Viewer == null || Target == null)
+        return false;
+      if (Viewer == Target)
+        return true;
+
+      if (Engine != null && EngineIsObservableCharacterMethod != null)
+      {
+        try
+        {
+          return EngineIsObservableCharacterMethod.Invoke(Engine, new object[] { Viewer, Target }) is bool B && B;
+        }
+        catch
+        {
+        }
+      }
+
+      return IsSquareObservable(Viewer.Square, Target.Square);
     }
 
     /// <summary>

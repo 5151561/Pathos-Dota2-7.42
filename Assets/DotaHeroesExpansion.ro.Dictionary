@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,năpustire omnislash
+BeamName,waveform dash,
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Un erou fluid din DOTA2 care stăpânește valurile învolburate, își mută liber punctele între Forță și Agilitate, se întărește prin Flux și Reflux și ia forma inamicilor."
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,totem vindecător
 EntityName,waterkin,spirit al apei
 ExplosionName,blade fury spin,vârtej furia lamei
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"O sferă condensată din apă vie a mareei, lansată ca muniție infinită la distanță dintr-o praștie."
 ItemName,tidal orb,sfera mareelor
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Înnăscut (Forma Lamei): Primești 1 cumul la fiecare 4 ture fără a suferi daune (până la 10 cumuluri). Fiecare cumul oferă +1% viteză de mișcare și +2,5% putere de lovire pe Agilitate și viteză de atac; persistă 4 ture după primirea daunelor."
@@ -47,6 +49,7 @@ SpellName,morph revert,anulare metamorfoză
 SpellName,morph strength,conversie forță
 SpellName,omnislash,omnislash
 SpellName,waveform,formă de val
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,lovitură critică dansul lamei
 StrikeName,healing ward pulse,puls totem vindecător
 StrikeName,omnislash slash,tăietură omnislash

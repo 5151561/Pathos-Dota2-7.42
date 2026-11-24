@@ -292,6 +292,29 @@ namespace Pathos.DotaHeroes.Framework.Targeting
           return false;
         }
 
+        // 战争迷雾与视野校验：
+        // - 非指向性技能（PointAny / PointOpen：波浪形态、治疗守卫等）：允许盲视野点击未探索区域（落点由技能负责安全弹出或打空）；
+        // - 严格单体指向性技能（UnitHostile：无敌斩、变体打击、变形等）：仅允许点击已探索且当前视野可见的格子或敌方单位，杜绝隔墙盲斩。
+        if (Session.Spec.Mode == DotaTargetMode.UnitHostile)
+        {
+          if (!PathosEngineBridge.IsSquareExplored(Caster, ClickedSquare))
+          {
+            StageSessions.Remove(__instance);
+            return false;
+          }
+
+          var Shell = StageShellProp?.GetValue(__instance);
+          var Engine = Shell != null ? ShellEngineProp?.GetValue(Shell) : null;
+          bool CanSeeTarget = ClickedSquare.Character != null
+            ? PathosEngineBridge.IsObservableCharacter(Engine, Caster, ClickedSquare.Character)
+            : PathosEngineBridge.IsSquareObservable(Caster.Square, ClickedSquare);
+          if (!CanSeeTarget)
+          {
+            StageSessions.Remove(__instance);
+            return false;
+          }
+        }
+
         PendingTargets.AddOrUpdate(Caster, new PendingSpellTarget(ClickedSquare, ClickedSquare.Character));
         var Dir = Dist == 0
           ? Caster.Square.AsDirection(Caster.Square)
@@ -356,6 +379,8 @@ namespace Pathos.DotaHeroes.Framework.Targeting
 
         int Range = Session.MaxRange;
         var Origin = Caster.Square;
+        var Shell = StageShellProp?.GetValue(Stage);
+        var Engine = Shell != null ? ShellEngineProp?.GetValue(Shell) : null;
 
         for (int Dy = -Range; Dy <= Range; Dy++)
         {
@@ -370,20 +395,67 @@ namespace Pathos.DotaHeroes.Framework.Targeting
               continue;
 
             var Sq = ViewMap[Tx, Ty];
-            if (Sq == null || Sq.IsVoid())
+            if (Sq == null)
+              continue;
+
+            bool Explored = PathosEngineBridge.IsSquareExplored(Caster, Sq);
+
+            // 非指向性技能（PointAny / PointOpen）：未探索区域一视同仁全部亮框（不管底下是墙、虚空还是地板，彻底零地形泄露且允许盲视野发射）
+            if (!Explored)
+            {
+              if (Session.Spec.Mode != DotaTargetMode.UnitHostile)
+              {
+                int ULeft = DrawX + (Tx - ViewRegion.Left) * SquareSize;
+                int UTop = DrawY + (Ty - ViewRegion.Top) * SquareSize;
+                var URect = new Rect(ULeft + 1, UTop + 1, SquareSize - 2, SquareSize - 2);
+                DC.DrawRectangle(TileFill, TileBorder, 1, URect);
+              }
+              continue;
+            }
+
+            if (Sq.IsVoid())
               continue;
 
             if (Sq.IsBlocked(Vision: false) && Sq.Character == null)
+              continue;
+
+            // 指向敌方单位类技能：仅对当前视线可见的格子/敌人绘制指示器，防止隔墙透视或盲点视野外目标
+            if (Session.Spec.Mode == DotaTargetMode.UnitHostile)
+            {
+              bool VisibleSquare = PathosEngineBridge.IsSquareObservable(Origin, Sq);
+              bool VisibleHostile = DotaCombatHelper.IsHostile(Caster, Sq.Character) &&
+                                    PathosEngineBridge.IsObservableCharacter(Engine, Caster, Sq.Character);
+              if (!VisibleSquare && !VisibleHostile)
+                continue;
+
+              int HLeft = DrawX + (Tx - ViewRegion.Left) * SquareSize;
+              int HTop = DrawY + (Ty - ViewRegion.Top) * SquareSize;
+              var HTileRect = new Rect(HLeft + 1, HTop + 1, SquareSize - 2, SquareSize - 2);
+              if (VisibleHostile)
+                DC.DrawRectangle(HostileFill, HostileBorder, 2, HTileRect);
+              else
+                DC.DrawRectangle(TileFill, TileBorder, 1, HTileRect);
+              continue;
+            }
+
+            // PointOpen 仅高亮已探索空地；PointAny 允许点已探索空地或可见敌人格（跨已探索地形保留）
+            if (Session.Spec.Mode == DotaTargetMode.PointOpen && Sq.Character != null)
               continue;
 
             int Left = DrawX + (Tx - ViewRegion.Left) * SquareSize;
             int Top = DrawY + (Ty - ViewRegion.Top) * SquareSize;
             var TileRect = new Rect(Left + 1, Top + 1, SquareSize - 2, SquareSize - 2);
 
-            if (Session.Spec.Mode == DotaTargetMode.UnitHostile && DotaCombatHelper.IsHostile(Caster, Sq.Character))
+            if (Session.Spec.Mode == DotaTargetMode.PointAny &&
+                DotaCombatHelper.IsHostile(Caster, Sq.Character) &&
+                PathosEngineBridge.IsObservableCharacter(Engine, Caster, Sq.Character))
+            {
               DC.DrawRectangle(HostileFill, HostileBorder, 2, TileRect);
+            }
             else
+            {
               DC.DrawRectangle(TileFill, TileBorder, 1, TileRect);
+            }
           }
         }
       }

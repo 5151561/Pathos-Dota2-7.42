@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,연속 베기 돌진
+BeamName,waveform dash,
 CharacterName,Juggernaut,가면무사
 CharacterName,Morphling,모플링
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","DOTA2의 물 원소 영웅. 거친 파도로 변해 돌진하고, 힘과 민첩을 자유롭게 전환하며, 선천 능력 '밀물과 썰물'로 능력치에 따라 이동 속도/사거리/시전 거리/둔화 저항을 강화하고 적의 모습으로 변신한다."
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,치유의 토템
 EntityName,waterkin,물의 정령
 ExplosionName,blade fury spin,분노의 칼날 회전
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,새총의 무한 탄약으로 발사되는 응축된 조류 물 구슬.
 ItemName,tidal orb,조류의 구슬
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"선천 (검의 형상): 피해를 입지 않고 4턴이 지날 때마다 1중첩 획득 (최대 10중첩). 중첩당 이동 속도 +1%, 민첩 기반 타격 위력 및 공격 속도 +2.5%를 부여하며, 피해를 입은 뒤에도 4턴 동안 유지된다."
@@ -47,6 +49,7 @@ SpellName,morph revert,변신 해제
 SpellName,morph strength,힘 변환
 SpellName,omnislash,연속 베기
 SpellName,waveform,파형
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,검무 치명타
 StrikeName,healing ward pulse,치유의 토템 파동
 StrikeName,omnislash slash,연속 베기 참격

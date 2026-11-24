@@ -72,6 +72,9 @@ namespace Pathos.DotaHeroes.Framework
     private static readonly ConcurrentDictionary<string, PathosStatLimits> FixedClassLimits =
       new(StringComparer.OrdinalIgnoreCase);
 
+    private static readonly ConcurrentDictionary<string, Func<Character, PathosStatLimits>> DynamicClassLimitBonuses =
+      new(StringComparer.OrdinalIgnoreCase);
+
     private static readonly ConditionalWeakTable<Form, ConcurrentDictionary<string, Form>> CachedLimitForms = new();
 
     /// <summary>
@@ -336,6 +339,23 @@ namespace Pathos.DotaHeroes.Framework
       DotaHookBus.RegisterLimitFormQuery("dota.hero_stat_limits", HandleLimitFormQuery);
     }
 
+    /// <summary>
+    /// 为指定 DOTA2 职业注册动态属性上限加成（如水人 Lv 20 +敏捷 / Lv 25 +力量天赋），
+    /// 在基础职业上限之上按固定顺序叠加并按签名缓存克隆 Form，避免与其他 LimitFormQuery 竞争顺序。
+    /// </summary>
+    public static void RegisterHeroStatLimitBonus(string ClassName, Func<Character, PathosStatLimits> BonusResolver)
+    {
+      if (string.IsNullOrWhiteSpace(ClassName))
+        throw new ArgumentException("ClassName cannot be null or empty.", nameof(ClassName));
+
+      if (BonusResolver == null)
+        DynamicClassLimitBonuses.TryRemove(ClassName, out _);
+      else
+        DynamicClassLimitBonuses[ClassName] = BonusResolver;
+
+      DotaHookBus.RegisterLimitFormQuery("dota.hero_stat_limits", HandleLimitFormQuery);
+    }
+
     private static void HandleLimitFormQuery(LimitFormQueryEventArgs Args)
     {
       var Character = Args?.Character;
@@ -351,17 +371,41 @@ namespace Pathos.DotaHeroes.Framework
       if (string.IsNullOrEmpty(ClassName) || !FixedClassLimits.TryGetValue(ClassName, out var Limits))
         return;
 
+      int Str = Limits.Str;
+      int Dex = Limits.Dex;
+      int Con = Limits.Con;
+      int Int = Limits.Int;
+      int Wis = Limits.Wis;
+      int Cha = Limits.Cha;
+      string CacheKey = ClassName;
+
+      if (DynamicClassLimitBonuses.TryGetValue(ClassName, out var BonusResolver))
+      {
+        var Bonus = BonusResolver(Character);
+        if (Bonus.Str != 0 || Bonus.Dex != 0 || Bonus.Con != 0 ||
+            Bonus.Int != 0 || Bonus.Wis != 0 || Bonus.Cha != 0)
+        {
+          Str += Bonus.Str;
+          Dex += Bonus.Dex;
+          Con += Bonus.Con;
+          Int += Bonus.Int;
+          Wis += Bonus.Wis;
+          Cha += Bonus.Cha;
+          CacheKey = $"{ClassName}:{Str},{Dex},{Con},{Int},{Wis},{Cha}";
+        }
+      }
+
       var PerTemplate = CachedLimitForms.GetOrCreateValue(BaseLimitForm);
       Args.LimitForm = PerTemplate.GetOrAdd(
-        ClassName,
+        CacheKey,
         _ => PathosEngineBridge.CloneFormWithScores(
           BaseLimitForm,
-          Limits.Str,
-          Limits.Dex,
-          Limits.Con,
-          Limits.Int,
-          Limits.Wis,
-          Limits.Cha));
+          Str,
+          Dex,
+          Con,
+          Int,
+          Wis,
+          Cha));
     }
 
     private static void HandleAfterCreateActor(ActorCreateEventArgs Args)

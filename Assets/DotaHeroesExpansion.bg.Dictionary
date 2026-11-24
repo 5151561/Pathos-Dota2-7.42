@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,набег на омнислеш
+BeamName,waveform dash,
 CharacterName,Juggernaut,Джагърнаут
 CharacterName,Morphling,Морфлинг
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Течен герой от DOTA2, който владее бурните вълни, прехвърля свободно точки между Сила и Ловкост, подсилва се чрез Прилив и Отлив и приема образа на враговете си."
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,лечебен тотем
 EntityName,waterkin,воден дух
 ExplosionName,blade fury spin,вихър ярост на острието
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Сгъстена сфера от жива приливна вода, изстрелвана като безкраен далекобоен боеприпас от прашка."
 ItemName,tidal orb,сфера на прилива
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Вродено (Форма на острието): Печелете 1 натрупване на всеки 4 хода без получени щети (до 10 натрупвания). Всяко натрупване дава +1% скорост на движение и +2,5% сила на удара от ловкост и скорост на атака; запазва се 4 хода след получаване на щети."
@@ -47,6 +49,7 @@ SpellName,morph revert,отмяна на метаморфоза
 SpellName,morph strength,преобразуване в сила
 SpellName,omnislash,омнислеш
 SpellName,waveform,вълнова форма
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,критичен танц на острието
 StrikeName,healing ward pulse,импулс на лечебен тотем
 StrikeName,omnislash slash,сеч на омнислеш

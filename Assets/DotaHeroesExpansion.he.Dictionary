@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,הסתערות אומניסלאש
+BeamName,waveform dash,
 CharacterName,Juggernaut,ג'אגרנאוט
 CharacterName,Morphling,מורפלינג
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","גיבור DOTA2 זורם השולט בגלים גואים, מעביר בחופשיות בין כוח לזריזות, מתחזק באמצעות גאות ושפל ומשנה את צורתו לצורת אויביו."
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,טוטם ריפוי
 EntityName,waterkin,רוח מים
 ExplosionName,blade fury spin,מערבולת זעם הלהב
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,כדור דחוס של מי גאות חיים הנורה מקלע כתחמושת טווח אינסופית.
 ItemName,tidal orb,כדור גאות
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,מולדת (צורת הלהב): קבל 1 צבירה בכל 4 תורות ללא ספיגת נזק (עד 10 צבירות). כל צבירה מעניקה +1% מהירות תנועה ו-+2.5% עוצמת מכת זריזות ומהירות התקפה; נותרת 4 תורות לאחר ספיגת נזק.
@@ -47,6 +49,7 @@ SpellName,morph revert,ביטול שינוי צורה
 SpellName,morph strength,המרה לכוח
 SpellName,omnislash,אומניסלאש
 SpellName,waveform,צורת גל
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,קריטי ריקוד הלהב
 StrikeName,healing ward pulse,פעימת טוטם ריפוי
 StrikeName,omnislash slash,שיסוף אומניסלאש

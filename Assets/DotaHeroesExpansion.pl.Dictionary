@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,doskok omnislasha
+BeamName,waveform dash,
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Płynny bohater DOTA2 władający wezbranymi falami, swobodnie przerzucający punkty między Siłą i Zwinnością, wzmacniający się dzięki Odpływowi i przypływowi oraz przybierający postać wrogów."
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,totem leczenia
 EntityName,waterkin,istota wodna
 ExplosionName,blade fury spin,wir furii ostrza
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Skondensowana kula żywej wody przypływu wystrzeliwana z procy jako nieskończona amunicja dystansowa.
 ItemName,tidal orb,kula przypływu
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Wrodzona (Forma ostrza): Zyskaj 1 ładunek co 4 tury bez otrzymania obrażeń (maks. 10 ładunków). Każdy ładunek daje +1% prędkości ruchu oraz +2,5% siły ciosów ze Zwinności i szybkości ataku; utrzymuje się przez 4 tury po otrzymaniu obrażeń."
@@ -47,6 +49,7 @@ SpellName,morph revert,cofnij przemianę
 SpellName,morph strength,konwersja siły
 SpellName,omnislash,omnislash
 SpellName,waveform,forma fali
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,krytyk tańca ostrza
 StrikeName,healing ward pulse,puls totemu leczenia
 StrikeName,omnislash slash,cięcie omnislasha

@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,Omnischlag-Vorstoß
+BeamName,waveform dash,
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Ein wandelbarer DOTA2-Held, der wogende Wellen beherrscht, frei zwischen Stärke und Agilität wechselt, sich durch Ebbe und Flut stärkt und die Gestalt seiner Feinde annimmt."
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,Heilward
 EntityName,waterkin,Wasserwesen
 ExplosionName,blade fury spin,Klingenwut-Wirbel
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Eine verdichtete Kugel aus lebendiger Gezeitenflut, die als unendliche Munition aus einer Schleuder abgefeuert wird."
 ItemName,tidal orb,Gezeitenkugel
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Angeboren (Klingenform): Erhalte alle 4 Runden ohne erlittenen Schaden 1 Stapel (bis zu 10 Stapel). Jeder Stapel gewährt +1% Bewegungsgeschwindigkeit sowie +2,5% Agilitäts-Schlagkraft und Angriffsgeschwindigkeit; bleibt nach erlittenem Schaden 4 Runden lang erhalten."
@@ -47,6 +49,7 @@ SpellName,morph revert,Morph aufheben
 SpellName,morph strength,Stärke morphen
 SpellName,omnislash,Omnischlag
 SpellName,waveform,Wellenform
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,Klingentanz-Krit
 StrikeName,healing ward pulse,Heilward-Impuls
 StrikeName,omnislash slash,Omnischlag-Hieb

@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,ruée d'omnislash
+BeamName,waveform dash,
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Un héros fluide de DOTA2 qui maîtrise les vagues déferlantes, bascule librement entre Force et Agilité, se renforce grâce à Flux et Reflux et prend l'apparence de ses ennemis."
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,balise de soin
 EntityName,waterkin,être aquatique
 ExplosionName,blade fury spin,tourbillon de furie de la lame
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Une sphère condensée d'eau de marée vivante tirée comme munition infinie depuis une fronde.
 ItemName,tidal orb,orbe des marées
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Inné (Forme de lame) : Gagne 1 cumul tous les 4 tours sans subir de dégâts (jusqu'à 10 cumuls). Chaque cumul accorde +1% de vitesse de déplacement et +2,5% de puissance de frappe d'agilité et de vitesse d'attaque ; persiste 4 tours après avoir subi des dégâts."
@@ -47,6 +49,7 @@ SpellName,morph revert,annuler métamorphose
 SpellName,morph strength,transfert de force
 SpellName,omnislash,omnislash
 SpellName,waveform,forme de vague
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,critique de danse de la lame
 StrikeName,healing ward pulse,impulsion de balise de soin
 StrikeName,omnislash slash,entaille d'omnislash

@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,オムニスラッシュ突進
+BeamName,waveform dash,
 CharacterName,Juggernaut,ジャガーノート
 CharacterName,Morphling,モーフリング
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",DOTA2 の水元素ヒーロー。激浪となって突進し、筋力と敏捷を自在に変換し、天賦「干満の流転」で能力に応じて移動速度・射程・詠唱距離・減速耐性を高め、敵の姿へ変身することもできる。
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,ヒーリングウォード
 EntityName,waterkin,水霊
 ExplosionName,blade fury spin,ブレイドフューリー回転斬り
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,スリングの無限弾薬として放たれる、生きた潮汐水の凝縮弾。
 ItemName,tidal orb,潮汐の水弾
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,天賦（剣の型）：ダメージを受けずに 4 ターン経過するごとに 1 スタック獲得（最大 10 スタック）。1 スタックごとに移動速度 +1%、敏捷系斬撃威力・攻撃速度 +2.5% を付与し、被弾後も 4 ターン持続する。
@@ -47,6 +49,7 @@ SpellName,morph revert,モーフ解除
 SpellName,morph strength,モーフ（筋力）
 SpellName,omnislash,オムニスラッシュ
 SpellName,waveform,ウェーブフォーム
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,ブレイドダンス会心
 StrikeName,healing ward pulse,ヒーリングウォード波動
 StrikeName,omnislash slash,オムニスラッシュ斬撃

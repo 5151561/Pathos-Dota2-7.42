@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,พุ่งทะยานออมนิสแลช
+BeamName,waveform dash,
 CharacterName,Juggernaut,จั๊กเกอร์นอต
 CharacterName,Morphling,มอร์ฟลิง
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",ฮีโร่สายวารีแห่ง DOTA2 ผู้ควบคุมเกลียวคลื่นเชี่ยวกราก สับเปลี่ยนค่าระหว่างพละกำลังและความว่องไวได้อย่างอิสระ เสริมพลังด้วยสกิลติดตัวน้ำขึ้นน้ำลง และแปลงกายเป็นศัตรูได้
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,เสาฟื้นฟูพลัง
 EntityName,waterkin,วิญญาณวารี
 ExplosionName,blade fury spin,พายุหมุนดาบพิโรธ
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,ลูกแก้วกระแสน้ำมีชีวิตที่ควบแน่นขึ้นเพื่อใช้ยิงจากหนังสติ๊กเป็นกระสุนระยะไกลแบบไม่จำกัด
 ItemName,tidal orb,ลูกแก้วกระแสน้ำ
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,ติดตัวกำเนิด (ท่วงท่าดาบ): ได้รับ 1 สแตกทุกๆ 4 เทิร์นที่ไม่ได้รับความเสียหาย (สูงสุด 10 สแตก) แต่ละสแตกเพิ่มความเร็วเคลื่อนที่ +1% และพลังโจมตีกับความเร็วโจมตีสายความว่องไว +2.5%; คงอยู่ต่ออีก 4 เทิร์นหลังถูกโจมตี
@@ -47,6 +49,7 @@ SpellName,morph revert,คืนร่างเดิม
 SpellName,morph strength,แปลงค่าพละกำลัง
 SpellName,omnislash,ออมนิสแลช
 SpellName,waveform,ร่างคลื่นน้ำ
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,คริติคอลระบำดาบ
 StrikeName,healing ward pulse,คลื่นเสาฟื้นฟู
 StrikeName,omnislash slash,ฟาดฟันออมนิสแลช

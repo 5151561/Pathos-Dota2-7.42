@@ -1,4 +1,5 @@
 ﻿BeamName,omnislash dash,یورش آمنی‌اسلش
+BeamName,waveform dash,
 CharacterName,Juggernaut,جاگرنات
 CharacterName,Morphling,مورفلینگ
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",قهرمانی سیال از DOTA2 که امواج خروشان را فرمان می‌دهد، آزادانه میان قدرت و چابکی جابه‌جا می‌شود، با جزر و مد تقویت می‌گردد و به شکل دشمنان درمی‌آید.
@@ -14,6 +15,7 @@ EntityDescription,"A sentient elemental forged from living tidewater, capable of
 EntityName,healing ward,توتم شفا
 EntityName,waterkin,روح آب
 ExplosionName,blade fury spin,گردباد خشم تیغه
+ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,گوی فشرده‌ای از آب زنده جزرومد که به‌عنوان مهمات دوربرد بی‌پایان از قلاب‌سنگ شلیک می‌شود.
 ItemName,tidal orb,گوی جزرومد
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,ذاتی (شکل تیغه): هر 4 نوبت بدون دریافت آسیب 1 انباشت بگیرید (تا 10 انباشت). هر انباشت +1% سرعت حرکت و +2.5% قدرت ضربه چابکی و سرعت حمله می‌دهد؛ پس از دریافت آسیب تا 4 نوبت باقی می‌ماند.
@@ -47,6 +49,7 @@ SpellName,morph revert,لغو دگرگونی
 SpellName,morph strength,تبدیل به قدرت
 SpellName,omnislash,آمنی‌اسلش
 SpellName,waveform,شکل موج
+StrikeName,adaptive strike impact,
 StrikeName,blade dance crit,ضربه مرگبار رقص تیغه
 StrikeName,healing ward pulse,تپش توتم شفا
 StrikeName,omnislash slash,برش آمنی‌اسلش
