@@ -49,6 +49,36 @@ namespace Pathos.DotaHeroes.Framework.Skills
     }
 
     /// <summary>
+    /// 汇总角色当前已点全属性黄点累计提供的六维属性上限加成（在自然 30 级职业上限之上叠加，确保黄点永远有效不撞墙）。
+    /// </summary>
+    public static PathosStatLimits GetAttributeBonusStatLimits(Character Character)
+    {
+      if (Character == null || !HeroSkillRegistry.TryGetBuild(Character, out var Build))
+        return default;
+
+      int Str = 0, Dex = 0, Con = 0, Int = 0, Wis = 0, Cha = 0;
+      foreach (var Slot in Build.Slots)
+      {
+        if (Slot.Kind != DotaSkillSlotKind.AttributeBonus)
+          continue;
+
+        int Lv = GetSkillLevel(Character, Slot);
+        if (Lv <= 0)
+          continue;
+
+        var Bonus = Slot.GetAttributeBonusStatLimits(Lv);
+        Str += Bonus.Str;
+        Dex += Bonus.Dex;
+        Con += Bonus.Con;
+        Int += Bonus.Int;
+        Wis += Bonus.Wis;
+        Cha += Bonus.Cha;
+      }
+
+      return new PathosStatLimits(Str: Str, Dex: Dex, Con: Con, Int: Int, Wis: Wis, Cha: Cha);
+    }
+
+    /// <summary>
     /// 统计该英雄已消耗的全部技能点总数。
     /// </summary>
     public static int GetTotalSpentSkillPoints(Character Character)

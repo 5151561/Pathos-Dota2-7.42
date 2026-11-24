@@ -55,7 +55,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       Property PassiveProperty = null,
       Func<int, string> DescribeLevel = null,
       Action<object, Character, int> OnUpgrade = null,
-      Func<string> TitleResolver = null)
+      Func<string> TitleResolver = null,
+      DotaPrimaryAttribute PrimaryAttribute = DotaPrimaryAttribute.Universal)
     {
       if (string.IsNullOrWhiteSpace(Id))
         throw new ArgumentException("DotaSkillSlot Id cannot be null or empty.", nameof(Id));
@@ -74,6 +75,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
       this.PassiveProperty = PassiveProperty;
       this.DescribeLevel = DescribeLevel;
       this.OnUpgrade = OnUpgrade;
+      this.PrimaryAttribute = PrimaryAttribute;
     }
 
     public string Id { get; }
@@ -87,6 +89,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
     public Property PassiveProperty { get; }
     public Func<int, string> DescribeLevel { get; }
     public Action<object, Character, int> OnUpgrade { get; }
+    public DotaPrimaryAttribute PrimaryAttribute { get; }
 
     public int GetRequiredHeroLevel(int TargetSkillLevel)
     {
@@ -194,7 +197,37 @@ namespace Pathos.DotaHeroes.Framework.Skills
         IconGlyph: IconGlyph,
         DescribeLevel: Lv => DescribeAttributeBonusLevel(Lv, PrimaryAttribute),
         OnUpgrade: (Engine, Character, NewLevel) => ApplyAttributeBonusForLevel(Engine, Character, NewLevel, PrimaryAttribute),
-        TitleResolver: () => DotaLocalization.T("ui.skill.attr_bonus.title"));
+        TitleResolver: () => DotaLocalization.T("ui.skill.attr_bonus.title"),
+        PrimaryAttribute: PrimaryAttribute);
+    }
+
+    /// <summary>
+    /// 计算指定黄点等级累计提供的六维属性加成（同时用于抬高职业 LimitForm 上限）。
+    /// </summary>
+    public PathosStatLimits GetAttributeBonusStatLimits(int CurrentLevel)
+    {
+      if (Kind != DotaSkillSlotKind.AttributeBonus || CurrentLevel <= 0)
+        return default;
+
+      int Str = 0, Dex = 0, Con = 0, Int = 0, Wis = 0, Cha = 0;
+      int Clamped = Math.Clamp(CurrentLevel, 0, MaxLevel);
+      for (int Lv = 1; Lv <= Clamped; Lv++)
+      {
+        foreach (var Attr in GetAttributeBonusGrantForLevel(Lv, PrimaryAttribute))
+        {
+          switch (Attr)
+          {
+            case "strength": Str++; break;
+            case "dexterity": Dex++; break;
+            case "constitution": Con++; break;
+            case "intelligence": Int++; break;
+            case "wisdom": Wis++; break;
+            case "charisma": Cha++; break;
+          }
+        }
+      }
+
+      return new PathosStatLimits(Str: Str, Dex: Dex, Con: Con, Int: Int, Wis: Wis, Cha: Cha);
     }
 
     private static string[] GetAttributeBonusGrantForLevel(int Level, DotaPrimaryAttribute PrimaryAttribute)

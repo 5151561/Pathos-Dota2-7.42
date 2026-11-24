@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Skills;
 
 namespace Pathos.DotaHeroes.Framework
 {
@@ -377,23 +378,30 @@ namespace Pathos.DotaHeroes.Framework
       int Int = Limits.Int;
       int Wis = Limits.Wis;
       int Cha = Limits.Cha;
-      string CacheKey = ClassName;
 
       if (DynamicClassLimitBonuses.TryGetValue(ClassName, out var BonusResolver))
       {
         var Bonus = BonusResolver(Character);
-        if (Bonus.Str != 0 || Bonus.Dex != 0 || Bonus.Con != 0 ||
-            Bonus.Int != 0 || Bonus.Wis != 0 || Bonus.Cha != 0)
-        {
-          Str += Bonus.Str;
-          Dex += Bonus.Dex;
-          Con += Bonus.Con;
-          Int += Bonus.Int;
-          Wis += Bonus.Wis;
-          Cha += Bonus.Cha;
-          CacheKey = $"{ClassName}:{Str},{Dex},{Con},{Int},{Wis},{Cha}";
-        }
+        Str += Bonus.Str;
+        Dex += Bonus.Dex;
+        Con += Bonus.Con;
+        Int += Bonus.Int;
+        Wis += Bonus.Wis;
+        Cha += Bonus.Cha;
       }
+
+      var YellowBonus = HeroSkillService.GetAttributeBonusStatLimits(Character);
+      Str += YellowBonus.Str;
+      Dex += YellowBonus.Dex;
+      Con += YellowBonus.Con;
+      Int += YellowBonus.Int;
+      Wis += YellowBonus.Wis;
+      Cha += YellowBonus.Cha;
+
+      string CacheKey = (Str == Limits.Str && Dex == Limits.Dex && Con == Limits.Con &&
+                         Int == Limits.Int && Wis == Limits.Wis && Cha == Limits.Cha)
+        ? ClassName
+        : $"{ClassName}:{Str},{Dex},{Con},{Int},{Wis},{Cha}";
 
       var PerTemplate = CachedLimitForms.GetOrCreateValue(BaseLimitForm);
       Args.LimitForm = PerTemplate.GetOrAdd(
