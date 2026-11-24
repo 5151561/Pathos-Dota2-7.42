@@ -33,6 +33,16 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     /// 仅在 BeforeCastSpell 有效：设为 true 将跳过引擎原生 CastSpell 实现。
     /// </summary>
     public bool Cancel { get; set; }
+
+    /// <summary>
+    /// 本次施法实际扣除的法力值（含天赋减蓝耗与熟练度修正），仅在 AfterCastSpell 中有效。
+    /// 优先取施法前后法力差值；若引擎未在施法内扣蓝，则回退为施法期间 Character.SpellCost 查询到的真实蓝耗。
+    /// 空放返蓝请使用 <see cref="Pathos.DotaHeroes.Framework.DotaCombatHelper.RefundSpellCost"/>，切勿按 Spell.Mana 或常量返还。
+    /// </summary>
+    public int ManaSpent { get; internal set; }
+
+    internal int ManaBefore { get; set; } = -1;
+    internal int QueriedManaCost { get; set; } = -1;
   }
 
   /// <summary>

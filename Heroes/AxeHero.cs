@@ -732,7 +732,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       if (Target == null)
       {
-        DotaCombatHelper.RefundMana(Caster, BattleHungerManaCost);
+        DotaCombatHelper.RefundSpellCost(Args);
         PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, BattleHungerGlyph, DotaLocalization.T("axe.log.hunger_no_target"));
         return;
       }
@@ -778,7 +778,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       if (Target == null)
       {
-        DotaCombatHelper.RefundMana(Caster, CullingBladeManaCost);
+        DotaCombatHelper.RefundSpellCost(Args);
         PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, CullingBladeGlyph, DotaLocalization.T("axe.log.culling_no_target"));
         return;
       }
@@ -804,7 +804,7 @@ namespace Pathos.DotaHeroes.Heroes
         }
 
         // 100% 返还法力（对应 DOTA2 斩杀刷新冷却，支持连斩！）
-        DotaCombatHelper.RefundMana(Caster, CullingBladeManaCost);
+        DotaCombatHelper.RefundSpellCost(Args);
 
         // 给予斧王及周围 4 格友军战吼增益（+25% 移速 + 护甲）
         int BuffTurns = CullingBuffBaseTurns + (TalentService.HasTalent(Caster, TalentT1CullingBuffDuration) ? CullingBuffTalentExtraTurns : 0);
@@ -1046,7 +1046,7 @@ namespace Pathos.DotaHeroes.Heroes
           return new (string Key, string Value)[]
           {
             (DotaLocalization.T("axe.help.q.key_radius"), DotaHelpColor.Control(DotaLocalization.Format("axe.help.tiles_radius", Radius))),
-            (DotaLocalization.T("axe.help.q.key_duration"), DotaHelpColor.Control(DotaLocalization.Format("axe.help.turns_val", Duration))),
+            (DotaLocalization.T("axe.help.q.key_duration"), DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", Duration))),
             (DotaLocalization.T("axe.help.q.key_armor"), DotaHelpColor.Skill(DotaLocalization.Format("axe.help.q.val_armor", BonusDef, $"{DotaArmor:0}")))
           };
         },
@@ -1091,7 +1091,7 @@ namespace Pathos.DotaHeroes.Heroes
 
           return new (string Key, string Value)[]
           {
-            (DotaLocalization.T("axe.help.w.key_range"), DotaHelpColor.Control(DotaLocalization.Format("axe.help.tiles_val", Range))),
+            (DotaLocalization.T("axe.help.w.key_range"), DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", Range))),
             (DotaLocalization.T("axe.help.w.key_dot"), DotaHelpColor.Physical(DotaLocalization.Format("axe.help.w.val_dot", $"{EffDps:0.#}", EstTotal, BattleHungerDurationTurns))),
             (DotaLocalization.T("axe.help.w.key_slow"), DotaHelpColor.Control($"-{Slow:0}%"))
           };
@@ -1111,7 +1111,7 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("axe.help.cast_range_suffix", Range),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", Range),
               Bullets = new[] { DotaLocalization.Format("axe.help.w.tier_bullet", BonusPct) }
             });
           }
@@ -1156,7 +1156,7 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("axe.help.cast_range_suffix", 2),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", 2),
               Bullets = new[] { DotaLocalization.Format("axe.help.r.tier_bullet", BonusHp) }
             });
           }

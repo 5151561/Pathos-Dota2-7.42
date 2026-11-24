@@ -465,6 +465,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           return false;
         }
 
+        Args.ManaBefore = Character.Mana?.Points ?? -1;
         return true;
       }
 
@@ -476,7 +477,13 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         try
         {
           if (!__state.Args.Cancel)
-            DotaHookBus.DispatchAfterCastSpell(__state.Args);
+          {
+            var Args = __state.Args;
+            int ManaAfter = Args.Character?.Mana?.Points ?? -1;
+            int Delta = Args.ManaBefore >= 0 && ManaAfter >= 0 ? Args.ManaBefore - ManaAfter : 0;
+            Args.ManaSpent = Delta > 0 ? Delta : Math.Max(0, Args.QueriedManaCost);
+            DotaHookBus.DispatchAfterCastSpell(Args);
+          }
         }
         finally
         {
@@ -743,6 +750,11 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var Args = new SpellCostQueryEventArgs(__instance, Spell, Mastery, Qualification, __result);
         DotaHookBus.DispatchSpellCostQuery(Args);
         __result = Math.Max(0, Args.ManaCost);
+
+        // 记录施法期间引擎查询到的真实蓝耗，作为 SpellCastEventArgs.ManaSpent 的回退来源
+        var ActiveCast = DotaHookBus.ActiveSpellCast;
+        if (ActiveCast != null && ActiveCast.Character == __instance && ActiveCast.Spell == Spell)
+          ActiveCast.QueriedManaCost = __result;
       }
 
       private static void GetLimitFormPostfix(Character __instance, ref Form __result)

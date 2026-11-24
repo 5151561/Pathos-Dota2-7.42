@@ -107,10 +107,10 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly ConditionalWeakTable<Character, WeakReference<Character>> OwnerActiveWard = new();
     private static readonly ConditionalWeakTable<Character, OmnislashSession> ActiveOmnislashSessions = new();
 
-    private static readonly HashSet<Character> ActiveOmnislashCasters = new();
-    private static readonly HashSet<Character> ActiveBladeFuryTicks = new();
-    private static readonly HashSet<Character> SkipNextBladeFuryTick = new();
-    private static readonly HashSet<Character> SkipNextOmnislashTick = new();
+    private static readonly DotaCharacterFlagSet ActiveOmnislashCasters = new();
+    private static readonly DotaCharacterFlagSet ActiveBladeFuryTicks = new();
+    private static readonly DotaCharacterFlagSet SkipNextBladeFuryTick = new();
+    private static readonly DotaCharacterFlagSet SkipNextOmnislashTick = new();
 
     private Property BladeformTalentProperty;
     private Property BladeFuryStatusProperty;
@@ -251,7 +251,7 @@ namespace Pathos.DotaHeroes.Heroes
                 "jugg.skill.w.desc_lv",
                 $"{(Lv - 1) * 0.5f:0.#}",
                 (Lv - 1) * 4,
-                Lv < 4 ? DotaLocalization.T("jugg.skill.w.desc_next_suffix") : string.Empty),
+                Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
           TitleResolver: () => DotaLocalization.T("jugg.skill.w.title")),
         SlotE: DotaSkillSlot.CreatePassive(
           Id: SkillBladeDanceId,
@@ -841,11 +841,8 @@ namespace Pathos.DotaHeroes.Heroes
 
       if (InitialTarget == null)
       {
-        // 空大保护：未找到目标时按实际折后蓝耗返还法力值
-        int ActualMana = TalentService.HasTalent(Caster, TalentT2OmnislashMana)
-          ? DotaMechanicsMapper.MapCooldownReductionToManaCost(OmnislashManaCost, OmnislashTalentCdr)
-          : OmnislashManaCost;
-        DotaCombatHelper.RefundMana(Caster, ActualMana);
+        // 空大保护：未找到目标时按本次实际扣除的法力值返还（自动包含天赋折减）
+        DotaCombatHelper.RefundSpellCost(Args);
 
         PathosEngineBridge.WriteInternalLog(
           Args.Engine,
@@ -1142,7 +1139,7 @@ namespace Pathos.DotaHeroes.Heroes
             ? DotaLocalization.Format("ui.common.comma_item", DotaHelpColor.Talent(DotaLocalization.T("jugg.help.q.tag_t3_dps")))
             : string.Empty;
           string StarDmgNote = StarMult > 1.001f
-            ? DotaLocalization.Format("ui.common.comma_item", DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.tag_star_mult", $"{StarMult:0.00}")))
+            ? DotaLocalization.Format("ui.common.comma_item", DotaHelpColor.Skill(DotaLocalization.Format("ui.help.tag_star_mult", $"{StarMult:0.00}")))
             : string.Empty;
           string TalentSpeedNote = HasSpeedTalent
             ? $" + {DotaHelpColor.Talent(DotaLocalization.T("jugg.help.q.tag_t2_speed"))}"
@@ -1155,12 +1152,12 @@ namespace Pathos.DotaHeroes.Heroes
           {
             (DotaLocalization.T("jugg.help.q.key_duration"), DotaLocalization.Format(
               "jugg.help.q.val_duration",
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", Turns)),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", Turns)),
               ExtraTurns > 0 ? DotaLocalization.Format("jugg.help.q.max_star_extra_turns", ExtraTurns) : string.Empty)),
             (DotaLocalization.T("jugg.help.q.key_area"), DotaLocalization.Format(
               "jugg.help.q.val_area",
               DotaHelpColor.Control(DotaLocalization.T("jugg.help.tiles_3x3")),
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 1)))),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", 1)))),
             (DotaLocalization.T("jugg.help.q.key_dmg"), DotaLocalization.Format(
               "jugg.help.q.val_dmg",
               DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(SpinDice)),
@@ -1168,7 +1165,7 @@ namespace Pathos.DotaHeroes.Heroes
             (DotaLocalization.T("jugg.help.q.key_scale"), DotaLocalization.Format(
               "jugg.help.q.val_scale",
               DotaHelpColor.Stat($"×{Cadence * StarMult:0.##}"),
-              DotaHelpColor.Stat(DotaLocalization.Format("jugg.help.dex_val", Dex)),
+              DotaHelpColor.Stat(DotaLocalization.Format("ui.help.dex_val", Dex)),
               DotaHelpColor.Passive(DotaLocalization.Format("jugg.help.bladeform_stacks", BladeformStacks)),
               StarDmgNote,
               TalentDmgNote)),
@@ -1245,11 +1242,11 @@ namespace Pathos.DotaHeroes.Heroes
               : DotaHelpColor.Mana($"{ActualMana}")),
             (DotaLocalization.T("jugg.help.w.key_cast_aura"), DotaLocalization.Format(
               "jugg.help.w.val_cast_aura",
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", Range)),
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 2)))),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", Range)),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", 2)))),
             (DotaLocalization.T("jugg.help.q.key_duration"), DotaLocalization.Format(
               "jugg.help.w.val_duration",
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", Duration)))),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", Duration)))),
             (DotaLocalization.T("jugg.help.w.key_heal"), DotaLocalization.Format(
               "jugg.help.w.val_heal",
               DotaHelpColor.Heal($"{HealPct * 100:0.##}%"),
@@ -1262,7 +1259,7 @@ namespace Pathos.DotaHeroes.Heroes
         {
           DotaLocalization.Format(
             "jugg.help.w.mech_1",
-            DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 2)),
+            DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", 2)),
             DotaHelpColor.Heal("1 HP"))
         },
         BuildTiers = _ =>
@@ -1276,12 +1273,12 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", Range),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", Range),
               Bullets = new[]
               {
                 DotaLocalization.Format(
                   "jugg.help.w.tier_bullet",
-                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", Duration)),
+                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", Duration)),
                   DotaHelpColor.Heal(DotaLocalization.Format("jugg.help.w.pct_max_hp", $"{HealPct * 100:0.##}")))
               }
             });
@@ -1354,8 +1351,8 @@ namespace Pathos.DotaHeroes.Heroes
               : DotaHelpColor.Mana($"{ActualMana}")),
             (DotaLocalization.T("jugg.help.r.key_cast_jump"), DotaLocalization.Format(
               "jugg.help.r.val_cast_jump",
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", CastRange)),
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 3)))),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", CastRange)),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", 3)))),
             (DotaLocalization.T("jugg.help.r.key_slashes"), HasSlashTalent
               ? DotaLocalization.Format(
                   "jugg.help.r.val_slashes_talent",
@@ -1387,7 +1384,7 @@ namespace Pathos.DotaHeroes.Heroes
             DotaHelpColor.Physical(DotaLocalization.T("jugg.help.r.tag_weapon_dice")),
             DotaHelpColor.Stat(DotaLocalization.T("jugg.help.r.tag_stat_mod")),
             DotaHelpColor.Skill(DotaLocalization.T("jugg.help.r.tag_skill_atk")),
-            DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 3))),
+            DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", 3))),
           DotaLocalization.Format(
             "jugg.help.r.mech_2",
             DotaHelpColor.Stat(DotaLocalization.T("jugg.help.word.dex")),
@@ -1409,7 +1406,7 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", Range),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", Range),
               Bullets = new[]
               {
                 DotaLocalization.Format(

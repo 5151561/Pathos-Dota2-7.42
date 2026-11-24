@@ -204,7 +204,7 @@ namespace Pathos.DotaHeroes.Heroes
                 "morph.skill.q.desc_lv",
                 $"{1.0f + (Lv - 1) * 0.15f:0.00}",
                 Lv - 1,
-                Lv < 4 ? DotaLocalization.T("jugg.skill.w.desc_next_suffix") : string.Empty),
+                Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
           TitleResolver: () => DotaLocalization.T("morph.skill.q.title")),
         SlotW: DotaSkillSlot.CreateActive(
           Id: SkillAdaptiveStrikeId,
@@ -218,7 +218,7 @@ namespace Pathos.DotaHeroes.Heroes
                 "morph.skill.w.desc_lv",
                 $"{1.0f + (Lv - 1) * 0.15f:0.00}",
                 Lv - 1,
-                Lv < 4 ? DotaLocalization.T("jugg.skill.w.desc_next_suffix") : string.Empty),
+                Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
           TitleResolver: () => DotaLocalization.T("morph.skill.w.title")),
         SlotE: DotaSkillSlot.CreateActiveGroup(
           Id: SkillAttributeShiftId,
@@ -537,8 +537,8 @@ namespace Pathos.DotaHeroes.Heroes
         }
       });
 
-      // T1 右天赋（+15% 魔法抗性）：对法术/元素/环境等非普通物理伤害减免 15%
-      DotaHookBus.RegisterBeforeDamage("morphling.adaptive_strike", Args =>
+      // T1 右天赋（+15% 魔法抗性）：对法术/元素/环境等非普通物理伤害减免 15%（减伤阶段，晚于增伤/暴击执行）
+      DotaHookBus.RegisterBeforeDamage("morphling.talent_magic_resist", Args =>
       {
         if (Args.Defender != null &&
             Args.DamagePoints > 0 &&
@@ -548,7 +548,7 @@ namespace Pathos.DotaHeroes.Heroes
         {
           Args.DamagePoints = Math.Max(1, (int)MathF.Round(Args.DamagePoints * 0.85f));
         }
-      });
+      }, DotaHookPriority.Reduction);
     }
 
     private void ExecuteWaveform(DotaHeroContext Ctx, SpellCastEventArgs Args)
@@ -729,8 +729,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       if (Target == null || Target == Caster || Target.Deceased || Target.Square == null)
       {
-        int Refund = Args.Spell?.Mana ?? AdaptiveStrikeManaCost;
-        DotaCombatHelper.RefundMana(Caster, Refund);
+        DotaCombatHelper.RefundSpellCost(Args);
         PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, Args.Spell?.Glyph, DotaLocalization.T("morph.log.adaptive_no_target"));
         return;
       }
@@ -786,8 +785,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       if (Target == null || Target == Caster || Target.Deceased || Target.Entity == null)
       {
-        int Refund = Args.Spell?.Mana ?? MorphManaCost;
-        DotaCombatHelper.RefundMana(Caster, Refund);
+        DotaCombatHelper.RefundSpellCost(Args);
         PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, Args.Spell?.Glyph ?? MorphGlyph, DotaLocalization.T("morph.log.morph_no_target"));
         return;
       }
@@ -1017,13 +1015,13 @@ namespace Pathos.DotaHeroes.Heroes
           string RangeDetail = !string.IsNullOrEmpty(ExtraTags)
             ? DotaLocalization.Format(
                 "morph.help.range_detail",
-                DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", TotalRange)),
+                DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", TotalRange)),
                 BaseRange,
                 ExtraTags,
                 string.Empty)
-            : DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", BaseRange));
+            : DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", BaseRange));
           string StarDmgNote = StarMult > 1.001f
-            ? DotaLocalization.Format("ui.common.comma_item", DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.tag_star_mult", $"{StarMult:0.00}")))
+            ? DotaLocalization.Format("ui.common.comma_item", DotaHelpColor.Skill(DotaLocalization.Format("ui.help.tag_star_mult", $"{StarMult:0.00}")))
             : string.Empty;
 
           return new List<(string, string)>
@@ -1034,10 +1032,10 @@ namespace Pathos.DotaHeroes.Heroes
               DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice)),
               DotaHelpColor.Magic($"{WaveDice.Average() * StarMult:0.#}"),
               StarDmgNote,
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", Radius)))),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", Radius)))),
             (DotaLocalization.T("morph.help.q.key_mobility"), DotaLocalization.Format(
               "morph.help.q.val_mobility",
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", Evasion))))
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", Evasion))))
           };
         },
         BuildMechanicsNotes = _ => new[]
@@ -1054,14 +1052,14 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", WaveformBaseRanges[Idx]),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", WaveformBaseRanges[Idx]),
               Bullets = new[]
               {
                 DotaLocalization.Format(
                   "morph.help.q.tier_bullet",
                   DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice)),
-                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", WaveformRadii[Idx])),
-                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", WaveformEvasionTurns[Idx])))
+                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", WaveformRadii[Idx])),
+                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", WaveformEvasionTurns[Idx])))
               }
             });
           }
@@ -1104,11 +1102,11 @@ namespace Pathos.DotaHeroes.Heroes
             (DotaLocalization.T("morph.help.w.key_range"), StrBonus > 0
               ? DotaLocalization.Format(
                   "morph.help.range_detail",
-                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", BaseRange + StrBonus)),
+                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", BaseRange + StrBonus)),
                   BaseRange,
                   $" + {DotaHelpColor.Passive(DotaLocalization.Format("morph.help.ebb_tag", StrBonus))}",
                   string.Empty)
-              : DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", BaseRange))),
+              : DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", BaseRange))),
             (DotaLocalization.T("morph.help.w.key_dmg"), DotaLocalization.Format(
               "morph.help.w.val_dmg",
               DotaHelpColor.Magic($"{TotalMin}~{TotalMax}"),
@@ -1117,11 +1115,11 @@ namespace Pathos.DotaHeroes.Heroes
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.w.agi_bonus", BonusDmg)))),
             (DotaLocalization.T("morph.help.w.key_stun"), DotaLocalization.Format(
               "morph.help.w.val_stun",
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", FinalStun)),
-              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", MaxStun)))),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", FinalStun)),
+              DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", MaxStun)))),
             (DotaLocalization.T("morph.help.w.key_ratio"), DotaLocalization.Format(
               "morph.help.w.val_ratio",
-              DotaHelpColor.Stat(DotaLocalization.Format("jugg.help.dex_val", Dex)),
+              DotaHelpColor.Stat(DotaLocalization.Format("ui.help.dex_val", Dex)),
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", Str))))
           };
         },
@@ -1144,13 +1142,13 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", AdaptiveStrikeBaseRanges[Idx]),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", AdaptiveStrikeBaseRanges[Idx]),
               Bullets = new[]
               {
                 DotaLocalization.Format(
                   "morph.help.w.tier_bullet",
                   DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice)),
-                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", $"1~{MaxStun}")))
+                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.turns_val", $"1~{MaxStun}")))
               }
             });
           }
@@ -1182,7 +1180,7 @@ namespace Pathos.DotaHeroes.Heroes
             (DotaLocalization.T("morph.help.e.key_attrs"), DotaLocalization.Format(
               "morph.help.e1.val_attrs",
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", CurStr)),
-              DotaHelpColor.Stat(DotaLocalization.Format("jugg.help.dex_val", CurDex)),
+              DotaHelpColor.Stat(DotaLocalization.Format("ui.help.dex_val", CurDex)),
               MaxDex,
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.con_val", CurCon)),
               MinAttributeScore))
@@ -1239,7 +1237,7 @@ namespace Pathos.DotaHeroes.Heroes
               "morph.help.e2.val_attrs",
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", CurStr)),
               MaxStr,
-              DotaHelpColor.Stat(DotaLocalization.Format("jugg.help.dex_val", CurDex)),
+              DotaHelpColor.Stat(DotaLocalization.Format("ui.help.dex_val", CurDex)),
               MinAttributeScore,
               DotaHelpColor.Stat(DotaLocalization.Format("morph.help.con_val", CurCon))))
           };
@@ -1289,11 +1287,11 @@ namespace Pathos.DotaHeroes.Heroes
             (DotaLocalization.T("morph.help.r.key_range"), (StrBonus > 0 || StarRange > 0)
               ? DotaLocalization.Format(
                   "morph.help.range_detail",
-                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", TotalRange)),
+                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", TotalRange)),
                   BaseRange,
                   StrBonus > 0 ? $" + {DotaHelpColor.Passive(DotaLocalization.Format("morph.help.ebb_tag", StrBonus))}" : string.Empty,
                   StarRange > 0 ? $" + {DotaHelpColor.Skill(DotaLocalization.Format("morph.help.star_range_tag", StarRange))}" : string.Empty)
-              : DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", BaseRange))),
+              : DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", BaseRange))),
             (DotaLocalization.T("morph.help.r.key_mech"), DotaLocalization.Format(
               "morph.help.r.val_mech",
               DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name"))))
@@ -1311,12 +1309,12 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", MorphBaseRanges[Tier - 1]),
+              HeaderSuffix = DotaLocalization.Format("ui.help.cast_range_suffix", MorphBaseRanges[Tier - 1]),
               Bullets = new[]
               {
                 DotaLocalization.Format(
                   "morph.help.r.tier_bullet",
-                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", MorphBaseRanges[Tier - 1])),
+                  DotaHelpColor.Control(DotaLocalization.Format("ui.help.tiles_val", MorphBaseRanges[Tier - 1])),
                   DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
               }
             });

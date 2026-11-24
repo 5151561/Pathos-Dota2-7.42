@@ -195,6 +195,18 @@ namespace Pathos.DotaHeroes.Framework
     }
 
     /// <summary>
+    /// 按本次施法「实际扣除」的法力值全额返还（空放保护 / 斩杀刷新）。
+    /// 自动包含天赋减蓝耗与熟练度修正，避免按 Spell.Mana 或常量返还导致多返/少返。
+    /// </summary>
+    public static void RefundSpellCost(SpellCastEventArgs Args)
+    {
+      if (Args?.Character == null)
+        return;
+
+      RefundMana(Args.Character, Args.ManaSpent);
+    }
+
+    /// <summary>
     /// 判断某格是否可站立/可召唤（非空、非虚空、非阻挡、无其他角色占据）。
     /// </summary>
     public static bool IsOpenSquare(Square Square)
