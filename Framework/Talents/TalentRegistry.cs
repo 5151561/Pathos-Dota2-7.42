@@ -27,7 +27,8 @@ namespace Pathos.DotaHeroes.Framework.Talents
     }
 
     /// <summary>
-    /// 注册一棵英雄天赋树，并为其全部节点生成 Codex 持久化 Property 标记。
+    /// 注册一棵英雄天赋树。
+    /// 已学天赋通过 DotaCharacterStorage（Character.Dialogue.Tag）随原生存档持久化，不占用 Codex.Properties 64 位位图名额。
     /// 必须在 IDotaHeroDefinition.Register 阶段调用（Campaign 构建期）。
     /// </summary>
     public static void Register(DotaHeroContext Ctx, HeroTalentTree Tree)
@@ -39,8 +40,8 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
       foreach (var Tier in Tree.Tiers)
       {
-        BindNodeProperty(Ctx, Tree, Tier.Left);
-        BindNodeProperty(Ctx, Tree, Tier.Right);
+        NodesById[Tier.Left.Id] = Tier.Left;
+        NodesById[Tier.Right.Id] = Tier.Right;
       }
 
       TreesByClass[Tree.ClassName] = Tree;

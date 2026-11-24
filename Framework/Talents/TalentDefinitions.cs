@@ -104,12 +104,12 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
   /// <summary>
   /// 单个 DOTA2 英雄的完整 4 层天赋树定义。
-  /// Pathos 节奏标准解锁阶梯：Lv 5 / 10 / 15 / 20（四层二选一），Lv 22 / 23 / 24 / 25（依次补点另一侧）。
+  /// DOTA2 原版解锁阶梯：Lv 10 / 15 / 20 / 25（四层二选一），Lv 27 / 28 / 29 / 30（依次补点另一侧）。
   /// </summary>
   public sealed class HeroTalentTree
   {
-    public static readonly int[] DefaultUnlockLevels = { 5, 10, 15, 20 };
-    public static readonly int[] DefaultDualUnlockLevels = { 22, 23, 24, 25 };
+    public static readonly int[] DefaultUnlockLevels = { 10, 15, 20, 25 };
+    public static readonly int[] DefaultDualUnlockLevels = { 27, 28, 29, 30 };
 
     public HeroTalentTree(
       string ClassName,

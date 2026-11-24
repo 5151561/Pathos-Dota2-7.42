@@ -27,10 +27,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
       if (Character == null || string.IsNullOrWhiteSpace(TalentId))
         return false;
 
-      if (!TalentRegistry.TryGetNode(TalentId, out var Node) || Node.BackingProperty == null)
-        return false;
-
-      return PathosEngineBridge.HasAcquiredTalent(Character, Node.BackingProperty);
+      return DotaCharacterStorage.HasTalent(Character, TalentId);
     }
 
     public static TalentNodeState GetNodeState(Character Character, TalentTier Tier, TalentBranch Branch)
@@ -96,10 +93,10 @@ namespace Pathos.DotaHeroes.Framework.Talents
         return false;
 
       var Node = Tier.GetNode(Branch);
-      if (Node?.BackingProperty == null)
+      if (Node == null)
         return false;
 
-      if (!PathosEngineBridge.GainTalent(Engine, Character, Node.BackingProperty))
+      if (!DotaCharacterStorage.AddTalent(Character, Node.Id))
         return false;
 
       try

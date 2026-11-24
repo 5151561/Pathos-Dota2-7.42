@@ -31,8 +31,9 @@ Framework/
 │   ├── HookBootstrap.cs       # Harmony 引导器、14 组引擎补丁与 3 组客户端桥接入口
 │   ├── DotaHookBus.cs         # 幂等按键事件总线 + 线程上下文（ActiveSpellCast / ActiveAttack）
 │   ├── HookEventArgs.cs       # 强类型 Hook 事件参数
-│   └── PathosEngineBridge.cs  # 引擎内部成员反射缓存（伤害/治疗/召唤/销毁/Story 特效/自动回合）
-├── Talents/                   # 四层双修天赋树（Lv 5/10/15/20 + Lv 22~25 双修）与左下角独立面板
+│   └── PathosEngineBridge.cs  # 引擎内部成员反射缓存（伤害/治疗/召唤/销毁/学法升星/Story 特效/自动回合）
+├── Skills/                    # DOTA2 升级技能加点系统（Q/W/E/R 原生升星 + 被动独立升级 + 7 级全属性黄点）
+├── Talents/                   # 四层双修天赋树（Lv 10/15/20/25 + Lv 27~30 双修）与左下角「技能与天赋」双 Tab 面板
 ├── Targeting/                 # DotaRangeTargetingBridge（全射程方格选框与点击捕获）
 └── UI/
     ├── PathosClientReflection.cs  # Pathos.dll 查找、PatchSafe 与 Theme.GetImage 共享封装
@@ -56,21 +57,26 @@ docs/                          # 完整架构、基建、指南与英雄 7.42 �
 - **自定义像素 VFX**：使用 `Ctx.RegisterStrikeVfx`、`Ctx.RegisterBeamVfx`、`Ctx.RegisterExplosion3x3Vfx`，配合 `PathosEngineBridge.Story*` 播放。
 - **客户端补丁**：若需新增 `Pathos.dll` 反射或补丁，复用 `PathosClientReflection`。
 
-### 3.2 统一数值标尺（`DotaMechanicsMapper`）
-参考版本为 **DOTA2 7.42**，所有数值必须可推导，不拍脑袋手填：
+### 3.2 统一数值标尺（`DotaMechanicsMapper`）与 DOTA2 7.42 Wiki 强约束
+> **铁律（严禁违背）**：所有英雄基础属性、成长、蓝耗、伤害、持续时间、暴击率、天赋与技能机制，**必须严格对照 DOTA2 7.42 官方 Wiki / 刀塔百科核实原始数值**，严禁凭记忆估算、自行编造或混用旧版本（如 7.35/7.38/7.40 等）的过时数值！若不确定 7.42 数值，必须先查阅 Wiki 核对再写代码，并在英雄文档 `docs/heroes/<hero_id>.md` 中如实列出 7.42 溯源表。
+
+所有数值必须经 `DotaMechanicsMapper` 推导，不拍脑袋手填：
 - **初始六维**：`MapStartingStats(BaseStr, BaseAgi, BaseInt)` + `RegisterFixedStartingStats(ClassName, StartingStats)`。
 - **蓝量与蓝耗**：$K_{\text{mana}} = 20$（`ComputeClassManaBase` / `MapSkillManaCost` / `MapSpellLevel`，0 蓝耗忠实保留 0）。
 - **技能伤害**：$K_{\text{dmg}} = 15$（`MapSkillDamage` / `MapSkillDamageDice` / `MapDotDamageDicePerTurn`）。
 - **时间与持续伤害/治疗**：`1 秒 = 2 回合`（`MapDurationTurns`，每回合按 `0.5 秒` 折算 DPS/HoT）。
 - **护甲加减**：走 `RegisterDefenceQuery` + `MapArmorToDefence`（分段递减，正负封顶 ±8）。
 - **减冷却天赋**：统一折算为减蓝耗，在 `TalentNode.ManaReductions` 上声明 `SpellManaReductionRule`（配合 `ComputeCooldownReductionRatio`）。
+- **技能加点与双轨成长**：所有英雄统一接入 `HeroSkillRegistry`（1 级自带 1 点技能点，小技能 Lv 1/3/5/7、大招 Lv 6/12/18、7 级全属性黄点；主动技能 0→1 学会、1→N 原生升星并叠加升星基础数值增幅，与学派熟练度双重成长；被动技能由独立技能等级 0→4 级驱动，禁止强行挂钩武器/学派熟练度）。天赋树统一采用 DOTA2 原版 `Lv 10/15/20/25` + `Lv 27~30` 双修补点。
 
 ### 3.3 关键引擎避坑清单
-1. **点地召唤禁止在声明式 `Plain` 射线上直接挂 `SummonEntity`**：`Plain(Range)` 会对路径每格执行一次 `Apply`，导致一次召唤多个。正确做法：声明式用 `Plain(Range)` + `Apply.Nothing()`，在 `AfterCastSpell` 中调用 `PathosEngineBridge.SummonAllyEntity(...)`。
-2. **召唤物到期 / 替换销毁必须用 `PathosEngineBridge.DespawnSummon`**：禁止用 `DismissAlly`（会残留中立/野生单位在地图上）。
-3. **贴图资源**：单份 `128x128` 透明 PNG 放在 `Resources/Heroes/<hero_id>/`，**不要手动修改 `Atlases/`**（构建期清空重建且已 `.gitignore`）。文件名必须全局唯一且不与官方内置 Glyph 冲突（如主宰用 `yurnero.png` 避开内置怪物 `juggernaut`）。
-4. **角色私有运行时状态**：必须用 `ConditionalWeakTable<Character, TState>` 绑定，避免内存泄漏；Hook Key 统一 `<hero_id>.<feature>` 保证幂等覆盖。
-5. **客户端与引擎双可见**：凡通过 Hook 结算伤害的技能，必须在法术 `Description` 中明确写出伤害骰与倍率。
+1. **严禁滥用 `Codex.Properties`（64 位 `Inv.BitmixSet` 硬上限）**：Pathos 的 `PropertySet` 底层是单个 `Int64`（全局最多 64 个 `Property`），官方已占用 57 个，全扩展包仅余 7 个名额！超过 64 个会发生 `Index & 63` 回绕，直接撞上 `hallucination`（幻觉）等官方状态！因此**严禁**为天赋树节点或技能等级注册内部 `Property`，持久化数据必须走 `DotaCharacterStorage`（存入 `Character.Dialogue.Tag`）。
+2. **学习/升星法术必须用 `Character.Knowledge.LearnSpell(Spell, 1)`（已封装在 `PathosEngineBridge.LearnSpell`）**：禁止直接调 `Engine.LearnSpell`（会触发低智力读魔法书失败惩罚，如幻觉/困惑）。
+3. **点地召唤禁止在声明式 `Plain` 射线上直接挂 `SummonEntity`**：`Plain(Range)` 会对路径每格执行一次 `Apply`，导致一次召唤多个。正确做法：声明式用 `Plain(Range)` + `Apply.Nothing()`，在 `AfterCastSpell` 中调用 `PathosEngineBridge.SummonAllyEntity(...)`。
+4. **召唤物到期 / 替换销毁必须用 `PathosEngineBridge.DespawnSummon`**：禁止用 `DismissAlly`（会残留中立/野生单位在地图上）。
+5. **贴图资源**：单份 `128x128` 透明 PNG 放在 `Resources/Heroes/<hero_id>/`，**不要手动修改 `Atlases/`**（构建期清空重建且已 `.gitignore`）。文件名必须全局唯一且不与官方内置 Glyph 冲突（如主宰用 `yurnero.png` 避开内置怪物 `juggernaut`）。
+6. **角色私有运行时状态**：必须用 `ConditionalWeakTable<Character, TState>` 绑定，避免内存泄漏；Hook Key 统一 `<hero_id>.<feature>` 保证幂等覆盖。
+7. **客户端与引擎双可见**：凡通过 Hook 结算伤害的技能，必须在法术 `Description` 中明确写出伤害骰与倍率。
 
 ---
 

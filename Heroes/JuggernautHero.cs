@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using Inv;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Skills;
 using Pathos.DotaHeroes.Framework.Talents;
 using Pathos.DotaHeroes.Framework.Targeting;
 using Pathos.DotaHeroes.Framework.UI;
@@ -30,7 +31,13 @@ namespace Pathos.DotaHeroes.Heroes
     private const string HealingWardSpellName = "healing ward";
     private const string OmnislashSpellName = "omnislash";
 
-    // 主宰天赋节点 ID（Lv 5 / 10 / 15 / 20 解锁，Lv 22 / 23 / 24 / 25 双修补点）
+    // 主宰技能加点槽位 ID（小技能 Lv 1/3/5/7，大招 Lv 6/12/18，外加 7 级全属性黄点）
+    private const string SkillBladeFuryId = "jugg.q.blade_fury";
+    private const string SkillHealingWardId = "jugg.w.healing_ward";
+    private const string SkillBladeDanceId = "jugg.e.blade_dance";
+    private const string SkillOmnislashId = "jugg.r.omnislash";
+
+    // 主宰天赋节点 ID（DOTA2 原版节奏：Lv 10 / 15 / 20 / 25 解锁，Lv 27 / 28 / 29 / 30 双修补点）
     private const string TalentT1BladeformInterval = "jugg.t1.bladeform_interval";
     private const string TalentT1HealingWardMana = "jugg.t1.healing_ward_mana";
     private const string TalentT2BladeFurySpeed = "jugg.t2.blade_fury_speed";
@@ -147,7 +154,7 @@ namespace Pathos.DotaHeroes.Heroes
         Icon: BladeformGlyph);
       var BladeDanceTalent = Ctx.RegisterPassiveProperty(
         Name: "blade dance",
-        Description: "Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% to 35% chance (by Medium Blade mastery) to critically strike for 1.8x damage.",
+        Description: "Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
         Icon: BladeDanceGlyph);
       BladeFuryStatusProperty = Ctx.RegisterSkillStatusProperty(
         Name: "blade fury",
@@ -179,8 +186,79 @@ namespace Pathos.DotaHeroes.Heroes
       // 6. 注册预设英雄：Juggernaut（人类种族 + 主宰职业）
       Ctx.RegisterPresetHero("Juggernaut", Ctx.Races.human, JuggernautClass, Ctx.Genders.male, JuggernautGlyph);
 
-      // 7. 注册主宰 4 层天赋树（含减冷却 → 减蓝耗声明式映射）
+      // 7. 注册主宰技能加点表（Q/W/E/R + 7 级全属性黄点，主动升星与学派熟练度双重成长，剑舞被动独立升级）
+      RegisterSkillBuild(
+        Ctx,
+        JuggernautGlyph,
+        BladeFuryGlyph,
+        HealingWardGlyph,
+        BladeDanceGlyph,
+        OmnislashGlyph,
+        BladeFurySpell,
+        HealingWardSpell,
+        BladeDanceTalent,
+        OmnislashSpell);
+
+      // 8. 注册主宰 4 层天赋树（DOTA2 原版 Lv 10/15/20/25 + Lv 27~30 双修，含减冷却 → 减蓝耗声明式映射）
       RegisterTalentTree(Ctx, JuggernautGlyph);
+    }
+
+    private static void RegisterSkillBuild(
+      DotaHeroContext Ctx,
+      Glyph HeroGlyph,
+      Glyph BladeFuryGlyph,
+      Glyph HealingWardGlyph,
+      Glyph BladeDanceGlyph,
+      Glyph OmnislashGlyph,
+      Spell BladeFurySpell,
+      Spell HealingWardSpell,
+      Property BladeDanceTalent,
+      Spell OmnislashSpell)
+    {
+      var Build = HeroSkillBuild.CreateStandard(
+        ClassName: JuggernautClassName,
+        HeroDisplayName: "主宰 · 尤涅若",
+        HeroId: "jugg",
+        IconGlyph: HeroGlyph,
+        SlotQ: DotaSkillSlot.CreateActive(
+          Id: SkillBladeFuryId,
+          Hotkey: "Q",
+          Title: "剑刃风暴",
+          IconGlyph: BladeFuryGlyph,
+          Spell: BladeFurySpell,
+          DescribeLevel: Lv => Lv <= 0
+            ? "学习后获得「剑刃风暴」；升星额外 +15%/级旋转伤害，满级 +2 回合"
+            : $"升星伤害 ×{1.0f + (Lv - 1) * 0.15f:0.00}{(Lv >= 4 ? "，满级持续 +2 回合" : "（下级 +15% 伤害并升星减蓝耗）")}"),
+        SlotW: DotaSkillSlot.CreateActive(
+          Id: SkillHealingWardId,
+          Hotkey: "W",
+          Title: "治疗守卫",
+          IconGlyph: HealingWardGlyph,
+          Spell: HealingWardSpell,
+          DescribeLevel: Lv => Lv <= 0
+            ? "学习后获得「治疗守卫」；升星额外 +0.5%/回合回血与 +4 回合持续"
+            : $"升星附加 +{(Lv - 1) * 0.5f:0.#}%/回合回血、+{(Lv - 1) * 4} 回合持续{(Lv < 4 ? "（下级继续升星强化）" : "")}"),
+        SlotE: DotaSkillSlot.CreatePassive(
+          Id: SkillBladeDanceId,
+          Hotkey: "E",
+          Title: "剑舞",
+          IconGlyph: BladeDanceGlyph,
+          PassiveProperty: BladeDanceTalent,
+          DescribeLevel: Lv => Lv <= 0
+            ? "被动：普攻/无敌斩/剑刃风暴 20%/25%/30%/35% 触发 1.8× 暴击"
+            : $"当前暴击率 {GetBladeDanceCritChanceByLevel(Lv) * 100:0}%（1.8× 暴击{(Lv < 4 ? $"，下级 {GetBladeDanceCritChanceByLevel(Lv + 1) * 100:0}%" : "，已满级")}）"),
+        SlotR: DotaSkillSlot.CreateActive(
+          Id: SkillOmnislashId,
+          Hotkey: "R",
+          Title: "无敌斩",
+          IconGlyph: OmnislashGlyph,
+          Spell: OmnislashSpell,
+          IsUltimate: true,
+          DescribeLevel: Lv => Lv <= 0
+            ? "终极技能（Lv 6 解锁）：升星额外 +2 斩、+2 斩击攻击力/级"
+            : $"升星附加 +{(Lv - 1) * 2} 斩、+{(Lv - 1) * 2} 斩击攻击力{(Lv < 3 ? "（下级再 +2 斩与 +2 攻击力）" : "")}"));
+
+      HeroSkillRegistry.Register(Ctx, Build);
     }
 
     private static void RegisterTalentTree(DotaHeroContext Ctx, Glyph IconGlyph)
@@ -334,10 +412,23 @@ namespace Pathos.DotaHeroes.Heroes
         }
       });
 
-      // 3. 状态免疫钩子：剑刃风暴与无敌斩持续期间提供减益免疫
+      // 3. 状态免疫与满级剑刃风暴持续时间加成钩子
       DotaHookBus.RegisterBeforeApplyTransient("juggernaut.blade_fury_debuff_immunity", Args =>
       {
-        if (Args.Target == null || Args.Property == null || !DotaCombatHelper.IsNegativeDebuff(Ctx, Args.Property))
+        if (Args.Target == null || Args.Property == null)
+          return;
+
+        // 满级（Lv 4 / ★★★）剑刃风暴额外 +2 回合持续时间
+        if (Args.Property == BladeFuryStatusProperty &&
+            IsJuggernaut(Args.Target) &&
+            HeroSkillService.GetSkillLevel(Args.Target, SkillBladeFuryId) >= 4)
+        {
+          int BaseTurns = Math.Max(1, (int)MathF.Round(Args.Duration.Average()));
+          Args.Duration = Dice.Fixed(BaseTurns + 2);
+          return;
+        }
+
+        if (!DotaCombatHelper.IsNegativeDebuff(Ctx, Args.Property))
           return;
 
         if ((BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Args.Target, BladeFuryStatusProperty)) ||
@@ -429,12 +520,11 @@ namespace Pathos.DotaHeroes.Heroes
           }
         }
 
-        // (e) 被动「剑舞」：近战普攻、无敌斩与剑刃风暴均可触发 1.8x（T3 右天赋 1.95x）致命一击，T4 左天赋附带 40% 暴击吸血
+        // (e) 被动「剑舞」：由独立技能等级（1~4 级：20%/25%/30%/35%）驱动，近战普攻、无敌斩与剑刃风暴均可触发 1.8x（T3 右天赋 1.95x）致命一击
         if (IsBasicAttack || IsOmnislash || IsBladeFurySpin)
         {
-          int MasteryTier = DotaCombatHelper.GetSkillTier(Ctx, Attacker, Ctx.Skills.medium_blade);
-          float CritChance = MasteryTier >= 5 ? 0.35f : 0.20f + (MasteryTier - 1) * 0.04f;
-          if (Random.Shared.NextSingle() < CritChance)
+          float CritChance = GetBladeDanceCritChance(Attacker);
+          if (CritChance > 0.0f && Random.Shared.NextSingle() < CritChance)
           {
             float CritMultiplier = TalentService.HasTalent(Attacker, TalentT3BladeDanceCrit) ? 1.95f : 1.80f;
             Args.DamagePoints = Math.Max(Args.DamagePoints + 1, (int)MathF.Round(Args.DamagePoints * CritMultiplier));
@@ -559,7 +649,8 @@ namespace Pathos.DotaHeroes.Heroes
         BaseDps += BladeFuryTalentBonusDotaDps;
 
       float CadenceMultiplier = 1.0f + Math.Max(0, Dex - 10) * 0.05f + BladeformStacks * 0.025f;
-      Dice SpinDice = DotaMechanicsMapper.MapDotDamageDicePerTurn(BaseDps * CadenceMultiplier, DieFaces: 4);
+      float StarMultiplier = GetBladeFuryStarDamageMultiplier(Caster);
+      Dice SpinDice = DotaMechanicsMapper.MapDotDamageDicePerTurn(BaseDps * CadenceMultiplier * StarMultiplier, DieFaces: 4);
 
       var Targets = DotaCombatHelper.FindHostilesInRadius(Caster, Caster.Square, Radius: 1);
 
@@ -602,26 +693,8 @@ namespace Pathos.DotaHeroes.Heroes
         return;
 
       int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.clerical);
-      // 对应 DOTA2 百科：持续 18 / 20 / 22 / 24 秒（Champion 保持 24 秒并享受魔晶 6.5%/s 回复）
-      float DurationSeconds = Tier switch
-      {
-        1 => 18.0f,
-        2 => 20.0f,
-        3 => 22.0f,
-        _ => 24.0f
-      };
-      int Duration = DotaMechanicsMapper.MapDurationTurns(DurationSeconds); // 36 / 40 / 44 / 48 回合
-
-      // 对应 DOTA2 每秒 2% / 3% / 4% / 5%（魔晶 6.5%），按 1 秒 = 2 回合折算为每回合回复比例
-      float HealPerSec = Tier switch
-      {
-        1 => 0.02f,
-        2 => 0.03f,
-        3 => 0.04f,
-        4 => 0.05f,
-        _ => 0.065f
-      };
-      float HealPct = HealPerSec / DotaMechanicsMapper.TurnsPerSecond; // 1.0% / 1.5% / 2.0% / 2.5% / 3.25% 每回合
+      int Duration = GetHealingWardDurationByTier(Tier) + GetHealingWardExtraTurns(Caster);
+      float HealPct = GetHealingWardHealPctByTier(Tier) + GetHealingWardExtraHealPct(Caster);
 
       // 1. 若之前已有存活的治疗守卫，先彻底消散旧守卫（上限同时存在 1 个，避免占用盟友上限或残留旧单位）
       if (OwnerActiveWard.TryGetValue(Caster, out var OldRef) &&
@@ -738,15 +811,15 @@ namespace Pathos.DotaHeroes.Heroes
       int Dex = PathosEngineBridge.GetCurrentAbilityScore(Caster, "dexterity");
       int Str = PathosEngineBridge.GetCurrentAbilityScore(Caster, "strength");
       int BaseSlashes = Math.Clamp(4 + Tier + Math.Max(0, (Dex - 14) / 6), 5, 12);
-      int TotalSlashes = TalentService.HasTalent(Caster, TalentT4OmnislashSlashes)
-        ? BaseSlashes + 3
-        : BaseSlashes;
+      int StarSlashes = GetOmnislashExtraSlashes(Caster);
+      int TotalSlashes = BaseSlashes + StarSlashes + (TalentService.HasTalent(Caster, TalentT4OmnislashSlashes) ? 3 : 0);
 
       var WeaponAsset = DotaCombatHelper.GetEquippedWeapon(Ctx, Caster);
       var WeaponDice = PathosEngineBridge.GetMeleeDamageDice(Args.Engine, Caster, WeaponAsset);
       int StatBonus = Math.Max(0, (Math.Max(Str, Dex) - 10) / 2);
       int OmniBonusDamage = DotaMechanicsMapper.MapSkillDamage(
-        OmnislashBonusDotaDamage[Math.Clamp(Tier - 1, 0, OmnislashBonusDotaDamage.Length - 1)]);
+        OmnislashBonusDotaDamage[Math.Clamp(Tier - 1, 0, OmnislashBonusDotaDamage.Length - 1)]) +
+        GetOmnislashExtraDamage(Caster);
 
       var Session = new OmnislashSession
       {
@@ -951,11 +1024,38 @@ namespace Pathos.DotaHeroes.Heroes
     private static int GetBladeFuryDurationByTier(int Tier)
       => DotaMechanicsMapper.MapDurationTurns(Tier >= 5 ? 6.0f : 5.0f);
 
-    private static float GetBladeDanceCritChance(DotaHeroContext Ctx, Character Character)
+    private static float GetBladeFuryStarDamageMultiplier(Character Character)
     {
-      int MasteryTier = DotaCombatHelper.GetSkillTier(Ctx, Character, Ctx.Skills.medium_blade);
-      return MasteryTier >= 5 ? 0.35f : 0.20f + (MasteryTier - 1) * 0.04f;
+      int SkillLv = Math.Max(1, HeroSkillService.GetSkillLevel(Character, SkillBladeFuryId));
+      return 1.0f + (SkillLv - 1) * 0.15f;
     }
+
+    private static int GetBladeFuryExtraTurns(Character Character)
+      => HeroSkillService.GetSkillLevel(Character, SkillBladeFuryId) >= 4 ? 2 : 0;
+
+    private static int GetHealingWardExtraTurns(Character Character)
+      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillHealingWardId) - 1) * 4;
+
+    private static float GetHealingWardExtraHealPct(Character Character)
+      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillHealingWardId) - 1) * 0.005f;
+
+    private static int GetOmnislashExtraSlashes(Character Character)
+      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillOmnislashId) - 1) * 2;
+
+    private static int GetOmnislashExtraDamage(Character Character)
+      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillOmnislashId) - 1) * 2;
+
+    private static float GetBladeDanceCritChanceByLevel(int SkillLevel) => SkillLevel switch
+    {
+      <= 0 => 0.0f,
+      1 => 0.20f,
+      2 => 0.25f,
+      3 => 0.30f,
+      _ => 0.35f
+    };
+
+    private static float GetBladeDanceCritChance(Character Character)
+      => GetBladeDanceCritChanceByLevel(HeroSkillService.GetSkillLevel(Character, SkillBladeDanceId));
 
     private static void RegisterSpellHelpSpecs(DotaHeroContext Ctx)
     {
@@ -968,7 +1068,8 @@ namespace Pathos.DotaHeroes.Heroes
         {
           var Ch = HelpCtx.Character;
           int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation);
-          int Turns = GetBladeFuryDurationByTier(Tier);
+          int ExtraTurns = GetBladeFuryExtraTurns(Ch);
+          int Turns = GetBladeFuryDurationByTier(Tier) + ExtraTurns;
           int Dex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
           int BladeformStacks = IsJuggernaut(Ch) ? GetBladeformState(Ch).Stacks : 0;
 
@@ -978,15 +1079,19 @@ namespace Pathos.DotaHeroes.Heroes
             BaseDps += BladeFuryTalentBonusDotaDps;
 
           float Cadence = 1.0f + Math.Max(0, Dex - 10) * 0.05f + BladeformStacks * 0.025f;
-          Dice SpinDice = DotaMechanicsMapper.MapDotDamageDicePerTurn(BaseDps * Cadence, DieFaces: 4);
+          float StarMult = GetBladeFuryStarDamageMultiplier(Ch);
+          Dice SpinDice = DotaMechanicsMapper.MapDotDamageDicePerTurn(BaseDps * Cadence * StarMult, DieFaces: 4);
 
-          float CritChance = GetBladeDanceCritChance(Ctx, Ch);
+          float CritChance = GetBladeDanceCritChance(Ch);
           bool HasCritTalent = TalentService.HasTalent(Ch, TalentT3BladeDanceCrit);
           float CritMult = HasCritTalent ? 1.95f : 1.80f;
           bool HasSpeedTalent = TalentService.HasTalent(Ch, TalentT2BladeFurySpeed);
 
           string TalentDmgNote = HasDmgTalent
             ? $"，{DotaHelpColor.Talent("T3 天赋 +120 DPS")}"
+            : string.Empty;
+          string StarDmgNote = StarMult > 1.001f
+            ? $"，{DotaHelpColor.Skill($"升星 ×{StarMult:0.00}")}"
             : string.Empty;
           string TalentSpeedNote = HasSpeedTalent
             ? $" + {DotaHelpColor.Talent("15% 移速（T2）")}"
@@ -997,10 +1102,10 @@ namespace Pathos.DotaHeroes.Heroes
 
           var Rows = new List<(string, string)>
           {
-            ("持续时间", $"{DotaHelpColor.Control($"{Turns} 回合")}（施法当回合即触发首次转伤）"),
+            ("持续时间", $"{DotaHelpColor.Control($"{Turns} 回合")}（施法当回合即触发首次转伤{(ExtraTurns > 0 ? $"，满星 +{ExtraTurns} 回合" : "")}）"),
             ("生效范围", $"自身周围 {DotaHelpColor.Control("3×3 格")}（半径 {DotaHelpColor.Control("1 格")}）"),
             ("每回合伤害", $"{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(SpinDice))} 魔法伤害（均伤 {DotaHelpColor.Magic($"{SpinDice.Average():0.#}")}）"),
-            ("攻速频率缩放", $"{DotaHelpColor.Stat($"×{Cadence:0.##}")}（{DotaHelpColor.Stat($"敏捷 {Dex}")}，{DotaHelpColor.Passive($"剑心犹在 {BladeformStacks} 层")}{TalentDmgNote}）"),
+            ("倍率缩放", $"{DotaHelpColor.Stat($"×{Cadence * StarMult:0.##}")}（{DotaHelpColor.Stat($"敏捷 {Dex}")}，{DotaHelpColor.Passive($"剑心犹在 {BladeformStacks} 层")}{StarDmgNote}{TalentDmgNote}）"),
             ("防御与暴击", $"基础驱散 + 减益免疫 + {DotaHelpColor.Control("80% 魔法减伤")}{TalentSpeedNote}；{DotaHelpColor.Passive($"剑舞 {CritChance * 100:0}%")} 暴击（{CritMultText}）")
           };
           return Rows;
@@ -1041,8 +1146,10 @@ namespace Pathos.DotaHeroes.Heroes
           var Ch = HelpCtx.Character;
           int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.clerical);
           int Range = GetHealingWardCastRangeByTier(Tier);
-          int Duration = GetHealingWardDurationByTier(Tier);
-          float HealPct = GetHealingWardHealPctByTier(Tier);
+          int ExtraTurns = GetHealingWardExtraTurns(Ch);
+          float ExtraHealPct = GetHealingWardExtraHealPct(Ch);
+          int Duration = GetHealingWardDurationByTier(Tier) + ExtraTurns;
+          float HealPct = GetHealingWardHealPctByTier(Tier) + ExtraHealPct;
           bool HasManaTalent = TalentService.HasTalent(Ch, TalentT1HealingWardMana);
           int ActualMana = HasManaTalent
             ? DotaMechanicsMapper.MapCooldownReductionToManaCost(HealingWardManaCost, HealingWardTalentCdr)
@@ -1102,8 +1209,9 @@ namespace Pathos.DotaHeroes.Heroes
           int Str = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
 
           int BaseSlashes = Math.Clamp(4 + Tier + Math.Max(0, (Dex - 14) / 6), 5, 12);
+          int StarSlashes = GetOmnislashExtraSlashes(Ch);
           bool HasSlashTalent = TalentService.HasTalent(Ch, TalentT4OmnislashSlashes);
-          int TotalSlashes = HasSlashTalent ? BaseSlashes + 3 : BaseSlashes;
+          int TotalSlashes = BaseSlashes + StarSlashes + (HasSlashTalent ? 3 : 0);
 
           bool HasManaTalent = TalentService.HasTalent(Ch, TalentT2OmnislashMana);
           int ActualMana = HasManaTalent
@@ -1114,7 +1222,8 @@ namespace Pathos.DotaHeroes.Heroes
           var WeaponDice = PathosEngineBridge.GetMeleeDamageDice(HelpCtx.Engine, Ch, WeaponAsset);
           int StatBonus = Math.Max(0, (Math.Max(Str, Dex) - 10) / 2);
           int OmniBonus = DotaMechanicsMapper.MapSkillDamage(
-            OmnislashBonusDotaDamage[Math.Clamp(Tier - 1, 0, OmnislashBonusDotaDamage.Length - 1)]);
+            OmnislashBonusDotaDamage[Math.Clamp(Tier - 1, 0, OmnislashBonusDotaDamage.Length - 1)]) +
+            GetOmnislashExtraDamage(Ch);
 
           int BladeformStacks = IsJuggernaut(Ch) ? GetBladeformState(Ch).Stacks : 0;
           int BladeformBonus = BladeformStacks > 0 ? (int)MathF.Round(Dex * 0.025f * BladeformStacks) : 0;
@@ -1124,7 +1233,7 @@ namespace Pathos.DotaHeroes.Heroes
           int MaxSlash = DotaSpellHelpBridge.GetDiceMax(WeaponDice) + FlatBonus;
           float AvgSlash = WeaponDice.Average() + FlatBonus;
 
-          float CritChance = GetBladeDanceCritChance(Ctx, Ch);
+          float CritChance = GetBladeDanceCritChance(Ch);
           bool HasCritTalent = TalentService.HasTalent(Ch, TalentT3BladeDanceCrit);
           float CritMult = HasCritTalent ? 1.95f : 1.80f;
 
@@ -1341,7 +1450,6 @@ namespace Pathos.DotaHeroes.Heroes
         Ctx.AddClassAvatars(C, AvatarGlyph);
 
         C.AddFeat(1, BladeformTalent);
-        C.AddFeat(1, BladeDanceTalent);
         C.AddFeat(4, Ctx.Properties.free_action);
         C.AddFeat(8, Ctx.Properties.displacement);
         C.AddFeat(12, Ctx.Properties.quickness);
@@ -1354,10 +1462,6 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Skills.evocation,
           Ctx.Skills.clerical,
           Ctx.Skills.transmutation);
-
-        C.Startup.AddGrimoire(Dice.One, BladeFurySpell);
-        C.Startup.AddGrimoire(Dice.One, HealingWardSpell);
-        C.Startup.AddGrimoire(Dice.One, OmnislashSpell);
 
         C.Startup.Loot.AddKit(Chance.Always, Modifier.Plus1, Ctx.Items.katana);
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.leather_armour);

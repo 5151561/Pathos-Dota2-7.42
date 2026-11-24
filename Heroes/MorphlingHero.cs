@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Skills;
 using Pathos.DotaHeroes.Framework.Targeting;
 using Pathos.DotaHeroes.Framework.UI;
 
@@ -23,6 +24,10 @@ namespace Pathos.DotaHeroes.Heroes
   public sealed class MorphlingHero : IDotaHeroDefinition
   {
     private const string MorphlingClassName = "morphling";
+    private const string SkillWaveformId = "morph.q.waveform";
+    private const string SkillAdaptiveStrikeId = "morph.w.adaptive_strike";
+    private const string SkillAttributeShiftId = "morph.e.attribute_shift";
+    private const string SkillMorphId = "morph.r.morph";
     private const int MinAttributeScore = 3;
     private const int MinMaxLifePoints = 10;
     private const int HpPerShiftedPoint = 6;
@@ -87,6 +92,79 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 8. 注册预设英雄：Morphling（可在选人界面一键选中）
       Ctx.RegisterPresetHero("Morphling", WaterkinRace, MorphlingClass, Ctx.Genders.male, MorphlingGlyph);
+
+      // 9. 注册变体精灵技能加点表（Q/W/E/R + 7 级全属性黄点，主动升星与学派熟练度双重成长）
+      RegisterSkillBuild(
+        Ctx,
+        MorphlingGlyph,
+        WaveformGlyph,
+        AdaptiveStrikeGlyph,
+        MorphAgilityGlyph,
+        WaveformSpell,
+        AdaptiveStrikeSpell,
+        MorphAgilitySpell,
+        MorphStrengthSpell,
+        MorphSpell,
+        MorphRevertSpell);
+    }
+
+    private static void RegisterSkillBuild(
+      DotaHeroContext Ctx,
+      Glyph HeroGlyph,
+      Glyph WaveformGlyph,
+      Glyph AdaptiveStrikeGlyph,
+      Glyph AttributeShiftGlyph,
+      Spell WaveformSpell,
+      Spell AdaptiveStrikeSpell,
+      Spell MorphAgilitySpell,
+      Spell MorphStrengthSpell,
+      Spell MorphSpell,
+      Spell MorphRevertSpell)
+    {
+      var Build = HeroSkillBuild.CreateStandard(
+        ClassName: MorphlingClassName,
+        HeroDisplayName: "变体精灵 · 水人",
+        HeroId: "morph",
+        IconGlyph: HeroGlyph,
+        SlotQ: DotaSkillSlot.CreateActive(
+          Id: SkillWaveformId,
+          Hotkey: "Q",
+          Title: "波浪形态",
+          IconGlyph: WaveformGlyph,
+          Spell: WaveformSpell,
+          DescribeLevel: Lv => Lv <= 0
+            ? "学习后获得「波浪形态」；升星额外 +15%/级水波伤害与 +1 格射程"
+            : $"升星伤害 ×{1.0f + (Lv - 1) * 0.15f:0.00}，射程 +{Lv - 1} 格{(Lv < 4 ? "（下级继续升星强化）" : "")}"),
+        SlotW: DotaSkillSlot.CreateActive(
+          Id: SkillAdaptiveStrikeId,
+          Hotkey: "W",
+          Title: "变体打击",
+          IconGlyph: AdaptiveStrikeGlyph,
+          Spell: AdaptiveStrikeSpell,
+          DescribeLevel: Lv => Lv <= 0
+            ? "学习后获得「变体打击」；升星额外 +15%/级敏捷爆发伤害与 +1 回合最大眩晕"
+            : $"升星爆发伤害 ×{1.0f + (Lv - 1) * 0.15f:0.00}，最大眩晕 +{Lv - 1} 回合{(Lv < 4 ? "（下级继续升星强化）" : "")}"),
+        SlotE: DotaSkillSlot.CreateActiveGroup(
+          Id: SkillAttributeShiftId,
+          Hotkey: "E",
+          Title: "属性转换（敏/力）",
+          IconGlyph: AttributeShiftGlyph,
+          Spells: new[] { MorphAgilitySpell, MorphStrengthSpell },
+          DescribeLevel: Lv => Lv <= 0
+            ? "一次学习「属性转换·敏捷/力量」（0 蓝耗）；升星额外 +1/级单次转换步进"
+            : $"双技能同步升星：单次属性转换步进 +{Lv - 1}{(Lv < 4 ? "（下级步进再 +1）" : "")}"),
+        SlotR: DotaSkillSlot.CreateActiveGroup(
+          Id: SkillMorphId,
+          Hotkey: "R",
+          Title: "变形 / 解除变形",
+          IconGlyph: HeroGlyph,
+          Spells: new[] { MorphSpell, MorphRevertSpell },
+          IsUltimate: true,
+          DescribeLevel: Lv => Lv <= 0
+            ? "终极技能（Lv 6 解锁）：同步学习变形与解除变形；升星 +1 格/级施法射程"
+            : $"升星施法射程 +{Lv - 1} 格并降低变形蓝耗{(Lv < 3 ? "（下级射程再 +1 格）" : "")}"));
+
+      HeroSkillRegistry.Register(Ctx, Build);
     }
 
     public void RegisterHooks(DotaHeroContext Ctx)
@@ -235,21 +313,32 @@ namespace Pathos.DotaHeroes.Heroes
           float Scale = Math.Clamp((Ratio - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
 
           int MasteryTier = DotaCombatHelper.GetSkillTier(Ctx, ActiveCast.Character, Ctx.Skills.evocation);
-          // 对应 DOTA2 变体打击最短 0.5 秒（1 回合）、最长 1.5 / 2.0 / 2.5 / 3.0 秒（3 / 4 / 5 / 6 回合，Champion 7 回合）
-          int MaxStun = DotaMechanicsMapper.MapDurationTurns(1.0f + MasteryTier * 0.5f);
+          // 对应 DOTA2 7.42 变体打击最短 0.5 秒（1 回合）、最长 1.5 / 2.0 / 2.5 / 3.0 秒（3 / 4 / 5 / 6 回合，Champion 7 回合），叠加升星额外眩晕上限
+          int MaxStun = DotaMechanicsMapper.MapDurationTurns(1.0f + MasteryTier * 0.5f) +
+                        GetAdaptiveStrikeExtraMaxStun(ActiveCast.Character);
           int FinalStun = Math.Max(1, (int)MathF.Round(1.0f + (MaxStun - 1.0f) * Scale));
           Args.Duration = Dice.Fixed(FinalStun);
         }
       });
 
-      // W 变体打击：按 DEX/STR 比值动态追加敏捷爆发伤害（DEX ≥ 1.5×STR 达满额倍率）
+      // Q 波浪形态升星伤害增幅 & W 变体打击按 DEX/STR 比值动态追加敏捷爆发伤害（含升星增幅）
       DotaHookBus.RegisterBeforeDamage("morphling.adaptive_strike", Args =>
       {
         var ActiveCast = DotaHookBus.ActiveSpellCast;
         if (ActiveCast == null ||
             Args.Attacker != ActiveCast.Character ||
-            Args.Defender == ActiveCast.Character ||
-            !string.Equals(ActiveCast.Spell?.Name, "adaptive strike", StringComparison.OrdinalIgnoreCase))
+            Args.Defender == ActiveCast.Character)
+          return;
+
+        if (string.Equals(ActiveCast.Spell?.Name, "waveform", StringComparison.OrdinalIgnoreCase))
+        {
+          float StarMult = GetWaveformStarDamageMultiplier(ActiveCast.Character);
+          if (StarMult > 1.001f && Args.DamagePoints > 0)
+            Args.DamagePoints = Math.Max(Args.DamagePoints + 1, (int)MathF.Round(Args.DamagePoints * StarMult));
+          return;
+        }
+
+        if (!string.Equals(ActiveCast.Spell?.Name, "adaptive strike", StringComparison.OrdinalIgnoreCase))
           return;
 
         int Dex = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(ActiveCast.Character, "dexterity"));
@@ -257,7 +346,8 @@ namespace Pathos.DotaHeroes.Heroes
         float Ratio = Dex / (float)Str;
         float Scale = Math.Clamp((Ratio - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
 
-        int BonusDamage = (int)MathF.Round(Dex * (0.35f + 1.15f * Scale));
+        float AdaptiveStarMult = GetAdaptiveStrikeStarDamageMultiplier(ActiveCast.Character);
+        int BonusDamage = (int)MathF.Round(Dex * (0.35f + 1.15f * Scale) * AdaptiveStarMult);
         if (BonusDamage > 0)
           Args.DamagePoints += BonusDamage;
       });
@@ -269,7 +359,8 @@ namespace Pathos.DotaHeroes.Heroes
       if (Character?.CurrentForm == null || Character.MaximumForm == null)
         return;
 
-      int Step = DotaCombatHelper.GetSkillTier(Ctx, Character, Ctx.Skills.transmutation);
+      int Step = DotaCombatHelper.GetSkillTier(Ctx, Character, Ctx.Skills.transmutation) +
+                 GetAttributeShiftExtraStep(Character);
 
       int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Character, "strength");
       int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Character, "constitution");
@@ -362,6 +453,24 @@ namespace Pathos.DotaHeroes.Heroes
       return Math.Max(0, (Str - 10) / 5);
     }
 
+    private static float GetWaveformStarDamageMultiplier(Character Character)
+      => 1.0f + Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillWaveformId) - 1) * 0.15f;
+
+    private static int GetWaveformExtraRange(Character Character)
+      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillWaveformId) - 1);
+
+    private static float GetAdaptiveStrikeStarDamageMultiplier(Character Character)
+      => 1.0f + Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillAdaptiveStrikeId) - 1) * 0.15f;
+
+    private static int GetAdaptiveStrikeExtraMaxStun(Character Character)
+      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillAdaptiveStrikeId) - 1);
+
+    private static int GetAttributeShiftExtraStep(Character Character)
+      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillAttributeShiftId) - 1);
+
+    private static int GetMorphExtraRange(Character Character)
+      => Math.Max(0, HeroSkillService.GetSkillLevel(Character, SkillMorphId) - 1);
+
     private static int GetWaveformRange(DotaHeroContext Ctx, Character Caster)
     {
       var Qual = PathosEngineBridge.GetQualification(Caster, Ctx.Skills.transmutation);
@@ -370,7 +479,7 @@ namespace Pathos.DotaHeroes.Heroes
         : Qual == Ctx.Qualifications.expert ? 7
         : Qual == Ctx.Qualifications.specialist ? 6
         : 5;
-      return BaseRange + GetStrRangeBonus(Caster);
+      return BaseRange + GetStrRangeBonus(Caster) + GetWaveformExtraRange(Caster);
     }
 
     private static int GetAdaptiveStrikeRange(DotaHeroContext Ctx, Character Caster)
@@ -392,7 +501,7 @@ namespace Pathos.DotaHeroes.Heroes
         : Qual == Ctx.Qualifications.expert ? 7
         : Qual == Ctx.Qualifications.specialist ? 6
         : 5;
-      return BaseRange + GetStrRangeBonus(Caster);
+      return BaseRange + GetStrRangeBonus(Caster) + GetMorphExtraRange(Caster);
     }
 
     private static bool IsMorphling(Character Character)
@@ -421,16 +530,21 @@ namespace Pathos.DotaHeroes.Heroes
           int Idx = Math.Clamp(Tier - 1, 0, 4);
           int BaseRange = WaveformBaseRanges[Idx];
           int StrBonus = GetStrRangeBonus(Ch);
+          int StarRange = GetWaveformExtraRange(Ch);
+          float StarMult = GetWaveformStarDamageMultiplier(Ch);
           Dice WaveDice = DotaMechanicsMapper.MapSkillDamageDice(WaveformDotaDamages[Idx]);
           int Radius = WaveformRadii[Idx];
           int Evasion = WaveformEvasionTurns[Idx];
+          int TotalRange = BaseRange + StrBonus + StarRange;
+          string RangeDetail = (StrBonus > 0 || StarRange > 0)
+            ? $"{DotaHelpColor.Control($"{TotalRange} 格")}（基础 {BaseRange}{(StrBonus > 0 ? $" + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}" : "")}{(StarRange > 0 ? $" + {DotaHelpColor.Skill($"升星 +{StarRange}")}" : "")}）"
+            : DotaHelpColor.Control($"{BaseRange} 格");
+          string StarDmgNote = StarMult > 1.001f ? $"，{DotaHelpColor.Skill($"升星 ×{StarMult:0.00}")}" : string.Empty;
 
           return new List<(string, string)>
           {
-            ("实际突进射程", StrBonus > 0
-              ? $"{DotaHelpColor.Control($"{BaseRange + StrBonus} 格")}（基础 {BaseRange} + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}）"
-              : DotaHelpColor.Control($"{BaseRange} 格")),
-            ("落地水波伤害", $"{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice))} 水系伤害（均伤 {DotaHelpColor.Magic($"{WaveDice.Average():0.#}")}，半径 {DotaHelpColor.Control($"{Radius} 格")}）"),
+            ("实际突进射程", RangeDetail),
+            ("落地水波伤害", $"{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice))} 水系伤害（均伤 {DotaHelpColor.Magic($"{WaveDice.Average() * StarMult:0.#}")}{StarDmgNote}，半径 {DotaHelpColor.Control($"{Radius} 格")}）"),
             ("位移与生存", $"瞬移至目标格，获得穿墙与闪避位移 {DotaHelpColor.Control($"{Evasion} 回合")}")
           };
         },
@@ -477,10 +591,11 @@ namespace Pathos.DotaHeroes.Heroes
           int Str = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength"));
 
           float DexScale = Math.Clamp((Dex / (float)Str - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
-          int BonusDmg = (int)MathF.Round(Dex * (0.35f + 1.15f * DexScale));
+          float AdaptiveStarMult = GetAdaptiveStrikeStarDamageMultiplier(Ch);
+          int BonusDmg = (int)MathF.Round(Dex * (0.35f + 1.15f * DexScale) * AdaptiveStarMult);
 
           float StrScale = Math.Clamp((Str / (float)Dex - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
-          int MaxStun = DotaMechanicsMapper.MapDurationTurns(1.0f + Tier * 0.5f);
+          int MaxStun = DotaMechanicsMapper.MapDurationTurns(1.0f + Tier * 0.5f) + GetAdaptiveStrikeExtraMaxStun(Ch);
           int FinalStun = Math.Max(1, (int)MathF.Round(1.0f + (MaxStun - 1.0f) * StrScale));
 
           int TotalMin = DotaSpellHelpBridge.GetDiceMin(BaseDice) + BonusDmg;
@@ -531,7 +646,7 @@ namespace Pathos.DotaHeroes.Heroes
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Step = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
+          int Step = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation) + GetAttributeShiftExtraStep(Ch);
           int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
           int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
           int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
@@ -575,7 +690,7 @@ namespace Pathos.DotaHeroes.Heroes
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
-          int Step = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
+          int Step = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation) + GetAttributeShiftExtraStep(Ch);
           int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
           int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
           int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
@@ -622,11 +737,13 @@ namespace Pathos.DotaHeroes.Heroes
           int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
           int BaseRange = MorphBaseRanges[Math.Clamp(Tier - 1, 0, 4)];
           int StrBonus = GetStrRangeBonus(Ch);
+          int StarRange = GetMorphExtraRange(Ch);
+          int TotalRange = BaseRange + StrBonus + StarRange;
 
           return new List<(string, string)>
           {
-            ("实际施法射程", StrBonus > 0
-              ? $"{DotaHelpColor.Control($"{BaseRange + StrBonus} 格")}（基础 {BaseRange} + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}）"
+            ("实际施法射程", (StrBonus > 0 || StarRange > 0)
+              ? $"{DotaHelpColor.Control($"{TotalRange} 格")}（基础 {BaseRange}{(StrBonus > 0 ? $" + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}" : "")}{(StarRange > 0 ? $" + {DotaHelpColor.Skill($"升星 +{StarRange}")}" : "")}）"
               : DotaHelpColor.Control($"{BaseRange} 格")),
             ("变形机制", $"化身目标敌方生物，复制其外形、属性、技能与法术，且全程保留先天{DotaHelpColor.Passive("「潮涨潮落」")}")
           };
@@ -1037,13 +1154,6 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Skills.sling,
           Ctx.Skills.light_armour,
           Ctx.Skills.unarmed_combat);
-
-        C.Startup.AddGrimoire(Dice.One, WaveformSpell);
-        C.Startup.AddGrimoire(Dice.One, AdaptiveStrikeSpell);
-        C.Startup.AddGrimoire(Dice.One, MorphAgilitySpell);
-        C.Startup.AddGrimoire(Dice.One, MorphStrengthSpell);
-        C.Startup.AddGrimoire(Dice.One, MorphSpell);
-        C.Startup.AddGrimoire(Dice.One, MorphRevertSpell);
 
         C.Startup.Loot.AddKit(Chance.Always, Ctx.Items.robe);
         C.Startup.Loot.AddKit(Chance.Always, Modifier.Plus1, Ctx.Items.sling);

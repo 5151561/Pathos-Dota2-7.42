@@ -1,6 +1,33 @@
-# 天赋树与长/短期技能状态体系
+# 技能加点、天赋树与长/短期技能状态体系
 
-本文档详细说明 `DotaHeroesExpansion` 中**天赋树系统**、**长效技能 vs 短期主动技能状态（长短期技能治理）**、**左上角动态状态栏徽章**以及**多回合主动技能与像素特效**的底层架构与接入规范。
+本文档详细说明 `DotaHeroesExpansion` 中**DOTA2 升级技能加点系统（含原生升星与独立被动升级）**、**四层双修天赋树系统**、**长效技能 vs 短期主动技能状态（长短期技能治理）**、**左上角动态状态栏徽章**以及**多回合主动技能与像素特效**的底层架构与接入规范。
+
+---
+
+## 0. DOTA2 升级技能加点与双轨成长体系（`Framework/Skills/`）
+
+### 0.1 核心定位：双轨双重成长 + 被动彻底解耦
+- **纯 DOTA2 加点节奏**：英雄 1 级开局自带 **1 点技能点**，每升 1 级获得 1 点（与天赋树点数完全独立）。Q/W/E/R 初始均为 0 级（先天技能保持 1 级自带）。
+  - **小技能（Q / W / E）**：上限 4 级，英雄等级门槛 `Lv 1 / 3 / 5 / 7`。
+  - **大招（R）**：上限 3 级，英雄等级门槛 `Lv 6 / 12 / 18`。
+  - **全属性加成（黄点 `+`）**：上限 7 级，每级永久提升全六维 `+1`（受角色 `LimitForm` 上限保护，同步 `CurrentForm` 与 `MaximumForm`）。
+- **主动技能（学派熟练度 × 原生升星双重增幅）**：
+  - `0 → 1` 级：调用 `PathosEngineBridge.LearnSpell` 首次学会该法术（0 星）。
+  - `1 → 2 / 3 / 4` 级（大招 `1 → 2 / 3` 级）：每次加点调用 `Engine.LearnSpell` 原生升星（`★ / ★★ / ★★★`，在原生法术面板直接展示星星并降低施法蓝耗），同时在英雄 Hook 中叠加额外的升星基础数值加成（伤害倍率、治疗量、斩数/攻击力、射程或步进等），与 Pathos 原生学派熟练度（1~5 阶）双重叠加。
+  - 支持多法术联动槽位（`CreateActiveGroup`），例如水人 E（属性转换·敏捷/力量）与 R（变形/解除变形）一次加点同步学会/升星。
+- **被动技能（独立技能等级驱动）**：
+  - 彻底脱离原版武器/学派熟练度（避免持重刃却挂中刃熟练度的违和问题）。
+  - `0 → 1` 级自动通过 `Engine.GainTalent` 授予原生可见被动专长，`1 → 4` 级直接由 `HeroSkillService.GetSkillLevel(character, skillId)` 驱动数值（如主宰剑舞 `20% / 25% / 30% / 35%`）。
+- **100% 原生存档持久化**：
+  - 每个槽位在 Campaign 构建期自动生成 `dota_skill_<id>_lv1..N` 内部 `Property` 标记并注册至 `DotaPropertyVisibility` 隐藏，写入 `Character.AcquiredTalentSet`，读档自动还原。
+
+### 0.2 组件分工
+
+| 文件 | 职责 |
+| :--- | :--- |
+| [HeroSkillDefinitions.cs](../../Framework/Skills/HeroSkillDefinitions.cs) | 定义 `DotaSkillSlot`、`HeroSkillBuild`、`DotaSkillSlotKind`、`DotaSkillUpgradeState` 与标准 7 级黄点工厂。 |
+| [HeroSkillRegistry.cs](../../Framework/Skills/HeroSkillRegistry.cs) | 按 `Class.Name` 索引英雄技能表，自动生成 `dota_skill_*` 持久化标记并登记隐藏。 |
+| [HeroSkillService.cs](../../Framework/Skills/HeroSkillService.cs) | 查询技能等级/星级/可用技能点、执行加点（原生 `LearnSpell` 升星 + 被动授专长 + 黄点加属性）及升级日志提醒。 |
 
 ---
 
@@ -13,14 +40,14 @@
 | [TalentDefinitions.cs](../../Framework/Talents/TalentDefinitions.cs) | 定义 `HeroTalentTree`、`TalentTier`、`TalentNode`、`TalentBranch`、`TalentNodeState` 与声明式 `SpellManaReductionRule`。 |
 | [TalentRegistry.cs](../../Framework/Talents/TalentRegistry.cs) | 按 `Class.Name` 索引所有英雄天赋树；自动在 `Codex.Properties` 生成 `dota_talent_<id>` 内部标记并登记至 `DotaPropertyVisibility` 隐藏。 |
 | [TalentService.cs](../../Framework/Talents/TalentService.cs) | 查询已学天赋与可用点数、执行不可洗点学习（调用 `Engine.GainTalent` 写入 `AcquiredTalentSet`）、自动订阅 `SpellCostQuery`（减冷却 → 减蓝耗）与 `AfterLevelUp`（升级解锁日志提示）。 |
-| [TalentTreeUiBridge.cs](../../Framework/Talents/TalentTreeUiBridge.cs) | 挂载 `StagePanel`、`TalentPanel`、`HelpLibrary`：在左下角「休息」按钮右侧注入原生 `MenuButton`（紧贴 `EdgeWidth` 不裁切），提供与角色/法术/日志同位互斥的左侧停靠天赋树面板，支持 `F2` 开关与 `ESC` 关闭。 |
+| [TalentTreeUiBridge.cs](../../Framework/Talents/TalentTreeUiBridge.cs) | 挂载 `StagePanel`、`TalentPanel`、`HelpLibrary`：在左下角「休息」按钮右侧注入原生 `MenuButton`（紧贴 `EdgeWidth` 不裁切），提供与角色/法术/日志同位互斥的左侧停靠「技能加点 + 天赋树」双 Tab 面板，支持 `F2` 开关与 `ESC` 关闭。 |
 
 ### 1.2 解锁阶梯与存档持久化
 
-- **标准解锁阶梯**（`HeroTalentTree.CreateStandard`）：
-  - **常规四层二选一**：`Lv 5`（T1）/ `Lv 10`（T2）/ `Lv 15`（T3）/ `Lv 20`（T4）。
-  - **满级后双修补点**：`Lv 22`（补 T1）/ `Lv 23`（补 T2）/ `Lv 24`（补 T3）/ `Lv 25`（补 T4）。
-  - 选定后不可反悔 / 不可洗点，有未分配天赋点时左下角按钮自动高亮提示。
+- **DOTA2 原版解锁阶梯**（`HeroTalentTree.CreateStandard`）：
+  - **常规四层二选一**：`Lv 10`（T1）/ `Lv 15`（T2）/ `Lv 20`（T3）/ `Lv 25`（T4）。
+  - **满级后双修补点**：`Lv 27`（补 T1）/ `Lv 28`（补 T2）/ `Lv 29`（补 T3）/ `Lv 30`（补 T4）。
+  - 选定后不可反悔 / 不可洗点，有未分配技能点或天赋点时左下角按钮自动高亮提示。
 - **100% 原生存档兼容**：
   - 每个 `TalentNode` 在 Campaign 构建期绑定一个 `dota_talent_<sanitized_id>` 内部 `Property`。
   - 学习时通过 `PathosEngineBridge.GainTalent` 写入 `Character.AcquiredTalentSet`，读档后 `TalentService.HasTalent(char, talentId)` 自动生效，无需外置存档文件。

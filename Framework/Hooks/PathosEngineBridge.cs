@@ -19,6 +19,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly Type AttackCommandType = EngineAsm.GetType("Pathos.AttackCommand");
     private static readonly Type GeneratorType = EngineAsm.GetType("Pathos.Generator");
     private static readonly Type MasteryType = EngineAsm.GetType("Pathos.Mastery");
+    private static readonly Type KnowledgeType = EngineAsm.GetType("Pathos.Knowledge");
     private static readonly Type StoryType = EngineAsm.GetType("Pathos.Story");
     private static readonly Type DecisionType = EngineAsm.GetType("Pathos.Decision");
     private static readonly Type InteractionType = EngineAsm.GetType("Pathos.Interaction");
@@ -103,6 +104,20 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     private static readonly PropertyInfo MasterySpellProp =
       MasteryType?.GetProperty("Spell", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo MasteryLevelProp =
+      MasteryType?.GetProperty("Level", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo CharacterKnowledgeProp =
+      typeof(Character).GetProperty("Knowledge", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo KnowledgeLearnSpellMethod =
+      KnowledgeType?.GetMethod("LearnSpell", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Spell), typeof(int) }, null);
+
+    private static readonly MethodInfo CharacterGetMasteryMethod =
+      typeof(Character).GetMethod("GetMastery", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Spell) }, null);
 
     private static readonly MethodInfo EngineGainTalentMethod =
       EngineType?.GetMethod("GainTalent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
@@ -217,6 +232,54 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public static Spell GetMasterySpell(object Mastery)
     {
       return Mastery != null && MasterySpellProp != null ? MasterySpellProp.GetValue(Mastery) as Spell : null;
+    }
+
+    /// <summary>
+    /// 通过 Pathos 原生 Character.Knowledge.LearnSpell(Spell, 1) 直接学习或升星指定法术：
+    /// 首次调用为角色学会该法术（Mastery.Level = 1，0 星），后续每次调用自动递增 Level（1★ / 2★ / 3★...）并随存档持久化。
+    /// 直接操作 Knowledge 可绕过 Engine.LearnSpell 的「读魔法书失败惩罚」（低智力/低等级时触发幻觉/困惑等）。
+    /// </summary>
+    public static bool LearnSpell(object Engine, Character Character, Spell Spell)
+    {
+      if (Character == null || Spell == null || CharacterKnowledgeProp == null || KnowledgeLearnSpellMethod == null)
+        return false;
+
+      try
+      {
+        var Knowledge = CharacterKnowledgeProp.GetValue(Character);
+        if (Knowledge == null)
+          return false;
+
+        KnowledgeLearnSpellMethod.Invoke(Knowledge, new object[] { Spell, 1 });
+        return true;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"LearnSpell failed: {Ex}");
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// 查询角色当前在指定法术上的原生 Mastery.Level（未学会返回 0；学会 0 星返回 1；1★ 返回 2；2★ 返回 3...）。
+    /// </summary>
+    public static int GetSpellMasteryLevel(Character Character, Spell Spell)
+    {
+      if (Character == null || Spell == null || CharacterGetMasteryMethod == null || MasteryLevelProp == null)
+        return 0;
+
+      try
+      {
+        var Mastery = CharacterGetMasteryMethod.Invoke(Character, new object[] { Spell });
+        if (Mastery == null)
+          return 0;
+
+        return MasteryLevelProp.GetValue(Mastery) is int Level ? Level : 0;
+      }
+      catch
+      {
+        return 0;
+      }
     }
 
     /// <summary>

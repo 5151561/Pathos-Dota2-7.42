@@ -2,6 +2,10 @@
 
 本规范用于保证所有 DOTA2 英雄在 Pathos 回合制 Roguelike 体系下拥有统一、可推导、忠实于刀塔百科（DOTA2 Wiki）的数值标尺与手感。所有换算函数统一封装在 [DotaMechanicsMapper.cs](../../Framework/DotaMechanicsMapper.cs) 中。
 
+> [!IMPORTANT]
+> **版本基准铁律（DOTA2 7.42 Wiki）**：
+> 本扩展包所有英雄的初始三维、属性成长、技能伤害、蓝耗、冷却、持续时间、被动概率与天赋树数值，**必须严格对照 DOTA2 7.42 官方 Wiki / 刀塔百科核对原始数值**，严禁凭印象估算或混用其他版本的过时数据！每位英雄必须在 `docs/heroes/<hero_id>.md` 中附带完整的 7.42 → Pathos 数值映射溯源表。
+
 ---
 
 ## 1. 英雄初始属性映射（固定分配，告别 4d6 摇骰子）
