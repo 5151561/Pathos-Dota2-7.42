@@ -53,6 +53,14 @@ namespace Pathos.DotaHeroes.Framework.Talents
     private static PropertyInfo TileOptionIsVisibleProp;
     private static PropertyInfo KeystrokeKeyProp;
 
+    private static PropertyInfo ShellManifestProp;
+    private static PropertyInfo HelpLibraryPropertiesProp;
+    private static FieldInfo HelpLibraryRecordListField;
+    private static FieldInfo HelpSectionRecordListField;
+    private static FieldInfo HelpSectionCatalogueListField;
+    private static FieldInfo HelpCatalogueRecordListField;
+    private static PropertyInfo HelpRecordNameProp;
+
     public static void ApplyUiPatches(Harmony Harmony)
     {
       try
@@ -74,6 +82,10 @@ namespace Pathos.DotaHeroes.Framework.Talents
         var MenuButtonType = PathosClientAsm.GetType("Pathos.MenuButton");
         var ThemeType = PathosClientAsm.GetType("Pathos.Theme");
         var TileOptionType = PathosClientAsm.GetType("Pathos.TileOption");
+        var HelpLibraryType = PathosClientAsm.GetType("Pathos.HelpLibrary");
+        var HelpSectionType = PathosClientAsm.GetType("Pathos.HelpSection");
+        var HelpCatalogueType = PathosClientAsm.GetType("Pathos.HelpCatalogue");
+        var HelpRecordType = PathosClientAsm.GetType("Pathos.HelpRecord");
 
         if (StagePanelType == null)
           return;
@@ -114,6 +126,14 @@ namespace Pathos.DotaHeroes.Framework.Talents
         TalentPanelDictField = TalentPanelType?.GetField("PropertyOptionDictionary", AnyInstance);
         TileOptionIsVisibleProp = TileOptionType?.GetProperty("IsVisible", AnyInstance);
 
+        ShellManifestProp = ShellType?.GetProperty("Manifest", AnyInstance);
+        HelpLibraryPropertiesProp = HelpLibraryType?.GetProperty("Properties", AnyInstance);
+        HelpLibraryRecordListField = HelpLibraryType?.GetField("RecordList", AnyInstance);
+        HelpSectionRecordListField = HelpSectionType?.GetField("RecordList", AnyInstance);
+        HelpSectionCatalogueListField = HelpSectionType?.GetField("CatalogueList", AnyInstance);
+        HelpCatalogueRecordListField = HelpCatalogueType?.GetField("RecordList", AnyInstance);
+        HelpRecordNameProp = HelpRecordType?.GetProperty("Name", AnyInstance);
+
         // 1. StagePanel.InternalRefresh：同步左下角按钮与左侧面板状态
         PatchSafe(Harmony, StagePanelType, "InternalRefresh", Type.EmptyTypes,
           postfix: nameof(StageInternalRefreshPostfix));
@@ -138,11 +158,28 @@ namespace Pathos.DotaHeroes.Framework.Talents
           HookBootstrap.WriteDebug("Patched Pathos.StagePanel.RouteKeystroke");
         }
 
-        // 5. TalentPanel.Refresh(Character)：在原生角色面板中隐藏内部 dota_talent_* 标记
+        // 5. TalentPanel.Refresh(Character)：在原生角色面板中隐藏内部 dota_talent_* 标记与主动技能短期状态
         if (TalentPanelType != null)
         {
           PatchSafe(Harmony, TalentPanelType, "Refresh", new[] { typeof(Character) },
             postfix: nameof(TalentPanelRefreshPostfix));
+
+          if (TileOptionType != null)
+          {
+            PatchSafe(Harmony, TalentPanelType, "ToggleTalent", new[] { TileOptionType, typeof(Property) },
+              prefix: nameof(TalentPanelTogglePrefix));
+          }
+        }
+
+        // 6. HelpLibrary 构造后置：从百科「天赋/特性」列表中剔除内部天赋树标记与主动技能短期状态（技能仍在「法术」栏目中展示）
+        if (HelpLibraryType != null && ShellType != null)
+        {
+          var HelpCtor = AccessTools.Constructor(HelpLibraryType, new[] { ShellType });
+          if (HelpCtor != null)
+          {
+            Harmony.Patch(HelpCtor, postfix: new HarmonyMethod(typeof(TalentTreeUiBridge), nameof(HelpLibraryCtorPostfix)));
+            HookBootstrap.WriteDebug("Patched Pathos.HelpLibrary..ctor");
+          }
         }
       }
       catch (Exception Ex)
@@ -254,7 +291,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
         foreach (DictionaryEntry Entry in Dict)
         {
           if (Entry.Key is Property Prop &&
-              TalentRegistry.IsInternalTalentProperty(Prop) &&
+              TalentRegistry.IsHiddenFromTalentPanel(Prop) &&
               Entry.Value != null)
           {
             TileOptionIsVisibleProp.SetValue(Entry.Value, false);
@@ -264,6 +301,84 @@ namespace Pathos.DotaHeroes.Framework.Talents
       catch (Exception Ex)
       {
         HookBootstrap.WriteError($"TalentPanelRefreshPostfix failed: {Ex}");
+      }
+    }
+
+    private static bool TalentPanelTogglePrefix(Property Property)
+    {
+      if (Property != null && TalentRegistry.IsHiddenFromTalentPanel(Property))
+        return false;
+
+      return true;
+    }
+
+    private static void HelpLibraryCtorPostfix(object __instance, object Shell)
+    {
+      if (__instance == null || Shell == null)
+        return;
+
+      try
+      {
+        var Manifest = ShellManifestProp?.GetValue(Shell) as Manifest;
+        var PropertiesSection = HelpLibraryPropertiesProp?.GetValue(__instance);
+        if (Manifest?.Properties?.List == null || PropertiesSection == null)
+          return;
+
+        var HiddenNames = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var Prop in Manifest.Properties.List)
+        {
+          if (TalentRegistry.IsHiddenFromTalentPanel(Prop))
+          {
+            if (!string.IsNullOrEmpty(Prop.Name))
+              HiddenNames.Add(Prop.Name);
+            var Localized = PathosEngineBridge.GetLocalizedName(Prop);
+            if (!string.IsNullOrEmpty(Localized))
+              HiddenNames.Add(Localized);
+          }
+        }
+
+        if (HiddenNames.Count == 0)
+          return;
+
+        var RemovedRecords = new System.Collections.Generic.HashSet<object>();
+
+        void PruneRecordList(IList RecordList)
+        {
+          if (RecordList == null)
+            return;
+
+          for (int i = RecordList.Count - 1; i >= 0; i--)
+          {
+            var Rec = RecordList[i];
+            var RecName = Rec != null ? HelpRecordNameProp?.GetValue(Rec) as string : null;
+            if (!string.IsNullOrEmpty(RecName) && HiddenNames.Contains(RecName))
+            {
+              RemovedRecords.Add(Rec);
+              RecordList.RemoveAt(i);
+            }
+          }
+        }
+
+        PruneRecordList(HelpSectionRecordListField?.GetValue(PropertiesSection) as IList);
+
+        if (HelpSectionCatalogueListField?.GetValue(PropertiesSection) is IEnumerable Catalogues)
+        {
+          foreach (var Cat in Catalogues)
+            PruneRecordList(HelpCatalogueRecordListField?.GetValue(Cat) as IList);
+        }
+
+        if (RemovedRecords.Count > 0 && HelpLibraryRecordListField?.GetValue(__instance) is IList GlobalRecords)
+        {
+          for (int i = GlobalRecords.Count - 1; i >= 0; i--)
+          {
+            if (RemovedRecords.Contains(GlobalRecords[i]))
+              GlobalRecords.RemoveAt(i);
+          }
+        }
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"HelpLibraryCtorPostfix failed: {Ex}");
       }
     }
 

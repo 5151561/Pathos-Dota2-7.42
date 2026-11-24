@@ -1,0 +1,228 @@
+using System;
+using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using HarmonyLib;
+using Inv;
+using Pathos.DotaHeroes.Framework.Hooks;
+
+namespace Pathos.DotaHeroes.Framework.UI
+{
+  /// <summary>
+  /// 左上角状态栏（StagePanel.LeftColumn）动态状态徽章描述。
+  /// 供各 DOTA2 英雄的叠层/充能类短期状态（如主宰「剑心犹在」）复用原生 Pathos StatusIcon 渲染。
+  /// </summary>
+  public sealed class DotaStatusBadge
+  {
+    public string Key { get; init; }
+    public Glyph Glyph { get; init; }
+    public string Text { get; init; }
+    public string Count { get; init; }
+    public Colour Colour { get; init; } = Colour.Black;
+    public Property HelpProperty { get; init; }
+  }
+
+  /// <summary>
+  /// Pathos 左上角状态栏（StagePanel.ArrangeStatus）桥接：
+  /// 允许 DOTA2 英雄将带层数的短期状态以原生 StatusIcon 样式显示在左上角状态栏，并支持点击查看属性说明。
+  /// </summary>
+  public static class DotaStatusBarBridge
+  {
+    private static readonly ConcurrentDictionary<string, Func<Character, DotaStatusBadge>> Providers =
+      new(StringComparer.Ordinal);
+
+    private static readonly ConditionalWeakTable<object, Dictionary<string, object>> StageIconCaches = new();
+    private static readonly ConditionalWeakTable<object, Property> IconHelpProperties = new();
+
+    private static PropertyInfo StagePlayerProp;
+    private static PropertyInfo StageShellProp;
+    private static PropertyInfo StageHelpQueryProp;
+    private static FieldInfo StageSurfaceField;
+    private static FieldInfo StageLeftColumnField;
+
+    private static FieldInfo SideColumnTopIconsField;
+
+    private static ConstructorInfo StatusIconCtor;
+    private static PropertyInfo StatusIconImageProp;
+    private static PropertyInfo StatusIconTextProp;
+    private static PropertyInfo StatusIconCountProp;
+    private static PropertyInfo StatusIconColourProp;
+    private static EventInfo StatusIconSingleTapEvent;
+
+    private static MethodInfo ThemeGetImageMethod;
+    private static MethodInfo HelpQueryShowPropertyMethod;
+
+    /// <summary>
+    /// 按唯一 Key 幂等注册一个左上角状态栏图标提供器（返回 null 表示当前不显示）。
+    /// </summary>
+    public static void RegisterProvider(string Key, Func<Character, DotaStatusBadge> Provider)
+    {
+      if (string.IsNullOrWhiteSpace(Key) || Provider == null)
+        return;
+
+      Providers[Key] = Provider;
+    }
+
+    internal static void ApplyPatches(Harmony Harmony)
+    {
+      try
+      {
+        var ClientAsm = AppDomain.CurrentDomain.GetAssemblies()
+          .FirstOrDefault(A => string.Equals(A.GetName().Name, "Pathos", StringComparison.OrdinalIgnoreCase));
+
+        if (ClientAsm == null)
+        {
+          HookBootstrap.WriteDebug("Pathos.dll not loaded; skipping DotaStatusBarBridge patches.");
+          return;
+        }
+
+        const BindingFlags AnyInstance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        const BindingFlags AnyStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+        var StagePanelType = ClientAsm.GetType("Pathos.StagePanel");
+        var SideColumnType = ClientAsm.GetType("Pathos.SideColumn");
+        var StatusIconType = ClientAsm.GetType("Pathos.StatusIcon");
+        var ThemeType = ClientAsm.GetType("Pathos.Theme");
+        var HelpQueryType = ClientAsm.GetType("Pathos.HelpQuery");
+        var ShellType = ClientAsm.GetType("Pathos.Shell");
+
+        if (StagePanelType == null || SideColumnType == null || StatusIconType == null)
+        {
+          HookBootstrap.WriteError("DotaStatusBarBridge: required Pathos client types not found.");
+          return;
+        }
+
+        StagePlayerProp = StagePanelType.GetProperty("Player", AnyInstance);
+        StageShellProp = StagePanelType.GetProperty("Shell", AnyInstance);
+        StageHelpQueryProp = StagePanelType.GetProperty("HelpQuery", AnyInstance);
+        StageSurfaceField = StagePanelType.GetField("Surface", AnyInstance);
+        StageLeftColumnField = StagePanelType.GetField("LeftColumn", AnyInstance);
+
+        SideColumnTopIconsField = SideColumnType.GetField("TopIcons", AnyInstance);
+
+        StatusIconCtor = StatusIconType.GetConstructor(AnyInstance, null, new[] { ShellType, typeof(Surface), typeof(bool) }, null);
+        StatusIconImageProp = StatusIconType.GetProperty("Image", AnyInstance);
+        StatusIconTextProp = StatusIconType.GetProperty("Text", AnyInstance);
+        StatusIconCountProp = StatusIconType.GetProperty("Count", AnyInstance);
+        StatusIconColourProp = StatusIconType.GetProperty("Colour", AnyInstance);
+        StatusIconSingleTapEvent = StatusIconType.GetEvent("SingleTapEvent", AnyInstance);
+
+        ThemeGetImageMethod = ThemeType?.GetMethod("GetImage", AnyStatic, null, new[] { typeof(Glyph) }, null);
+        HelpQueryShowPropertyMethod = HelpQueryType?.GetMethod("ShowProperty", AnyInstance, null, new[] { typeof(Property) }, null);
+
+        var ArrangeStatusMethod = AccessTools.Method(StagePanelType, "ArrangeStatus", Type.EmptyTypes);
+        if (ArrangeStatusMethod == null)
+        {
+          HookBootstrap.WriteError("DotaStatusBarBridge: StagePanel.ArrangeStatus not found.");
+          return;
+        }
+
+        Harmony.Patch(ArrangeStatusMethod, postfix: new HarmonyMethod(typeof(DotaStatusBarBridge), nameof(StageArrangeStatusPostfix)));
+        HookBootstrap.WriteDebug("Patched Pathos.StagePanel.ArrangeStatus (StatusBar)");
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"DotaStatusBarBridge.ApplyPatches failed: {Ex}");
+      }
+    }
+
+    private static void StageArrangeStatusPostfix(object __instance)
+    {
+      if (__instance == null || Providers.IsEmpty)
+        return;
+
+      try
+      {
+        var Player = StagePlayerProp?.GetValue(__instance) as Player;
+        var Character = Player?.Prime?.Character;
+        if (Character == null)
+          return;
+
+        var LeftColumn = StageLeftColumnField?.GetValue(__instance);
+        if (LeftColumn == null)
+          return;
+
+        if (SideColumnTopIconsField?.GetValue(LeftColumn) is not IList TopIcons)
+          return;
+
+        var Shell = StageShellProp?.GetValue(__instance);
+        var Surface = StageSurfaceField?.GetValue(__instance) as Surface;
+        if (Shell == null || Surface == null || StatusIconCtor == null)
+          return;
+
+        var Cache = StageIconCaches.GetValue(__instance, _ => new Dictionary<string, object>(StringComparer.Ordinal));
+
+        foreach (var Pair in Providers)
+        {
+          DotaStatusBadge Badge;
+          try
+          {
+            Badge = Pair.Value(Character);
+          }
+          catch (Exception Ex)
+          {
+            HookBootstrap.WriteError($"DotaStatusBarBridge provider '{Pair.Key}' failed: {Ex}");
+            continue;
+          }
+
+          if (Badge == null)
+            continue;
+
+          string BadgeKey = string.IsNullOrEmpty(Badge.Key) ? Pair.Key : Badge.Key;
+          if (!Cache.TryGetValue(BadgeKey, out var IconObj))
+          {
+            IconObj = StatusIconCtor.Invoke(new object[] { Shell, Surface, false });
+            if (IconObj == null)
+              continue;
+
+            var StageRef = __instance;
+            var CapturedIcon = IconObj;
+            if (StatusIconSingleTapEvent != null)
+            {
+              Action OnTap = () =>
+              {
+                try
+                {
+                  if (IconHelpProperties.TryGetValue(CapturedIcon, out var Prop) && Prop != null)
+                  {
+                    var HelpQuery = StageHelpQueryProp?.GetValue(StageRef);
+                    if (HelpQuery != null)
+                      HelpQueryShowPropertyMethod?.Invoke(HelpQuery, new object[] { Prop });
+                  }
+                }
+                catch { }
+              };
+              StatusIconSingleTapEvent.AddEventHandler(IconObj, OnTap);
+            }
+
+            Cache[BadgeKey] = IconObj;
+          }
+
+          if (Badge.HelpProperty != null)
+            IconHelpProperties.AddOrUpdate(IconObj, Badge.HelpProperty);
+
+          if (Badge.Glyph != null && ThemeGetImageMethod != null)
+          {
+            var Img = ThemeGetImageMethod.Invoke(null, new object[] { Badge.Glyph });
+            if (Img != null)
+              StatusIconImageProp?.SetValue(IconObj, Img);
+          }
+
+          StatusIconTextProp?.SetValue(IconObj, Badge.Text ?? string.Empty);
+          StatusIconCountProp?.SetValue(IconObj, Badge.Count ?? string.Empty);
+          StatusIconColourProp?.SetValue(IconObj, Badge.Colour);
+
+          if (!TopIcons.Contains(IconObj))
+            TopIcons.Add(IconObj);
+        }
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"DotaStatusBarBridge.StageArrangeStatusPostfix failed: {Ex}");
+      }
+    }
+  }
+}

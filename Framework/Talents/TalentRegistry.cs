@@ -24,6 +24,9 @@ namespace Pathos.DotaHeroes.Framework.Talents
     private static readonly ConcurrentDictionary<string, byte> InternalPropertyNames =
       new(StringComparer.OrdinalIgnoreCase);
 
+    private static readonly ConcurrentDictionary<string, byte> TransientOnlyPropertyNames =
+      new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
     /// 注册一棵英雄天赋树，并为其全部节点生成 Codex 持久化 Property 标记。
     /// 必须在 IDotaHeroDefinition.Register 阶段调用（Campaign 构建期）。
@@ -65,6 +68,27 @@ namespace Pathos.DotaHeroes.Framework.Talents
     }
 
     /// <summary>
+    /// 声明一个仅用于主动技能短期状态（Transient）的 Property，
+    /// 避免它在原生 TalentPanel（尤其是大师模式）与百科「天赋/特性」栏目中被误展示为永久天赋。
+    /// </summary>
+    public static void RegisterTransientOnlyProperty(Property Property)
+    {
+      if (Property == null || string.IsNullOrEmpty(Property.Name))
+        return;
+
+      TransientOnlyPropertyNames[Property.Name] = 0;
+    }
+
+    /// <summary>
+    /// 判断指定 Property 是否为仅用于技能短期状态的属性。
+    /// </summary>
+    public static bool IsTransientOnlyProperty(Property Property)
+    {
+      var Name = Property?.Name;
+      return !string.IsNullOrEmpty(Name) && TransientOnlyPropertyNames.ContainsKey(Name);
+    }
+
+    /// <summary>
     /// 判断指定 Property 是否为天赋树内部持久化标记（用于在原生 TalentPanel 中过滤隐藏）。
     /// </summary>
     public static bool IsInternalTalentProperty(Property Property)
@@ -75,6 +99,15 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
       return Name.StartsWith(InternalPropertyPrefix, StringComparison.OrdinalIgnoreCase) ||
              InternalPropertyNames.ContainsKey(Name);
+    }
+
+    /// <summary>
+    /// 判断指定 Property 是否应从原生 TalentPanel 与百科「天赋/特性」列表中隐藏
+    /// （包括内部天赋树持久化标记与主动技能短期状态）。
+    /// </summary>
+    public static bool IsHiddenFromTalentPanel(Property Property)
+    {
+      return IsInternalTalentProperty(Property) || IsTransientOnlyProperty(Property);
     }
 
     private static void BindNodeProperty(DotaHeroContext Ctx, HeroTalentTree Tree, TalentNode Node)

@@ -21,6 +21,38 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly Type MasteryType = EngineAsm.GetType("Pathos.Mastery");
     private static readonly Type StoryType = EngineAsm.GetType("Pathos.Story");
     private static readonly Type DecisionType = EngineAsm.GetType("Pathos.Decision");
+    private static readonly Type InteractionType = EngineAsm.GetType("Pathos.Interaction");
+    private static readonly Type SummonEntityEffectType = EngineAsm.GetType("Pathos.SummonEntityEffect");
+    private static readonly Type TranslationType = EngineAsm.GetType("Pathos.Translation");
+
+    private static readonly MethodInfo TranslationGetPropertyNameMethod =
+      TranslationType?.GetMethod("GetName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Property) }, null);
+
+    private static readonly MethodInfo TranslationGetEntityNameMethod =
+      TranslationType?.GetMethod("GetName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Entity) }, null);
+
+    private static readonly ConstructorInfo InteractionSourceSquareCtor =
+      InteractionType?.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Square), typeof(string) }, null);
+
+    private static readonly ConstructorInfo SummonEntityEffectCtor =
+      SummonEntityEffectType?.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        Type.EmptyTypes, null);
+
+    private static readonly PropertyInfo SummonEffectCountProp =
+      SummonEntityEffectType?.GetProperty("Count", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo SummonEffectEntityArrayProp =
+      SummonEntityEffectType?.GetProperty("EntityArray", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo SummonEffectConstructedProp =
+      SummonEntityEffectType?.GetProperty("Constructed", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo EngineApplyEffectsMethod =
+      EngineType?.GetMethod("ApplyEffects", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { InteractionType, typeof(System.Collections.Generic.IEnumerable<Effect>) }, null);
 
     private static readonly PropertyInfo CharacterDecisionProp =
       typeof(Character).GetProperty("Decision", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -320,6 +352,62 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         return;
 
       EngineDismissAllyMethod.Invoke(Engine, new object[] { Ally });
+    }
+
+    /// <summary>
+    /// 通过 Pathos 原生 Reactor.SummonEntity 管线在指定格子精确召唤 1 个友方随从
+    /// （避免 Plain(Range) 射线在路径每个空格上重复执行 SummonEntity 导致一次召唤多个）。
+    /// </summary>
+    public static Character SummonAllyEntity(
+      object Engine,
+      Character Owner,
+      Square TargetSquare,
+      Entity Entity,
+      bool Constructed = true,
+      string Cause = null)
+    {
+      if (Engine == null || Owner == null || TargetSquare == null || Entity == null)
+        return null;
+      if (InteractionSourceSquareCtor == null || SummonEntityEffectCtor == null || EngineApplyEffectsMethod == null)
+        return null;
+
+      try
+      {
+        var BeforeSet = new System.Collections.Generic.HashSet<Character>();
+        if (TargetSquare.Character != null)
+          BeforeSet.Add(TargetSquare.Character);
+        foreach (var Sq in TargetSquare.GetAroundSquares(3))
+        {
+          if (Sq?.Character != null)
+            BeforeSet.Add(Sq.Character);
+        }
+
+        var Effect = (Effect)SummonEntityEffectCtor.Invoke(null);
+        SummonEffectCountProp?.SetValue(Effect, Dice.One);
+        SummonEffectConstructedProp?.SetValue(Effect, Constructed);
+        SummonEffectEntityArrayProp?.SetValue(Effect, new[] { Entity });
+
+        var Interaction = InteractionSourceSquareCtor.Invoke(new object[] { Owner, TargetSquare, Cause });
+        EngineApplyEffectsMethod.Invoke(Engine, new object[] { Interaction, new[] { Effect } });
+
+        if (TargetSquare.Character != null &&
+            TargetSquare.Character.Entity == Entity &&
+            !BeforeSet.Contains(TargetSquare.Character))
+          return TargetSquare.Character;
+
+        foreach (var Sq in TargetSquare.GetAroundSquares(3))
+        {
+          var Cand = Sq?.Character;
+          if (Cand != null && Cand.Entity == Entity && !BeforeSet.Contains(Cand))
+            return Cand;
+        }
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"SummonAllyEntity failed: {Ex}");
+      }
+
+      return null;
     }
 
     /// <summary>
@@ -643,6 +731,38 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       var Decision = CharacterDecisionProp.GetValue(Character);
       if (Decision != null)
         DecisionWaitMethod.Invoke(Decision, null);
+    }
+
+    public static string GetLocalizedName(Property Property)
+    {
+      if (Property == null)
+        return string.Empty;
+
+      try
+      {
+        if (TranslationGetPropertyNameMethod?.Invoke(null, new object[] { Property }) is string Localized &&
+            !string.IsNullOrEmpty(Localized))
+          return Localized;
+      }
+      catch { }
+
+      return Property.Name ?? string.Empty;
+    }
+
+    public static string GetLocalizedName(Entity Entity)
+    {
+      if (Entity == null)
+        return string.Empty;
+
+      try
+      {
+        if (TranslationGetEntityNameMethod?.Invoke(null, new object[] { Entity }) is string Localized &&
+            !string.IsNullOrEmpty(Localized))
+          return Localized;
+      }
+      catch { }
+
+      return Entity.Name ?? string.Empty;
     }
 
     private static Ability FindAbility(Form Form, string AttributeName)

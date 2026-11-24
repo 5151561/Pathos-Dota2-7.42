@@ -26,7 +26,7 @@ PropertyDescription,[DOTA2 Talent] +40% 剑舞暴击吸血:,
 PropertyDescription,[DOTA2 Talent] 剑心犹在叠层间隔减半: 4 回合 → 2 回合,
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,先天技能「剑心犹在」：每连续 4 回合未受伤害叠加 1 层（上限 10 层），每层提供 +1% 移速与 +2.5% 等效敏捷攻速及近战/无敌斩额外伤害；受伤后保留 4 回合粘滞期。
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,先天技能「潮涨潮落」：敏捷提供额外移速与远程攻击距离；力量提供额外施法距离与减速抗性（变形期间持续保留）。
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,无敌斩连斩中：全程免疫一切伤害与负面状态，每回合自动瞬移斩击附近一名敌方单位。
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% to 35% chance (by Medium Blade mastery) to critically strike for 1.8x damage.",被动技能「剑舞」：近战普攻、无敌斩与剑刃风暴有 20% ~ 35% 概率（随中刃熟练度提升）触发 1.8 倍致命一击。
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",剑刃风暴旋转中：免疫负面状态、获得 80% 魔法/元素伤害减免，并每回合对周围敌人造成魔法伤害。
 PropertyName,blade dance,剑舞
@@ -41,7 +41,7 @@ PropertyName,dota_talent_jugg_t3_blade_fury_damage,
 PropertyName,dota_talent_jugg_t4_blade_dance_lifesteal,
 PropertyName,dota_talent_jugg_t4_omnislash_slashes,
 PropertyName,ebb and flow,潮涨潮落
-PropertyName,omnislash,
+PropertyName,omnislash,无敌斩
 RaceName,waterkin//female,变体水灵
 RaceName,waterkin//male,变体水灵
 RaceName,waterkin//non-binary,变体水灵

@@ -6,6 +6,7 @@ using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Talents;
 using Pathos.DotaHeroes.Framework.Targeting;
+using Pathos.DotaHeroes.Framework.UI;
 
 namespace Pathos.DotaHeroes.Heroes
 {
@@ -98,8 +99,10 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly HashSet<Character> SkipNextBladeFuryTick = new();
     private static readonly HashSet<Character> SkipNextOmnislashTick = new();
 
+    private Property BladeformTalentProperty;
     private Property BladeFuryStatusProperty;
     private Property OmnislashStatusProperty;
+    private Entity HealingWardEntity;
     private Glyph JuggernautGlyph;
     private Glyph BladeformGlyph;
     private Glyph BladeFuryGlyph;
@@ -133,13 +136,17 @@ namespace Pathos.DotaHeroes.Heroes
       OmnislashDashBeam = RegisterOmnislashDashBeam(Ctx);
 
       // 2. 注册先天技能（剑心犹在）、被动技能（剑舞）与剑刃风暴/无敌斩状态属性
-      var BladeformTalent = RegisterBladeformTalent(Ctx, BladeformGlyph);
+      BladeformTalentProperty = RegisterBladeformTalent(Ctx, BladeformGlyph);
       var BladeDanceTalent = RegisterBladeDanceTalent(Ctx, BladeDanceGlyph);
       BladeFuryStatusProperty = RegisterBladeFuryStatus(Ctx, BladeFuryGlyph);
       OmnislashStatusProperty = RegisterOmnislashStatus(Ctx, OmnislashGlyph);
 
+      // 剑刃风暴与无敌斩属于主动技能的短期状态，不应出现在原生「天赋」面板或百科「天赋/特性」栏目中
+      TalentRegistry.RegisterTransientOnlyProperty(BladeFuryStatusProperty);
+      TalentRegistry.RegisterTransientOnlyProperty(OmnislashStatusProperty);
+
       // 3. 注册治疗守卫召唤物实体（使用透明背景的木雕翡翠火焰图腾贴图）
-      var HealingWardEntity = RegisterHealingWardEntity(Ctx, HealingWardTotemGlyph);
+      HealingWardEntity = RegisterHealingWardEntity(Ctx, HealingWardTotemGlyph);
 
       // 4. 注册主宰主动技能（Q / W / R）
       var BladeFurySpell = RegisterBladeFurySpell(Ctx, BladeFuryGlyph, BladeFuryStatusProperty);
@@ -150,7 +157,7 @@ namespace Pathos.DotaHeroes.Heroes
       var JuggernautClass = RegisterJuggernautClass(
         Ctx,
         JuggernautGlyph,
-        BladeformTalent,
+        BladeformTalentProperty,
         BladeDanceTalent,
         BladeFurySpell,
         HealingWardSpell,
@@ -236,6 +243,27 @@ namespace Pathos.DotaHeroes.Heroes
         Mode: DotaTargetMode.PointOpen,
         ResolveRange: Caster => GetHealingWardCastRange(Ctx, Caster),
         AllowSelf: true));
+
+      // 0.2 注册「剑心犹在」左上角状态栏动态叠层显示（叠层 > 0 时展示层数，受击粘滞期以橙色高亮提示）
+      DotaStatusBarBridge.RegisterProvider("juggernaut.bladeform", Character =>
+      {
+        if (!IsJuggernaut(Character) || Character.Deceased)
+          return null;
+
+        var State = GetBladeformState(Character);
+        if (State.Stacks <= 0)
+          return null;
+
+        return new DotaStatusBadge
+        {
+          Key = "juggernaut.bladeform",
+          Glyph = BladeformGlyph,
+          Text = (BladeformTalentProperty != null ? PathosEngineBridge.GetLocalizedName(BladeformTalentProperty) : "剑心犹在").ToUpper(),
+          Count = $"×{State.Stacks}",
+          Colour = State.LingerTurns > 0 ? Colour.DarkOrange : Colour.Black,
+          HelpProperty = BladeformTalentProperty
+        };
+      });
 
       // 1. 施法后置钩子：Q 剑刃风暴（驱散+立刻触发一次转伤）、W 治疗守卫（追踪/替换）、R 无敌斩（连续瞬移斩击）
       DotaHookBus.RegisterAfterCastSpell("juggernaut.spell_casts", Args =>
@@ -410,7 +438,7 @@ namespace Pathos.DotaHeroes.Heroes
               int HealAmt = Math.Max(1, (int)MathF.Round(Args.DamagePoints * 0.40f));
               var SelfDir = Attacker.Square != null ? Attacker.Square.AsDirection(Attacker.Square) : default;
               PathosEngineBridge.HealCharacter(Args.Engine, Attacker, Attacker, SelfDir, HealAmt);
-              LifestealNote = $" (+{HealAmt} HP lifesteal)";
+              LifestealNote = $"（吸血 +{HealAmt} HP）";
             }
 
             if (IsOmnislash)
@@ -420,14 +448,18 @@ namespace Pathos.DotaHeroes.Heroes
             else if (Args.Defender?.Square != null)
             {
               PathosEngineBridge.StoryStriking(Args.Engine, Delay.Zero, Args.Defender.Square, BladeDanceCritStrike ?? Ctx.Strikes.flame);
-              PathosEngineBridge.StoryCaption(Args.Engine, Args.Defender.Square, Colour.OrangeRed, "CRIT!", Delayed: false);
+              PathosEngineBridge.StoryCaption(Args.Engine, Args.Defender.Square, Colour.OrangeRed, "暴击!", Delayed: false);
             }
 
+            string SourceTag = IsOmnislash ? "（无敌斩）" : IsBladeFurySpin ? "（剑刃风暴）" : string.Empty;
+            string TargetName = Args.Defender?.Entity != null
+              ? PathosEngineBridge.GetLocalizedName(Args.Defender.Entity)
+              : "目标";
             PathosEngineBridge.WriteInternalLog(
               Args.Engine,
               Attacker,
               BladeDanceGlyph,
-              $"Blade Dance! Critical strike for {Args.DamagePoints} damage{LifestealNote}!");
+              $"剑舞暴击{SourceTag}！对 {TargetName} 造成 {Args.DamagePoints} 点伤害{LifestealNote}！");
           }
         }
       });
@@ -460,7 +492,7 @@ namespace Pathos.DotaHeroes.Heroes
             Engine,
             Juggernaut,
             BladeformGlyph,
-            "Bladeform fades after taking damage.");
+            "剑心犹在层数因受伤已消散。");
         }
         return;
       }
@@ -482,7 +514,7 @@ namespace Pathos.DotaHeroes.Heroes
               Engine,
               Juggernaut,
               BladeformGlyph,
-              "Bladeform reached maximum (10 stacks): +10% move speed, +25% agility cadence & strike power!");
+              "剑心犹在已叠满（10 层）：移速 +10%，敏捷攻速与伤害 +25%！");
           }
         }
       }
@@ -610,53 +642,55 @@ namespace Pathos.DotaHeroes.Heroes
       };
       float HealPct = HealPerSec / DotaMechanicsMapper.TurnsPerSecond; // 1.0% / 1.5% / 2.0% / 2.5% / 3.25% 每回合
 
-      // 寻找刚召唤出的新治疗守卫（扩大搜索半径以覆盖最大施法距离）
-      Character NewWard = null;
-      foreach (var Sq in Caster.Square.GetAroundSquares(6))
-      {
-        var Candidate = Sq?.Character;
-        if (Candidate != null &&
-            !Candidate.Deceased &&
-            IsHealingWard(Candidate) &&
-            IsFriendly(Caster, Candidate) &&
-            !WardStates.TryGetValue(Candidate, out _))
-        {
-          NewWard = Candidate;
-          break;
-        }
-      }
-
-      if (NewWard == null)
-        return;
-
-      // 若玩家通过全射程点地指示器指定了落点，将守卫直接放置到目标格子（若已被占用则落于其最近空位）
-      var PendingTarget = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      if (PendingTarget?.TargetSquare != null && PendingTarget.TargetSquare.Map == Caster.Square.Map)
-      {
-        var DesiredSq = PendingTarget.TargetSquare;
-        Square PlacementSq = null;
-        if (DesiredSq.Character == null && !DesiredSq.IsBlocked(Vision: false) && !DesiredSq.IsVoid())
-        {
-          PlacementSq = DesiredSq;
-        }
-        else if (DesiredSq != Caster.Square)
-        {
-          PlacementSq = FindOpenAdjacentSquare(NewWard, DesiredSq);
-        }
-
-        if (PlacementSq != null && PlacementSq != NewWard.Square)
-          PathosEngineBridge.TeleportCharacter(Args.Engine, NewWard, PlacementSq, MasterMode: false);
-      }
-
-      // 若之前已有存活的治疗守卫，先彻底消散旧守卫（上限同时存在 1 个，避免残留野生单位）
+      // 1. 若之前已有存活的治疗守卫，先彻底消散旧守卫（上限同时存在 1 个，避免占用盟友上限或残留旧单位）
       if (OwnerActiveWard.TryGetValue(Caster, out var OldRef) &&
           OldRef.TryGetTarget(out var OldWard) &&
           OldWard != null &&
-          OldWard != NewWard &&
           !OldWard.Deceased)
       {
         PathosEngineBridge.DespawnSummon(Args.Engine, OldWard, "replaced");
       }
+
+      // 2. 确定召唤落点：优先玩家通过全射程选格指示器指定的格子，否则回退至施法方向相邻空位或自身周围空位
+      var PendingTarget = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
+      Square DesiredSq = null;
+      if (PendingTarget?.TargetSquare != null && PendingTarget.TargetSquare.Map == Caster.Square.Map)
+      {
+        DesiredSq = PendingTarget.TargetSquare;
+      }
+      else if (Args.Direction != Direction.Self)
+      {
+        DesiredSq = Caster.Square.Adjacent(Args.Direction, 1) ?? Caster.Square;
+      }
+      else
+      {
+        DesiredSq = Caster.Square;
+      }
+
+      Square PlacementSq = null;
+      if (DesiredSq != null && DesiredSq.Character == null && !DesiredSq.IsBlocked(Vision: false) && !DesiredSq.IsVoid())
+      {
+        PlacementSq = DesiredSq;
+      }
+      else if (DesiredSq != null)
+      {
+        PlacementSq = FindOpenAdjacentSquare(Caster, DesiredSq) ?? FindOpenAdjacentSquare(Caster, Caster.Square) ?? DesiredSq;
+      }
+
+      if (PlacementSq == null || HealingWardEntity == null)
+        return;
+
+      // 3. 通过原生 Reactor.SummonEntity 精确召唤 1 个治疗守卫
+      var NewWard = PathosEngineBridge.SummonAllyEntity(
+        Args.Engine,
+        Caster,
+        PlacementSq,
+        HealingWardEntity,
+        Constructed: true,
+        Cause: HealingWardSpellName);
+
+      if (NewWard == null)
+        return;
 
       WardStates.AddOrUpdate(NewWard, new HealingWardState
       {
@@ -772,7 +806,7 @@ namespace Pathos.DotaHeroes.Heroes
           Args.Engine,
           Caster,
           OmnislashGlyph,
-          "Omnislash: no hostile target in range (Mana refunded).");
+          "无敌斩：射程内无敌方目标（已返还法力）。");
         return;
       }
 
@@ -898,7 +932,7 @@ namespace Pathos.DotaHeroes.Heroes
             : (OmnislashStrike ?? Ctx.Strikes.sever));
 
         if (LastOmnislashStrikeCritted)
-          PathosEngineBridge.StoryCaption(Engine, TargetSq, Colour.OrangeRed, "CRIT!", Delayed: false);
+          PathosEngineBridge.StoryCaption(Engine, TargetSq, Colour.OrangeRed, "暴击!", Delayed: false);
 
         Session.SlashesDone++;
         Session.RemainingSlashes = Math.Max(0, Session.RemainingSlashes - 1);
@@ -927,7 +961,7 @@ namespace Pathos.DotaHeroes.Heroes
           Engine,
           Caster,
           OmnislashGlyph,
-          $"Omnislash unleashed {Session.SlashesDone} invulnerable strikes!");
+          $"无敌斩发动完毕，共斩出 {Session.SlashesDone} 次无敌斩击！");
       }
     }
 
@@ -1351,7 +1385,8 @@ namespace Pathos.DotaHeroes.Heroes
         {
           var Adept = S.SetAdept(Qual);
           Adept.SetCast().Plain(Dice.Fixed(Range)).SetTargetSelf(true);
-          Adept.Apply.SummonEntity(Dice.One, true, HealingWardEntity);
+          // 声明式保留射程外壳以触发全射程选格指示器，实际唯一召唤由 HandleHealingWardCast 精确执行（避免 Plain 射线每格重复召唤）
+          Adept.Apply.Nothing();
         }
 
         Configure(Ctx.Qualifications.proficient, 3);

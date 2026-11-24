@@ -338,6 +338,9 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
         // 16. DOTA2 原生选框扩距施法补丁（仅在游戏客户端存在 Pathos.dll 时挂载）
         Targeting.DotaRangeTargetingBridge.ApplyPatches(Harmony);
+
+        // 17. DOTA2 左上角状态栏动态叠层徽章补丁（仅在游戏客户端存在 Pathos.dll 时挂载）
+        UI.DotaStatusBarBridge.ApplyPatches(Harmony);
       }
 
       private static void PatchMethod(
