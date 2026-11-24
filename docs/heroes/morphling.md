@@ -98,6 +98,7 @@
 - **左上角状态栏徽章**：`DotaStatusBarBridge`（`morphling.ebb_flow`、`morphling.morphed`）
 - **自定义像素 VFX**：`WaveformDashBeam`（4 方向 Beam）、`WaveformSplashExplosion`（3×3 九宫格 Explosion）、`AdaptiveStrikeImpactStrike`（单格 Strike）
 - **全射程选格（`DotaRangeTargetingBridge`）**：`waveform`（`PointOpen`）、`adaptive strike`（`UnitHostile`）、`morph`（`UnitHostile`）
+- **增益/减益 Modifier（`DotaModifierService`）**：不定义任何 Modifier。变体精灵没有手写的剩余回合计数器：T1 左 `+2` 防御按「是否处于变形」实时判定（非计时）；波浪形态的相位/位移与变体打击眩晕均为原生 Transient，由引擎自行计时；`WaveformOriginSquares` 仅缓存施法起点格。
 
 ### 注册的 `DotaHookBus` Key
 - `dota.fixed_starting_stats`（`AfterCreateActor`）与 `dota.hero_stat_limits`（`LimitFormQuery`）：锁定固定初始六维、30 级职业上限与 Lv 20/25 天赋动态上限拓宽。

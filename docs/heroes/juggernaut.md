@@ -88,6 +88,9 @@
   - `healing ward`：`PointOpen`，射程 `3 / 3 / 4 / 4 / 5`（随牧师系熟练度），`AllowSelf: true`
 - **左上角状态栏徽章（`DotaStatusBarBridge`）**：
   - `juggernaut.bladeform`：层数 $> 0$ 时显示 `×1 ~ ×10`，受击粘滞期以橙色（`DarkOrange`）高亮提示，点击可查看「剑心犹在」说明。
+- **增益/减益 Modifier（`DotaModifierService`）**：
+  - 主宰自身不定义任何 Modifier，仅注册减益免疫 `juggernaut.blade_fury_debuff_immunity`（`RegisterDebuffImmunity`）：剑刃风暴期间免疫一切 Hook 实现的减益 Modifier（如斧王战斗饥渴）；无敌斩期间经 `InvulnerableQuery` 同样免疫。
+  - **刻意未迁移**：先天「剑心犹在」是无持续时间的永久叠层计数器（`ConditionalWeakTable<Character, BladeformState>`，粘滞期仅为内部子状态，徽章颜色动态变化，层数在 `juggernaut.turn_ticks` 同回合内被剑刃风暴读取），其移速/攻速仍由 `juggernaut.bladeform_speed` 独立相乘；T2 左剑刃风暴 `+15%` 移速绑定原生 `blade fury` Transient；治疗守卫到期属于召唤物生命周期；无敌斩为连斩会话——均不属于「带回合数的增益/减益」。
 - **自定义像素特效（`DotaHeroContext` VFX 工厂）**：
   - 3×3 剑刃风暴金橙旋风（`blade fury spin`）、无敌斩斩击（`omnislash slash`）、无敌斩瞬移残影光束（`omnislash dash`）、剑舞暴击新月（`blade dance crit`）、治疗守卫脉冲（`healing ward pulse`）。
 

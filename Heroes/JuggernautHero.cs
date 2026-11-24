@@ -78,6 +78,9 @@ namespace Pathos.DotaHeroes.Heroes
     // 无敌斩 7.42 额外攻击力：25 / 30 / 35（5 阶熟练度对应 25 / 30 / 35 / 40 / 45 → Pathos +2 / +2 / +2 / +3 / +3）
     private static readonly float[] OmnislashBonusDotaDamage = { 25.0f, 30.0f, 35.0f, 40.0f, 45.0f };
 
+    // 注：剑心犹在是「无持续时间的永久叠层计数器」（受击后 4 回合粘滞仅是其内部子状态），
+    // 且徽章颜色随粘滞期动态变化、层数被剑刃风暴频率/增伤在 juggernaut.turn_ticks 同一回合内读取，
+    // 故刻意不迁移到 DotaModifierService（框架 Modifier 必须有剩余回合、徽章颜色固定、计时由独立 Hook 推进）。
     private sealed class BladeformState
     {
       public int Stacks;
