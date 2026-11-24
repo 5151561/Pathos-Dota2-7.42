@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.UI;
 
 namespace Pathos.DotaHeroes.Framework.Talents
 {
@@ -47,7 +48,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
     private static PropertyInfo ThemePanelColourProp;
     private static PropertyInfo ThemeStrokeColourProp;
-    private static MethodInfo ThemeGetImageMethod;
 
     private static FieldInfo TalentPanelDictField;
     private static PropertyInfo TileOptionIsVisibleProp;
@@ -65,9 +65,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
     {
       try
       {
-        var PathosClientAsm = AppDomain.CurrentDomain.GetAssemblies()
-          .FirstOrDefault(A => string.Equals(A.GetName().Name, "Pathos", StringComparison.OrdinalIgnoreCase));
-
+        var PathosClientAsm = PathosClientReflection.FindClientAssembly();
         if (PathosClientAsm == null)
         {
           HookBootstrap.WriteDebug("Pathos.dll not loaded; skipping TalentTree UI patches.");
@@ -90,8 +88,8 @@ namespace Pathos.DotaHeroes.Framework.Talents
         if (StagePanelType == null)
           return;
 
-        const BindingFlags AnyInstance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        const BindingFlags AnyStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        const BindingFlags AnyInstance = PathosClientReflection.AnyInstance;
+        const BindingFlags AnyStatic = PathosClientReflection.AnyStatic;
 
         StageSurfaceField = StagePanelType.GetField("Surface", AnyInstance);
         StageLeftMenuStackField = StagePanelType.GetField("LeftMenuStack", AnyInstance);
@@ -121,7 +119,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         ThemePanelColourProp = ThemeType?.GetProperty("PanelColour", AnyStatic);
         ThemeStrokeColourProp = ThemeType?.GetProperty("StrokeColour", AnyStatic);
-        ThemeGetImageMethod = ThemeType?.GetMethod("GetImage", AnyStatic, null, new[] { typeof(Glyph) }, null);
 
         TalentPanelDictField = TalentPanelType?.GetField("PropertyOptionDictionary", AnyInstance);
         TileOptionIsVisibleProp = TileOptionType?.GetProperty("IsVisible", AnyInstance);
@@ -196,17 +193,15 @@ namespace Pathos.DotaHeroes.Framework.Talents
       string prefix = null,
       string postfix = null)
     {
-      var Method = AccessTools.Method(TargetType, MethodName, ParamTypes);
-      if (Method == null)
-      {
-        HookBootstrap.WriteError($"UI hook target not found: {TargetType?.FullName}.{MethodName}");
-        return;
-      }
-
-      var PrefixMethod = prefix != null ? new HarmonyMethod(typeof(TalentTreeUiBridge), prefix) : null;
-      var PostfixMethod = postfix != null ? new HarmonyMethod(typeof(TalentTreeUiBridge), postfix) : null;
-      Harmony.Patch(Method, prefix: PrefixMethod, postfix: PostfixMethod);
-      HookBootstrap.WriteDebug($"Patched {TargetType.FullName}.{MethodName}");
+      PathosClientReflection.PatchSafe(
+        Harmony,
+        TargetType,
+        MethodName,
+        ParamTypes,
+        typeof(TalentTreeUiBridge),
+        Prefix: prefix,
+        Postfix: postfix,
+        Tag: "TalentUI");
     }
 
     private static void StageInternalRefreshPostfix(object __instance)
@@ -466,19 +461,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
     }
 
     private static Inv.Image GetGlyphImage(Glyph Glyph)
-    {
-      if (Glyph == null || ThemeGetImageMethod == null)
-        return null;
-
-      try
-      {
-        return ThemeGetImageMethod.Invoke(null, new object[] { Glyph }) as Inv.Image;
-      }
-      catch
-      {
-        return null;
-      }
-    }
+      => PathosClientReflection.GetThemeGlyphImage(Glyph);
 
     private static bool IsNativeSidePanelVisible(object Panel)
     {

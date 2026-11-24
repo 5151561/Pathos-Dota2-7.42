@@ -35,9 +35,11 @@ dotnet build .\DotaHeroesExpansion.csproj -c Release
 完整文档位于 [docs/](docs/README.md)：
 
 - **架构与规范**
-  - [整体架构与项目结构](docs/architecture/overview.md)（含目录职责、按英雄管理贴图与 MSBuild 自动聚合流）
-  - [Hook 事件总线与引擎桥接](docs/architecture/hook-system.md)（`DotaHookBus` 全事件速查与 `PathosEngineBridge`）
-  - [DOTA2 → Pathos 机制映射规范](docs/architecture/design-guidelines.md)（蓝耗映射、机制实现模式、命名防冲突规范）
+  - [整体架构与项目结构](docs/architecture/overview.md)（混合架构分层、目录职责与 MSBuild 资源自动聚合流）
+  - [Hook 事件总线、引擎桥接与战斗基建](docs/architecture/hook-system.md)（`DotaHookBus`、`PathosEngineBridge` 与 `DotaCombatHelper`）
+  - [天赋树与长/短期技能状态体系](docs/architecture/talents-and-skills.md)（4 层双修天赋树、长短期状态隐藏治理、左上角状态栏徽章与自定义 VFX）
+  - [全射程选格与范围施法体系](docs/architecture/range-targeting.md)（`DotaRangeTargetingBridge`、目标解析、点地召唤与 AOE 范围）
+  - [DOTA2 → Pathos 机制与数值映射规范](docs/architecture/design-guidelines.md)（属性/蓝耗/伤害/时间/治疗/护甲映射与命名规范）
 - **开发指南**
   - [编译、部署与调试指南](docs/guides/build-and-debug.md)
   - [新增 DOTA2 英雄指南](docs/guides/adding-a-hero.md)

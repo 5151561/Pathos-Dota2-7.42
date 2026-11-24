@@ -52,7 +52,6 @@ namespace Pathos.DotaHeroes.Framework.UI
     private static PropertyInfo StatusIconColourProp;
     private static EventInfo StatusIconSingleTapEvent;
 
-    private static MethodInfo ThemeGetImageMethod;
     private static MethodInfo HelpQueryShowPropertyMethod;
 
     /// <summary>
@@ -70,22 +69,18 @@ namespace Pathos.DotaHeroes.Framework.UI
     {
       try
       {
-        var ClientAsm = AppDomain.CurrentDomain.GetAssemblies()
-          .FirstOrDefault(A => string.Equals(A.GetName().Name, "Pathos", StringComparison.OrdinalIgnoreCase));
-
+        var ClientAsm = PathosClientReflection.FindClientAssembly();
         if (ClientAsm == null)
         {
           HookBootstrap.WriteDebug("Pathos.dll not loaded; skipping DotaStatusBarBridge patches.");
           return;
         }
 
-        const BindingFlags AnyInstance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        const BindingFlags AnyStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        const BindingFlags AnyInstance = PathosClientReflection.AnyInstance;
 
         var StagePanelType = ClientAsm.GetType("Pathos.StagePanel");
         var SideColumnType = ClientAsm.GetType("Pathos.SideColumn");
         var StatusIconType = ClientAsm.GetType("Pathos.StatusIcon");
-        var ThemeType = ClientAsm.GetType("Pathos.Theme");
         var HelpQueryType = ClientAsm.GetType("Pathos.HelpQuery");
         var ShellType = ClientAsm.GetType("Pathos.Shell");
 
@@ -110,18 +105,16 @@ namespace Pathos.DotaHeroes.Framework.UI
         StatusIconColourProp = StatusIconType.GetProperty("Colour", AnyInstance);
         StatusIconSingleTapEvent = StatusIconType.GetEvent("SingleTapEvent", AnyInstance);
 
-        ThemeGetImageMethod = ThemeType?.GetMethod("GetImage", AnyStatic, null, new[] { typeof(Glyph) }, null);
         HelpQueryShowPropertyMethod = HelpQueryType?.GetMethod("ShowProperty", AnyInstance, null, new[] { typeof(Property) }, null);
 
-        var ArrangeStatusMethod = AccessTools.Method(StagePanelType, "ArrangeStatus", Type.EmptyTypes);
-        if (ArrangeStatusMethod == null)
-        {
-          HookBootstrap.WriteError("DotaStatusBarBridge: StagePanel.ArrangeStatus not found.");
-          return;
-        }
-
-        Harmony.Patch(ArrangeStatusMethod, postfix: new HarmonyMethod(typeof(DotaStatusBarBridge), nameof(StageArrangeStatusPostfix)));
-        HookBootstrap.WriteDebug("Patched Pathos.StagePanel.ArrangeStatus (StatusBar)");
+        PathosClientReflection.PatchSafe(
+          Harmony,
+          StagePanelType,
+          "ArrangeStatus",
+          Type.EmptyTypes,
+          typeof(DotaStatusBarBridge),
+          Postfix: nameof(StageArrangeStatusPostfix),
+          Tag: "StatusBar");
       }
       catch (Exception Ex)
       {
@@ -204,9 +197,9 @@ namespace Pathos.DotaHeroes.Framework.UI
           if (Badge.HelpProperty != null)
             IconHelpProperties.AddOrUpdate(IconObj, Badge.HelpProperty);
 
-          if (Badge.Glyph != null && ThemeGetImageMethod != null)
+          if (Badge.Glyph != null)
           {
-            var Img = ThemeGetImageMethod.Invoke(null, new object[] { Badge.Glyph });
+            var Img = PathosClientReflection.GetThemeGlyphImage(Badge.Glyph);
             if (Img != null)
               StatusIconImageProp?.SetValue(IconObj, Img);
           }

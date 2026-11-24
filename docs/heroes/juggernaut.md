@@ -62,9 +62,9 @@
 | :---: | :--- | :---: | :--- |
 | **Q** | 剑刃风暴 (`blade fury`) | 6 | 立即基础驱散自身负面状态并舞起持续 `10 ~ 12` 回合的剑刃风暴；期间免疫负面状态、获得 `80%` 魔法/元素减伤，每回合行动自动对周围 `3×3` 敌人造成魔法伤害（可触发剑舞暴击），且普通物理普攻不造成常规伤害。 |
 | **W** | 治疗守卫 (`healing ward`) | 7 | 召唤 `1 HP` 可移动友方随从「治疗守卫」（同时上限 `1` 个，持续 `36 ~ 48` 回合，到期或重招时通过 `DespawnSummon` 彻底消散），每回合为周围 `2` 格友方回复 `1% ~ 3.25%` 最大生命值。 |
-| **R** | 无敌斩 (`omnislash`) | 13 | 突进并在周围 `3` 格敌方目标间连续瞬移发动 `5 ~ 12` 次武器物理斩击，全程免疫一切伤害，每次斩击均可触发「剑舞」暴击与「剑心犹在」加成（射程内无目标时自动返还法力）。 |
+| **R** | 无敌斩 (`omnislash`) | 13 | 支持 4~7 格全射程选定敌方目标（空大自动返蓝），突进并在周围 `3` 格敌方目标间自动推进回合连续瞬移斩击 `5 ~ 12` 次（T4 右天赋最高 `15` 斩），全程免疫一切伤害与负面状态，自带残影连线与斩击像素特效，每次斩击均可触发「剑舞」暴击与「剑心犹在」加成。 |
 
-### 天赋树（独立面板 / 快捷键 `F2`，选定不可重置）
+### 天赋树（左下角独立面板 / 快捷键 `F2`，选定不可重置）
 
 | 层级（双修） | 左分支（DOTA2 原版 → Pathos 映射） | 右分支（DOTA2 原版 → Pathos 映射） |
 | :---: | :--- | :--- |
@@ -75,15 +75,29 @@
 
 ---
 
-## 4. Hook 注册清单与关键调参常量
+## 4. 框架基建接入与 Hook 清单
+
+### 接入的公共基建
+- **固定初始六维**：`DotaMechanicsMapper.RegisterFixedStartingStats("juggernaut", ...)`
+- **天赋树**：`TalentRegistry.Register`（Lv 5/10/15/20 + Lv 22~25 双修，T1 右/T2 右采用声明式 `SpellManaReductionRule`）
+- **长短期技能分类**：
+  - 长效天赋（原生天赋栏与百科可见）：`bladeform`、`blade dance`（`Ctx.RegisterPassiveProperty`）
+  - 短期主动技能状态（原生天赋栏与百科自动隐藏）：`blade fury`、`omnislash`（`Ctx.RegisterSkillStatusProperty`）
+- **全射程选格（`DotaRangeTargetingBridge`）**：
+  - `omnislash`：`UnitHostile`，射程 `4 / 5 / 5 / 6 / 7`（随变化系熟练度），`AllowSelf: false`
+  - `healing ward`：`PointOpen`，射程 `3 / 3 / 4 / 4 / 5`（随牧师系熟练度），`AllowSelf: true`
+- **左上角状态栏徽章（`DotaStatusBarBridge`）**：
+  - `juggernaut.bladeform`：层数 $> 0$ 时显示 `×1 ~ ×10`，受击粘滞期以橙色（`DarkOrange`）高亮提示，点击可查看「剑心犹在」说明。
+- **自定义像素特效（`DotaHeroContext` VFX 工厂）**：
+  - 3×3 剑刃风暴金橙旋风（`blade fury spin`）、无敌斩斩击（`omnislash slash`）、无敌斩瞬移残影光束（`omnislash dash`）、剑舞暴击新月（`blade dance crit`）、治疗守卫脉冲（`healing ward pulse`）。
 
 ### 注册的 `DotaHookBus` Key
 - `dota.fixed_starting_stats`（`AfterCreateActor`，共享框架）：开局/重摇锁定固定六维并重算初始 HP/Mana。
-- `juggernaut.spell_casts`（`AfterCastSpell`）：处理剑刃风暴首次驱散与转伤、治疗守卫唯一性替换（`DespawnSummon`）、无敌斩连续瞬移斩击。
-- `juggernaut.turn_ticks`（`AfterExecuteCommand`）：驱动剑心犹在叠层/粘滞、剑刃风暴每回合 `3×3` 转伤、治疗守卫每回合光环回血与到期消散。
-- `juggernaut.blade_fury_debuff_immunity`（`BeforeApplyTransient`）：剑刃风暴期间减益免疫。
-- `juggernaut.bladeform_speed`（`SpeedQuery`）：剑心犹在移速（每层 `+1%`）与攻速（每层 `+2.5%`）加成。
-- `juggernaut.damage_modifiers`（`BeforeDamage`）：无敌斩无敌、剑刃风暴魔抗与普攻抑制、剑舞暴击、剑心犹在增伤。
+- `juggernaut.spell_casts`（`AfterCastSpell`）：处理剑刃风暴基础驱散与首跳、治疗守卫唯一性替换与精确召唤（`SummonAllyEntity` / `DespawnSummon`）、无敌斩启动与空大返蓝。
+- `juggernaut.turn_ticks`（`AfterExecuteCommand`）：驱动剑心犹在叠层/粘滞、剑刃风暴每回合 `3×3` 转伤、治疗守卫每回合光环回血与到期消散、无敌斩自动多回合连斩（`QueueWaitDecision`）。
+- `juggernaut.blade_fury_debuff_immunity`（`BeforeApplyTransient`）：剑刃风暴与无敌斩期间减益免疫。
+- `juggernaut.bladeform_speed`（`SpeedQuery`）：剑心犹在移速（每层 `+1%`）与攻速（每层 `+2.5%`）加成，以及 T2 左剑刃风暴移速天赋（`+15%`）。
+- `juggernaut.damage_modifiers`（`BeforeDamage`）：无敌斩无敌、剑刃风暴 80% 魔法/元素减伤与普攻抑制、剑心犹在增伤、剑舞暴击（含 T3 暴击倍率与 T4 暴击吸血）。
 - `juggernaut.bladeform_on_hit`（`AfterDamage`）：受击后使剑心犹在进入粘滞期。
 
 ### 常用调参常量（位于 [JuggernautHero.cs](../../Heroes/JuggernautHero.cs) 顶部）
@@ -97,10 +111,9 @@
 
 ## 5. 贴图资源清单
 
-位于 `Resources/Heroes/juggernaut/`（构建期自动分发至四套图集）：
-- `yurnero.png`（使用 `yurnero` 避免与 Pathos 官方内置怪物贴图 `juggernaut` 重名冲突）
-- `bladeform.png`
-- `blade fury.png`
-- `healing ward.png`
-- `blade dance.png`
-- `omnislash.png`
+位于 `Resources/Heroes/juggernaut/`（单份源文件，构建期自动分发至四套图集）：
+- **角色与技能图标**：`yurnero.png`（避开官方内置怪物贴图 `juggernaut`）、`bladeform.png`、`blade fury.png`、`healing ward.png`、`healing ward totem.png`、`blade dance.png`、`omnislash.png`
+- **自绘像素特效**：
+  - 剑刃风暴 3×3 九宫格：`blade fury fx tl/tc/tr/ml/mc/mr/bl/bc/br.png`
+  - 无敌斩斩击与 4 方向残影：`omnislash fx strike.png`、`omnislash fx beam h/v/f/b.png`
+  - 剑舞暴击与治疗脉冲：`blade dance fx crit.png`、`healing ward fx pulse.png`

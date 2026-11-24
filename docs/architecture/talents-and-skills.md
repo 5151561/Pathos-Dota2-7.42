@@ -1,0 +1,103 @@
+# 天赋树与长/短期技能状态体系
+
+本文档详细说明 `DotaHeroesExpansion` 中**天赋树系统**、**长效技能 vs 短期主动技能状态（长短期技能治理）**、**左上角动态状态栏徽章**以及**多回合主动技能与像素特效**的底层架构与接入规范。
+
+---
+
+## 1. DOTA2 四层双修天赋树体系（`Framework/Talents/`）
+
+### 1.1 组件分工
+
+| 文件 | 职责 |
+| :--- | :--- |
+| [TalentDefinitions.cs](../../Framework/Talents/TalentDefinitions.cs) | 定义 `HeroTalentTree`、`TalentTier`、`TalentNode`、`TalentBranch`、`TalentNodeState` 与声明式 `SpellManaReductionRule`。 |
+| [TalentRegistry.cs](../../Framework/Talents/TalentRegistry.cs) | 按 `Class.Name` 索引所有英雄天赋树；自动在 `Codex.Properties` 生成 `dota_talent_<id>` 内部标记并登记至 `DotaPropertyVisibility` 隐藏。 |
+| [TalentService.cs](../../Framework/Talents/TalentService.cs) | 查询已学天赋与可用点数、执行不可洗点学习（调用 `Engine.GainTalent` 写入 `AcquiredTalentSet`）、自动订阅 `SpellCostQuery`（减冷却 → 减蓝耗）与 `AfterLevelUp`（升级解锁日志提示）。 |
+| [TalentTreeUiBridge.cs](../../Framework/Talents/TalentTreeUiBridge.cs) | 挂载 `StagePanel`、`TalentPanel`、`HelpLibrary`：在左下角「休息」按钮右侧注入原生 `MenuButton`（紧贴 `EdgeWidth` 不裁切），提供与角色/法术/日志同位互斥的左侧停靠天赋树面板，支持 `F2` 开关与 `ESC` 关闭。 |
+
+### 1.2 解锁阶梯与存档持久化
+
+- **标准解锁阶梯**（`HeroTalentTree.CreateStandard`）：
+  - **常规四层二选一**：`Lv 5`（T1）/ `Lv 10`（T2）/ `Lv 15`（T3）/ `Lv 20`（T4）。
+  - **满级后双修补点**：`Lv 22`（补 T1）/ `Lv 23`（补 T2）/ `Lv 24`（补 T3）/ `Lv 25`（补 T4）。
+  - 选定后不可反悔 / 不可洗点，有未分配天赋点时左下角按钮自动高亮提示。
+- **100% 原生存档兼容**：
+  - 每个 `TalentNode` 在 Campaign 构建期绑定一个 `dota_talent_<sanitized_id>` 内部 `Property`。
+  - 学习时通过 `PathosEngineBridge.GainTalent` 写入 `Character.AcquiredTalentSet`，读档后 `TalentService.HasTalent(char, talentId)` 自动生效，无需外置存档文件。
+
+### 1.3 声明式「减冷却 → 减蓝耗」与自定义效果
+
+- **减冷却转减蓝耗**：只需在 `TalentNode` 的 `ManaReductions` 中声明 `new SpellManaReductionRule(spellName, cdrRatio)`（`cdrRatio` 用 `DotaMechanicsMapper.ComputeCooldownReductionRatio(reducedSec, refCooldownSec)` 计算），`TalentService` 会通过 `SpellCostQuery` 自动接管 `Character.SpellCost`，**施法扣蓝与法术面板蓝耗显示自动同步**（多来源乘算叠加封顶 60%，正蓝耗保底 1 且至少 -1）。
+- **学习瞬间触发的一次性效果**：可传入 `OnLearn: (engine, character) => { ... }`（如永久加属性、授予专长等）。
+- **持续/战斗期生效的天赋**：在对应 Hook 中直接调用 `TalentService.HasTalent(character, TalentId)` 分支判断。
+
+---
+
+## 2. 长短期技能与状态治理规范（极其重要）
+
+在 Pathos 中，所有 `Codex.Properties` 默认都会出现在**角色原生「天赋」面板（`TalentPanel`，尤其是大师模式）**以及**游戏内百科「天赋/特性」（`HelpLibrary.Properties`）**中。如果把主动技能的短期状态也当普通 `Property` 注册，就会污染天赋列表，让玩家误以为它们是可获得的永久天赋。
+
+因此，框架通过 **`DotaHeroContext` + `DotaPropertyVisibility` + `DotaStatusBarBridge`** 将技能与状态严格划分为 **三类**，分别走不同注册通道：
+
+| 类别 | 语义与典型示例 | 注册入口 | 原生天赋栏 / 百科可见性 | 运行时表现 |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. 长效技能（先天 / 被动）** | 角色常驻的先天技能与被动技能（如水人「潮涨潮落」、主宰「剑心犹在」「剑舞」） | `Ctx.RegisterPassiveProperty(name, desc, icon)` + `Class.AddFeat(1, prop)` | **可见**（角色天赋栏与百科中正常展示） | 通过 `DotaHookBus` 实时生效；若带动态叠层，额外接入 `DotaStatusBarBridge` 在左上角展示实时层数。 |
+| **2. 短期主动技能状态（Transient-only）** | 主动技能施放后短暂持续的自身状态（如「剑刃风暴」「无敌斩」） | `Ctx.RegisterSkillStatusProperty(name, desc, icon)` | **自动隐藏**（`DotaPropertyVisibility` 在 `TalentPanel` 与 `HelpLibrary` 中自动剔除；技能本身仍在「法术」栏目展示） | 仅在施法期间通过 `ApplyTransient` 挂载到角色身上，在左上角显示原版倒计时状态图标，到期自动消失。 |
+| **3. 内部持久化标记** | 天赋树节点存档标记（`dota_talent_*`） | `TalentRegistry.Register(...)` 自动生成 | **自动隐藏**（`DotaPropertyVisibility` 自动剔除） | 写入 `AcquiredTalentSet`，由独立天赋树面板管理展示。 |
+
+> **接入铁律**：写新英雄时，**永远不要直接裸调 `Ctx.Properties.Add`**；按长/短期语义分别调用 `Ctx.RegisterPassiveProperty` 或 `Ctx.RegisterSkillStatusProperty`，即可自动完成可见性治理。
+
+---
+
+## 3. 左上角状态栏动态叠层徽章（`Framework/UI/DotaStatusBarBridge.cs`）
+
+对于带**动态层数、充能或粘滞期变色**的状态（如主宰「剑心犹在」`×1 ~ ×10`，受击粘滞期变橙色），Pathos 原生 `Transient` 只能显示剩余回合数，无法展示自定义层数。
+
+`DotaStatusBarBridge` 通过 Postfix 挂载 `StagePanel.ArrangeStatus`，将自定义徽章以**原生 `StatusIcon`** 形式插入 `StagePanel.LeftColumn.TopIcons`：
+
+```csharp
+DotaStatusBarBridge.RegisterProvider("juggernaut.bladeform", Character =>
+{
+  if (!DotaCombatHelper.IsClass(Character, JuggernautClassName) || Character.Deceased)
+    return null;
+
+  var State = GetBladeformState(Character);
+  if (State.Stacks <= 0)
+    return null; // 返回 null 表示当前不显示
+
+  return new DotaStatusBadge
+  {
+    Key = "juggernaut.bladeform",
+    Glyph = BladeformGlyph,
+    Text = PathosEngineBridge.GetLocalizedName(BladeformTalentProperty).ToUpper(),
+    Count = $"×{State.Stacks}",
+    Colour = State.LingerTurns > 0 ? Colour.DarkOrange : Colour.Black,
+    HelpProperty = BladeformTalentProperty // 支持点击图标弹出原生属性说明窗口
+  };
+});
+```
+
+- **幂等注册**：按 `Key` 覆盖，多次重建 Campaign 不会重复创建图标。
+- **点击查百科**：只要填了 `HelpProperty`，玩家点击左上角状态图标即可调用原生 `HelpQuery.ShowProperty` 查看说明。
+
+---
+
+## 4. 主动技能实现模式：持续 Tick、自动多回合连斩与自定义像素 VFX
+
+### 4.1 每回合持续技能（如剑刃风暴）
+1. 声明式外壳：`SetTargetSelf(true)` + `ApplyTransient(statusProp, Dice.Fixed(turns))`。
+2. `AfterCastSpell`：执行施法瞬间逻辑（如基础驱散 + 立刻结算第 1 跳），并将角色加入 `SkipNextTick` 集合（防止同一回合 `AfterExecuteCommand` 紧接着再结算一次）。
+3. `AfterExecuteCommand`：若 `HasTransient(actor, statusProp)`，先检查 `SkipNextTick.Remove(actor)`，否则执行每回合 Tick。
+
+### 4.2 多回合自动推进技能（如无敌斩）
+当技能需要跨越多个回合自动执行动作并逐帧播完动画（且期间无需玩家反复手动按等待）时，采用 **Session + `QueueWaitDecision`** 模式：
+1. 在 `ConditionalWeakTable<Character, TSession>` 中记录剩余次数与参数。
+2. `AfterCastSpell` 执行第 1 步；若仍有剩余次数，挂上短期状态 `ApplyTransient`、记录 `SkipNextTick`，并调用 `PathosEngineBridge.QueueWaitDecision(caster)`。
+3. 引擎自动推进下一回合触发 `AfterExecuteCommand`，继续执行下一步并再次 `QueueWaitDecision`，直至次数耗尽或无目标时清理 Session 并 `RemoveTransient`。
+
+### 4.3 自定义像素特效（`DotaHeroContext` VFX 工厂）
+所有自定义特效走 Pathos 原生 `Story` 管线，单份 PNG 放在 `Resources/Heroes/<hero_id>/`：
+- **单格打击/脉冲**（`Strike`）：`Ctx.RegisterStrikeVfx("name", "glyph name")` → `PathosEngineBridge.StoryStriking(...)`
+- **4 方向光束/瞬移残影**（`Beam`）：`Ctx.RegisterBeamVfx("name", h, v, f, b)` → `DotaCombatHelper.PlayBeamTrail(...)`
+- **3×3 范围爆炸**（`Explosion`）：准备 `<prefix> tl/tc/tr/ml/mc/mr/bl/bc/br.png` 9 张贴图，`Ctx.RegisterExplosion3x3Vfx("name", "<prefix>")` → `PathosEngineBridge.StoryExploding(...)`
+- **原生飘字与范围波纹**：`PathosEngineBridge.StoryCaption(...)`、`PathosEngineBridge.StoryDetecting(...)`、`PathosEngineBridge.StoryAttacking(...)`

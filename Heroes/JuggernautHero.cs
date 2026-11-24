@@ -129,21 +129,34 @@ namespace Pathos.DotaHeroes.Heroes
       OmnislashGlyph = Ctx.RegisterGlyph("omnislash");
 
       // 1.5 注册主宰专属自绘像素特效（走 Pathos 原生 Explosion / Strike / Beam 引擎管线）
-      BladeFuryExplosion = RegisterBladeFuryExplosion(Ctx);
-      OmnislashStrike = RegisterCustomStrike(Ctx, "omnislash slash", "omnislash fx strike");
-      BladeDanceCritStrike = RegisterCustomStrike(Ctx, "blade dance crit", "blade dance fx crit");
-      HealingWardPulseStrike = RegisterCustomStrike(Ctx, "healing ward pulse", "healing ward fx pulse");
-      OmnislashDashBeam = RegisterOmnislashDashBeam(Ctx);
+      BladeFuryExplosion = Ctx.RegisterExplosion3x3Vfx("blade fury spin", "blade fury fx");
+      OmnislashStrike = Ctx.RegisterStrikeVfx("omnislash slash", "omnislash fx strike");
+      BladeDanceCritStrike = Ctx.RegisterStrikeVfx("blade dance crit", "blade dance fx crit");
+      HealingWardPulseStrike = Ctx.RegisterStrikeVfx("healing ward pulse", "healing ward fx pulse");
+      OmnislashDashBeam = Ctx.RegisterBeamVfx(
+        "omnislash dash",
+        "omnislash fx beam h",
+        "omnislash fx beam v",
+        "omnislash fx beam f",
+        "omnislash fx beam b");
 
-      // 2. 注册先天技能（剑心犹在）、被动技能（剑舞）与剑刃风暴/无敌斩状态属性
-      BladeformTalentProperty = RegisterBladeformTalent(Ctx, BladeformGlyph);
-      var BladeDanceTalent = RegisterBladeDanceTalent(Ctx, BladeDanceGlyph);
-      BladeFuryStatusProperty = RegisterBladeFuryStatus(Ctx, BladeFuryGlyph);
-      OmnislashStatusProperty = RegisterOmnislashStatus(Ctx, OmnislashGlyph);
-
-      // 剑刃风暴与无敌斩属于主动技能的短期状态，不应出现在原生「天赋」面板或百科「天赋/特性」栏目中
-      TalentRegistry.RegisterTransientOnlyProperty(BladeFuryStatusProperty);
-      TalentRegistry.RegisterTransientOnlyProperty(OmnislashStatusProperty);
+      // 2. 注册长效天赋（先天「剑心犹在」/ 被动「剑舞」）与短期主动技能状态（剑刃风暴 / 无敌斩，自动在原生天赋面板与百科隐藏）
+      BladeformTalentProperty = Ctx.RegisterPassiveProperty(
+        Name: "bladeform",
+        Description: "Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.",
+        Icon: BladeformGlyph);
+      var BladeDanceTalent = Ctx.RegisterPassiveProperty(
+        Name: "blade dance",
+        Description: "Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% to 35% chance (by Medium Blade mastery) to critically strike for 1.8x damage.",
+        Icon: BladeDanceGlyph);
+      BladeFuryStatusProperty = Ctx.RegisterSkillStatusProperty(
+        Name: "blade fury",
+        Description: "Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
+        Icon: BladeFuryGlyph);
+      OmnislashStatusProperty = Ctx.RegisterSkillStatusProperty(
+        Name: "omnislash",
+        Description: "Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.",
+        Icon: OmnislashGlyph);
 
       // 3. 注册治疗守卫召唤物实体（使用透明背景的木雕翡翠火焰图腾贴图）
       HealingWardEntity = RegisterHealingWardEntity(Ctx, HealingWardTotemGlyph);
@@ -164,14 +177,7 @@ namespace Pathos.DotaHeroes.Heroes
         OmnislashSpell);
 
       // 6. 注册预设英雄：Juggernaut（人类种族 + 主宰职业）
-      Ctx.Heroes.Add(H =>
-      {
-        H.Name = "Juggernaut";
-        H.Race = Ctx.Races.human;
-        H.Class = JuggernautClass;
-        H.Gender = Ctx.Genders.male;
-        H.CustomGlyph = JuggernautGlyph;
-      });
+      Ctx.RegisterPresetHero("Juggernaut", Ctx.Races.human, JuggernautClass, Ctx.Genders.male, JuggernautGlyph);
 
       // 7. 注册主宰 4 层天赋树（含减冷却 → 减蓝耗声明式映射）
       RegisterTalentTree(Ctx, JuggernautGlyph);
@@ -328,7 +334,7 @@ namespace Pathos.DotaHeroes.Heroes
       // 3. 状态免疫钩子：剑刃风暴与无敌斩持续期间提供减益免疫
       DotaHookBus.RegisterBeforeApplyTransient("juggernaut.blade_fury_debuff_immunity", Args =>
       {
-        if (Args.Target == null || Args.Property == null || !IsNegativeDebuff(Ctx, Args.Property))
+        if (Args.Target == null || Args.Property == null || !DotaCombatHelper.IsNegativeDebuff(Ctx, Args.Property))
           return;
 
         if ((BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Args.Target, BladeFuryStatusProperty)) ||
@@ -374,7 +380,7 @@ namespace Pathos.DotaHeroes.Heroes
             Args.Defender != null &&
             PathosEngineBridge.HasTransient(Args.Defender, BladeFuryStatusProperty) &&
             Args.DamagePoints > 0 &&
-            IsNonBasicPhysicalIncoming(Args))
+            DotaCombatHelper.IsNonBasicPhysicalIncoming(Args))
         {
           int Reduced = (int)MathF.Floor(Args.DamagePoints * 0.20f);
           if (Reduced <= 0)
@@ -423,7 +429,7 @@ namespace Pathos.DotaHeroes.Heroes
         // (e) 被动「剑舞」：近战普攻、无敌斩与剑刃风暴均可触发 1.8x（T3 右天赋 1.95x）致命一击，T4 左天赋附带 40% 暴击吸血
         if (IsBasicAttack || IsOmnislash || IsBladeFurySpin)
         {
-          int MasteryTier = GetSkillTier(Ctx, Attacker, Ctx.Skills.medium_blade);
+          int MasteryTier = DotaCombatHelper.GetSkillTier(Ctx, Attacker, Ctx.Skills.medium_blade);
           float CritChance = MasteryTier >= 5 ? 0.35f : 0.20f + (MasteryTier - 1) * 0.04f;
           if (Random.Shared.NextSingle() < CritChance)
           {
@@ -527,29 +533,7 @@ namespace Pathos.DotaHeroes.Heroes
         return;
 
       // 基础驱散自身常见负面状态
-      var Debuffs = new[]
-      {
-        Ctx.Properties.slowness,
-        Ctx.Properties.stunned,
-        Ctx.Properties.confusion,
-        Ctx.Properties.blindness,
-        Ctx.Properties.fear,
-        Ctx.Properties.silence,
-        Ctx.Properties.paralysis,
-        Ctx.Properties.sleeping,
-        Ctx.Properties.hallucination,
-        Ctx.Properties.fumbling,
-        Ctx.Properties.sickness,
-        Ctx.Properties.petrifying,
-        Ctx.Properties.narcolepsy,
-        Ctx.Properties.fainting
-      };
-
-      foreach (var Debuff in Debuffs)
-      {
-        if (Debuff != null && PathosEngineBridge.HasTransient(Caster, Debuff))
-          PathosEngineBridge.RemoveTransient(Args.Engine, Caster, Caster, Debuff);
-      }
+      DotaCombatHelper.DispelNegativeDebuffs(Ctx, Args.Engine, Caster);
 
       // 施法当回合立即结算一次旋转伤害，并标记跳过同一指令的 Postfix 重复结算
       SkipNextBladeFuryTick.Add(Caster);
@@ -561,7 +545,7 @@ namespace Pathos.DotaHeroes.Heroes
       if (Caster?.Square == null || Caster.Deceased)
         return;
 
-      int Tier = GetSkillTier(Ctx, Caster, Ctx.Skills.evocation);
+      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.evocation);
       int Dex = PathosEngineBridge.GetCurrentAbilityScore(Caster, "dexterity");
       int BladeformStacks = IsJuggernaut(Caster) ? GetBladeformState(Caster).Stacks : 0;
 
@@ -574,13 +558,7 @@ namespace Pathos.DotaHeroes.Heroes
       float CadenceMultiplier = 1.0f + Math.Max(0, Dex - 10) * 0.05f + BladeformStacks * 0.025f;
       Dice SpinDice = DotaMechanicsMapper.MapDotDamageDicePerTurn(BaseDps * CadenceMultiplier, DieFaces: 4);
 
-      var Targets = new List<Character>();
-      foreach (var Sq in Caster.Square.GetAroundSquares(1))
-      {
-        var Candidate = Sq?.Character;
-        if (IsHostile(Caster, Candidate))
-          Targets.Add(Candidate);
-      }
+      var Targets = DotaCombatHelper.FindHostilesInRadius(Caster, Caster.Square, Radius: 1);
 
       // 播放自定义 3×3 剑刃风暴金橙旋风贴图（Pathos 原生 Explosion 管线），精准标出 3×3 生效范围
       PathosEngineBridge.StoryExploding(Engine, Delay.Zero, Caster.Square, BladeFuryExplosion ?? Ctx.Explosions.fiery);
@@ -620,7 +598,7 @@ namespace Pathos.DotaHeroes.Heroes
       if (Caster?.Square == null)
         return;
 
-      int Tier = GetSkillTier(Ctx, Caster, Ctx.Skills.clerical);
+      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.clerical);
       // 对应 DOTA2 百科：持续 18 / 20 / 22 / 24 秒（Champion 保持 24 秒并享受魔晶 6.5%/s 回复）
       float DurationSeconds = Tier switch
       {
@@ -653,30 +631,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 2. 确定召唤落点：优先玩家通过全射程选格指示器指定的格子，否则回退至施法方向相邻空位或自身周围空位
       var PendingTarget = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      Square DesiredSq = null;
-      if (PendingTarget?.TargetSquare != null && PendingTarget.TargetSquare.Map == Caster.Square.Map)
-      {
-        DesiredSq = PendingTarget.TargetSquare;
-      }
-      else if (Args.Direction != Direction.Self)
-      {
-        DesiredSq = Caster.Square.Adjacent(Args.Direction, 1) ?? Caster.Square;
-      }
-      else
-      {
-        DesiredSq = Caster.Square;
-      }
-
-      Square PlacementSq = null;
-      if (DesiredSq != null && DesiredSq.Character == null && !DesiredSq.IsBlocked(Vision: false) && !DesiredSq.IsVoid())
-      {
-        PlacementSq = DesiredSq;
-      }
-      else if (DesiredSq != null)
-      {
-        PlacementSq = FindOpenAdjacentSquare(Caster, DesiredSq) ?? FindOpenAdjacentSquare(Caster, Caster.Square) ?? DesiredSq;
-      }
-
+      var PlacementSq = DotaCombatHelper.ResolveOpenPointTarget(Caster, Args.Direction, PendingTarget);
       if (PlacementSq == null || HealingWardEntity == null)
         return;
 
@@ -723,7 +678,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (Ally == null || Ally == Ward || Ally.Deceased || Ally.Life == null)
           continue;
 
-        if (!IsFriendly(Ward, Ally))
+        if (!DotaCombatHelper.IsFriendly(Ward, Ally))
           continue;
 
         if (Ally.Life.Points < Ally.Life.Total)
@@ -754,53 +709,20 @@ namespace Pathos.DotaHeroes.Heroes
       if (Caster?.Square == null || Caster.Deceased)
         return;
 
-      int Tier = GetSkillTier(Ctx, Caster, Ctx.Skills.transmutation);
+      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.transmutation);
       int CastRange = GetOmnislashCastRange(Ctx, Caster);
 
-      // 优先使用 DOTA2 全射程选格指示器锁定的精确敌方目标（支持 360° 最大射程内任意敌人）
-      Character InitialTarget = null;
+      // 优先使用 DOTA2 全射程选格指示器锁定的精确敌方目标（含 1 格智能吸附、方向射线与最近敌人回退）
       var PendingTarget = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
-      if (PendingTarget != null)
-      {
-        if (IsHostile(Caster, PendingTarget.TargetCharacter) &&
-            PendingTarget.TargetCharacter.Square != null &&
-            Caster.Square.AsRange(PendingTarget.TargetCharacter.Square) <= CastRange)
-        {
-          InitialTarget = PendingTarget.TargetCharacter;
-        }
-        else if (PendingTarget.TargetSquare != null && PendingTarget.TargetSquare.Map == Caster.Square.Map)
-        {
-          // 若玩家点击了敌人身旁的格子，智能吸附该格周围 1 格内最近的敌方单位
-          int BestDist = int.MaxValue;
-          foreach (var Sq in PendingTarget.TargetSquare.GetAroundSquares(1))
-          {
-            var Cand = Sq?.Character;
-            if (!IsHostile(Caster, Cand) || Caster.Square.AsRange(Sq) > CastRange)
-              continue;
-            int D = PendingTarget.TargetSquare.AsRange(Sq);
-            if (D < BestDist)
-            {
-              BestDist = D;
-              InitialTarget = Cand;
-            }
-          }
-        }
-      }
-
-      if (InitialTarget == null)
-        InitialTarget = FindInitialOmnislashTarget(Caster, Args.Direction, CastRange);
+      var InitialTarget = DotaCombatHelper.ResolveHostileTarget(Caster, Args.Direction, CastRange, PendingTarget);
 
       if (InitialTarget == null)
       {
         // 空大保护：未找到目标时按实际折后蓝耗返还法力值
-        if (Caster.Mana != null)
-        {
-          int ActualMana = TalentService.HasTalent(Caster, TalentT2OmnislashMana)
-            ? DotaMechanicsMapper.MapCooldownReductionToManaCost(OmnislashManaCost, OmnislashTalentCdr)
-            : OmnislashManaCost;
-          int Refunded = Math.Min(Caster.Mana.Total, Caster.Mana.Points + ActualMana);
-          PathosEngineBridge.SetMeterPoints(Caster.Mana, Refunded);
-        }
+        int ActualMana = TalentService.HasTalent(Caster, TalentT2OmnislashMana)
+          ? DotaMechanicsMapper.MapCooldownReductionToManaCost(OmnislashManaCost, OmnislashTalentCdr)
+          : OmnislashManaCost;
+        DotaCombatHelper.RefundMana(Caster, ActualMana);
 
         PathosEngineBridge.WriteInternalLog(
           Args.Engine,
@@ -817,7 +739,7 @@ namespace Pathos.DotaHeroes.Heroes
         ? BaseSlashes + 3
         : BaseSlashes;
 
-      var WeaponAsset = GetEquippedWeapon(Ctx, Caster);
+      var WeaponAsset = DotaCombatHelper.GetEquippedWeapon(Ctx, Caster);
       var WeaponDice = PathosEngineBridge.GetMeleeDamageDice(Args.Engine, Caster, WeaponAsset);
       int StatBonus = Math.Max(0, (Math.Max(Str, Dex) - 10) / 2);
       int OmniBonusDamage = DotaMechanicsMapper.MapSkillDamage(
@@ -836,7 +758,7 @@ namespace Pathos.DotaHeroes.Heroes
       // 方案 A：当回合先瞬移斩出第 1 刀，剩余斩数自动推进回合逐斩跳跃（全程无敌、无需手动操作）
       ExecuteSingleOmnislashStep(Ctx, Args.Engine, Caster, Session, InitialTarget);
 
-      if (Session.RemainingSlashes > 0 && !Caster.Deceased && PickRandomNearbyHostile(Caster, Radius: 3) != null)
+      if (Session.RemainingSlashes > 0 && !Caster.Deceased && DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3) != null)
       {
         ActiveOmnislashSessions.AddOrUpdate(Caster, Session);
         SkipNextOmnislashTick.Add(Caster);
@@ -860,7 +782,7 @@ namespace Pathos.DotaHeroes.Heroes
         return;
       }
 
-      var NextTarget = PickRandomNearbyHostile(Caster, Radius: 3);
+      var NextTarget = DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3);
       if (NextTarget == null)
       {
         FinishOmnislashSession(Ctx, Engine, Caster, Session);
@@ -869,7 +791,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       ExecuteSingleOmnislashStep(Ctx, Engine, Caster, Session, NextTarget);
 
-      if (Session.RemainingSlashes > 0 && !Caster.Deceased && PickRandomNearbyHostile(Caster, Radius: 3) != null)
+      if (Session.RemainingSlashes > 0 && !Caster.Deceased && DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3) != null)
       {
         // 继续自动推进下一回合，直到斩数耗尽或周围 3 格内无敌方目标
         PathosEngineBridge.QueueWaitDecision(Caster);
@@ -892,23 +814,23 @@ namespace Pathos.DotaHeroes.Heroes
 
       var FromSq = Caster.Square;
       var TargetSq = Target.Square;
-      var DestSquare = FindOpenAdjacentSquare(Caster, TargetSq);
+      var DestSquare = DotaCombatHelper.FindOpenAdjacentSquare(Caster, TargetSq);
 
       ActiveOmnislashCasters.Add(Caster);
       try
       {
         if (DestSquare != null && DestSquare != Caster.Square)
         {
-          PlayOmnislashDashTrail(Engine, FromSq, DestSquare);
+          DotaCombatHelper.PlayBeamTrail(Engine, FromSq, DestSquare, OmnislashDashBeam);
           PathosEngineBridge.TeleportCharacter(Engine, Caster, DestSquare, MasterMode: false);
         }
         else if (FromSq != TargetSq)
         {
-          PlayOmnislashDashTrail(Engine, FromSq, TargetSq);
+          DotaCombatHelper.PlayBeamTrail(Engine, FromSq, TargetSq, OmnislashDashBeam);
         }
 
         var ToSq = Caster.Square;
-        int SlashDamage = RollDice(Session.WeaponDice) + Session.StatBonus + Session.OmniBonusDamage;
+        int SlashDamage = DotaCombatHelper.RollDice(Session.WeaponDice) + Session.StatBonus + Session.OmniBonusDamage;
         var Dir = ToSq.AsDirection(TargetSq);
 
         LastOmnislashStrikeCritted = false;
@@ -965,34 +887,6 @@ namespace Pathos.DotaHeroes.Heroes
       }
     }
 
-    private void PlayOmnislashDashTrail(object Engine, Square FromSq, Square ToSq)
-    {
-      if (Engine == null || FromSq == null || ToSq == null || FromSq.Map != ToSq.Map || OmnislashDashBeam == null)
-        return;
-
-      var Map = FromSq.Map;
-      var Dir = FromSq.AsDirection(ToSq);
-      int X0 = FromSq.X, Y0 = FromSq.Y;
-      int X1 = ToSq.X, Y1 = ToSq.Y;
-      int Dx = Math.Abs(X1 - X0), Dy = Math.Abs(Y1 - Y0);
-      int Sx = X0 < X1 ? 1 : -1, Sy = Y0 < Y1 ? 1 : -1;
-      int Err = Dx - Dy;
-
-      int Steps = 0;
-      while (Steps++ < 12)
-      {
-        if (Map.IsValid(X0, Y0))
-          PathosEngineBridge.StoryBeaming(Engine, Delay.Zero, Map[X0, Y0], Dir, OmnislashDashBeam);
-
-        if (X0 == X1 && Y0 == Y1)
-          break;
-
-        int E2 = 2 * Err;
-        if (E2 > -Dy) { Err -= Dy; X0 += Sx; }
-        if (E2 < Dx) { Err += Dx; Y0 += Sy; }
-      }
-    }
-
     private static bool IsInOmnislash(Character Character)
     {
       if (Character == null)
@@ -1004,7 +898,7 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static int GetOmnislashCastRange(DotaHeroContext Ctx, Character Caster)
     {
-      int Tier = GetSkillTier(Ctx, Caster, Ctx.Skills.transmutation);
+      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.transmutation);
       return Tier switch
       {
         1 => 4,
@@ -1017,7 +911,7 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static int GetHealingWardCastRange(DotaHeroContext Ctx, Character Caster)
     {
-      int Tier = GetSkillTier(Ctx, Caster, Ctx.Skills.clerical);
+      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.clerical);
       return Tier switch
       {
         1 => 3,
@@ -1028,280 +922,14 @@ namespace Pathos.DotaHeroes.Heroes
       };
     }
 
-    private static Character FindInitialOmnislashTarget(Character Caster, Direction Direction, int Range)
-    {
-      // 1. 优先沿施法方向直线搜索首个敌方目标
-      var Cursor = Caster.Square;
-      for (int Step = 1; Step <= Range; Step++)
-      {
-        var Next = Cursor.Adjacent(Direction, 1);
-        if (Next == null || Next == Cursor)
-          break;
-
-        if (IsHostile(Caster, Next.Character))
-          return Next.Character;
-
-        if (Next.IsBlocked(Vision: false))
-          break;
-
-        Cursor = Next;
-      }
-
-      // 2. 若直线未命中，则回退搜索射程内最近的敌方目标
-      Character Nearest = null;
-      int BestDist = int.MaxValue;
-      foreach (var Sq in Caster.Square.GetAroundSquares(Range))
-      {
-        var Candidate = Sq?.Character;
-        if (!IsHostile(Caster, Candidate))
-          continue;
-
-        int Dist = Caster.Square.AsRange(Sq);
-        if (Dist < BestDist)
-        {
-          BestDist = Dist;
-          Nearest = Candidate;
-        }
-      }
-
-      return Nearest;
-    }
-
-    private static Character PickRandomNearbyHostile(Character Caster, int Radius)
-    {
-      var Candidates = new List<Character>();
-      foreach (var Sq in Caster.Square.GetAroundSquares(Radius))
-      {
-        var Candidate = Sq?.Character;
-        if (IsHostile(Caster, Candidate))
-          Candidates.Add(Candidate);
-      }
-
-      if (Candidates.Count == 0)
-        return null;
-
-      return Candidates[Random.Shared.Next(Candidates.Count)];
-    }
-
-    private static Square FindOpenAdjacentSquare(Character Caster, Square TargetSquare)
-    {
-      if (TargetSquare == null)
-        return null;
-
-      if (Caster.Square != null && Caster.Square.IsAdjacent(TargetSquare, 1))
-        return Caster.Square;
-
-      var OpenSquares = new List<Square>();
-      foreach (var Sq in TargetSquare.GetAroundSquares(1))
-      {
-        if (Sq != null && Sq.Character == null && !Sq.IsBlocked(Vision: false) && !Sq.IsVoid())
-          OpenSquares.Add(Sq);
-      }
-
-      if (OpenSquares.Count == 0)
-        return null;
-
-      return OpenSquares[Random.Shared.Next(OpenSquares.Count)];
-    }
-
-    private static Asset GetEquippedWeapon(DotaHeroContext Ctx, Character Character)
-    {
-      if (Character?.Inventory == null)
-        return null;
-
-      foreach (var Asset in Character.Inventory.GetEquippedAssets())
-      {
-        if (Asset?.Item != null && Asset.Item.Stock == Ctx.Stocks.weapon)
-          return Asset;
-      }
-
-      return null;
-    }
-
-    private static int RollDice(Dice D)
-    {
-      int Total = D.Bonus;
-      if (D.Number > 0 && D.Base > 0)
-      {
-        for (int i = 0; i < D.Number; i++)
-          Total += Random.Shared.Next(1, D.Base + 1);
-      }
-      return Math.Max(1, Total);
-    }
-
     private static BladeformState GetBladeformState(Character Character)
-    {
-      return BladeformStates.GetValue(Character, _ => new BladeformState());
-    }
+      => BladeformStates.GetValue(Character, _ => new BladeformState());
 
     private static bool IsJuggernaut(Character Character)
-    {
-      return Character?.Class != null &&
-             string.Equals(Character.Class.Name, JuggernautClassName, StringComparison.OrdinalIgnoreCase);
-    }
+      => DotaCombatHelper.IsClass(Character, JuggernautClassName);
 
     private static bool IsHealingWard(Character Character)
-    {
-      return Character?.Entity != null &&
-             string.Equals(Character.Entity.Name, HealingWardEntityName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsHostile(Character Source, Character Target)
-    {
-      if (Source == null || Target == null || Target == Source || Target.Deceased)
-        return false;
-      if (Target.Life != null && Target.Life.Points <= 0)
-        return false;
-      if (Target.Neutral || PathosEngineBridge.IsAllied(Source, Target))
-        return false;
-      return true;
-    }
-
-    private static bool IsFriendly(Character Source, Character Target)
-    {
-      if (Source == null || Target == null || Target.Deceased)
-        return false;
-      if (Target.Life != null && Target.Life.Points <= 0)
-        return false;
-      return PathosEngineBridge.IsAllied(Source, Target);
-    }
-
-    private static bool IsNonBasicPhysicalIncoming(DamageEventArgs Args)
-    {
-      if (DotaHookBus.ActiveSpellCast != null)
-        return true;
-
-      // 非普通攻击来源（如元素喷吐、魔法陷阱、范围法术等）视作魔法/元素减伤范围
-      if (DotaHookBus.ActiveAttack == null)
-        return true;
-
-      return false;
-    }
-
-    private static bool IsNegativeDebuff(DotaHeroContext Ctx, Property Property)
-    {
-      return Property == Ctx.Properties.slowness ||
-             Property == Ctx.Properties.stunned ||
-             Property == Ctx.Properties.confusion ||
-             Property == Ctx.Properties.blindness ||
-             Property == Ctx.Properties.fear ||
-             Property == Ctx.Properties.silence ||
-             Property == Ctx.Properties.paralysis ||
-             Property == Ctx.Properties.sleeping ||
-             Property == Ctx.Properties.hallucination ||
-             Property == Ctx.Properties.fumbling ||
-             Property == Ctx.Properties.sickness ||
-             Property == Ctx.Properties.petrifying ||
-             Property == Ctx.Properties.narcolepsy ||
-             Property == Ctx.Properties.fainting;
-    }
-
-    private static int GetSkillTier(DotaHeroContext Ctx, Character Character, Skill Skill)
-    {
-      if (Character == null || Skill == null)
-        return 1;
-
-      var Qual = PathosEngineBridge.GetQualification(Character, Skill);
-      if (Qual == Ctx.Qualifications.champion) return 5;
-      if (Qual == Ctx.Qualifications.master) return 4;
-      if (Qual == Ctx.Qualifications.expert) return 3;
-      if (Qual == Ctx.Qualifications.specialist) return 2;
-      return 1;
-    }
-
-    private static Property RegisterBladeformTalent(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Properties.Add(P =>
-      {
-        P.Name = "bladeform";
-        P.Description = "Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.";
-        P.Glyph = Icon;
-      });
-    }
-
-    private static Property RegisterBladeDanceTalent(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Properties.Add(P =>
-      {
-        P.Name = "blade dance";
-        P.Description = "Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% to 35% chance (by Medium Blade mastery) to critically strike for 1.8x damage.";
-        P.Glyph = Icon;
-      });
-    }
-
-    private static Property RegisterBladeFuryStatus(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Properties.Add(P =>
-      {
-        P.Name = "blade fury";
-        P.Description = "Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.";
-        P.Glyph = Icon;
-      });
-    }
-
-    private static Property RegisterOmnislashStatus(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Properties.Add(P =>
-      {
-        P.Name = "omnislash";
-        P.Description = "Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.";
-        P.Glyph = Icon;
-      });
-    }
-
-    private static Explosion RegisterBladeFuryExplosion(DotaHeroContext Ctx)
-    {
-      var Tl = Ctx.RegisterGlyph("blade fury fx tl");
-      var Tc = Ctx.RegisterGlyph("blade fury fx tc");
-      var Tr = Ctx.RegisterGlyph("blade fury fx tr");
-      var Ml = Ctx.RegisterGlyph("blade fury fx ml");
-      var Mc = Ctx.RegisterGlyph("blade fury fx mc");
-      var Mr = Ctx.RegisterGlyph("blade fury fx mr");
-      var Bl = Ctx.RegisterGlyph("blade fury fx bl");
-      var Bc = Ctx.RegisterGlyph("blade fury fx bc");
-      var Br = Ctx.RegisterGlyph("blade fury fx br");
-
-      return Ctx.Explosions.Add(E =>
-      {
-        E.Name = "blade fury spin";
-        E.SetGlyph(ExplosionArea.TopLeft, Tl);
-        E.SetGlyph(ExplosionArea.TopCenter, Tc);
-        E.SetGlyph(ExplosionArea.TopRight, Tr);
-        E.SetGlyph(ExplosionArea.MiddleLeft, Ml);
-        E.SetGlyph(ExplosionArea.MiddleCenter, Mc);
-        E.SetGlyph(ExplosionArea.MiddleRight, Mr);
-        E.SetGlyph(ExplosionArea.BottomLeft, Bl);
-        E.SetGlyph(ExplosionArea.BottomCenter, Bc);
-        E.SetGlyph(ExplosionArea.BottomRight, Br);
-      });
-    }
-
-    private static Strike RegisterCustomStrike(DotaHeroContext Ctx, string Name, string GlyphName)
-    {
-      var Glyph = Ctx.RegisterGlyph(GlyphName);
-      return Ctx.Strikes.Add(S =>
-      {
-        S.Name = Name;
-        S.Glyph = Glyph;
-      });
-    }
-
-    private static Beam RegisterOmnislashDashBeam(DotaHeroContext Ctx)
-    {
-      var H = Ctx.RegisterGlyph("omnislash fx beam h");
-      var V = Ctx.RegisterGlyph("omnislash fx beam v");
-      var F = Ctx.RegisterGlyph("omnislash fx beam f");
-      var B = Ctx.RegisterGlyph("omnislash fx beam b");
-
-      return Ctx.Beams.Add(Bm =>
-      {
-        Bm.Name = "omnislash dash";
-        Bm.HorizontalGlyph = H;
-        Bm.VerticalGlyph = V;
-        Bm.ForwardSlantGlyph = F;
-        Bm.BackwardSlantGlyph = B;
-      });
-    }
+      => DotaCombatHelper.IsEntity(Character, HealingWardEntityName);
 
     private static Entity RegisterHealingWardEntity(DotaHeroContext Ctx, Glyph Icon)
     {

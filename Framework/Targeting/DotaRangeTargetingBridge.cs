@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using Inv;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.UI;
 
 namespace Pathos.DotaHeroes.Framework.Targeting
 {
@@ -121,17 +121,15 @@ namespace Pathos.DotaHeroes.Framework.Targeting
     {
       try
       {
-        var ClientAsm = AppDomain.CurrentDomain.GetAssemblies()
-          .FirstOrDefault(A => string.Equals(A.GetName().Name, "Pathos", StringComparison.OrdinalIgnoreCase));
-
+        var ClientAsm = PathosClientReflection.FindClientAssembly();
         if (ClientAsm == null)
         {
           HookBootstrap.WriteDebug("Pathos.dll not loaded; skipping DotaRangeTargetingBridge patches.");
           return;
         }
 
-        const BindingFlags AnyInstance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        const BindingFlags AnyStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        const BindingFlags AnyInstance = PathosClientReflection.AnyInstance;
+        const BindingFlags AnyStatic = PathosClientReflection.AnyStatic;
 
         var StagePanelType = ClientAsm.GetType("Pathos.StagePanel");
         var ScenePanelType = ClientAsm.GetType("Pathos.ScenePanel");
@@ -198,17 +196,15 @@ namespace Pathos.DotaHeroes.Framework.Targeting
       string prefix = null,
       string postfix = null)
     {
-      var Method = AccessTools.Method(TargetType, MethodName, ParamTypes);
-      if (Method == null)
-      {
-        HookBootstrap.WriteError($"DotaRangeTargetingBridge target not found: {TargetType?.FullName}.{MethodName}");
-        return;
-      }
-
-      var PrefixMethod = prefix != null ? new HarmonyMethod(typeof(DotaRangeTargetingBridge), prefix) : null;
-      var PostfixMethod = postfix != null ? new HarmonyMethod(typeof(DotaRangeTargetingBridge), postfix) : null;
-      Harmony.Patch(Method, prefix: PrefixMethod, postfix: PostfixMethod);
-      HookBootstrap.WriteDebug($"Patched {TargetType.FullName}.{MethodName} (Targeting)");
+      PathosClientReflection.PatchSafe(
+        Harmony,
+        TargetType,
+        MethodName,
+        ParamTypes,
+        typeof(DotaRangeTargetingBridge),
+        Prefix: prefix,
+        Postfix: postfix,
+        Tag: "Targeting");
     }
 
     private static void StageCastSpellPrefix(object __instance, Spell Spell)
@@ -379,7 +375,7 @@ namespace Pathos.DotaHeroes.Framework.Targeting
             int Top = DrawY + (Ty - ViewRegion.Top) * SquareSize;
             var TileRect = new Rect(Left + 1, Top + 1, SquareSize - 2, SquareSize - 2);
 
-            if (Session.Spec.Mode == DotaTargetMode.UnitHostile && IsHostile(Caster, Sq.Character))
+            if (Session.Spec.Mode == DotaTargetMode.UnitHostile && DotaCombatHelper.IsHostile(Caster, Sq.Character))
               DC.DrawRectangle(HostileFill, HostileBorder, 2, TileRect);
             else
               DC.DrawRectangle(TileFill, TileBorder, 1, TileRect);
@@ -390,17 +386,6 @@ namespace Pathos.DotaHeroes.Framework.Targeting
       {
         HookBootstrap.WriteError($"DotaRangeTargetingBridge.SceneDrawPostfix failed: {Ex}");
       }
-    }
-
-    private static bool IsHostile(Character Source, Character Target)
-    {
-      if (Source == null || Target == null || Target == Source || Target.Deceased)
-        return false;
-      if (Target.Life != null && Target.Life.Points <= 0)
-        return false;
-      if (Target.Neutral || PathosEngineBridge.IsAllied(Source, Target))
-        return false;
-      return true;
     }
   }
 }

@@ -74,10 +74,19 @@
 
 ---
 
-## 4. Hook 注册清单与关键调参常量
+## 4. 框架基建接入与 Hook 清单
+
+### 接入的公共基建
+- **固定初始六维**：`DotaMechanicsMapper.RegisterFixedStartingStats("morphling", ...)`
+- **长效天赋**：`ebb and flow`（`Ctx.RegisterPassiveProperty`）
+- **全射程选格（`DotaRangeTargetingBridge`）**（均实时叠加高力量施法距离加成）：
+  - `waveform`：`PointOpen`，基础射程 `5 ~ 11` + 力量加成，`AllowSelf: false`
+  - `adaptive strike`：`UnitHostile`，基础射程 `5 ~ 9` + 力量加成，`AllowSelf: false`
+  - `morph`：`UnitHostile`，基础射程 `5 ~ 10` + 力量加成，`AllowSelf: false`
 
 ### 注册的 `DotaHookBus` Key
 - `dota.fixed_starting_stats`（`AfterCreateActor`，共享框架）：开局/重摇锁定固定六维并重算初始 HP/Mana。
+- `morphling.range_and_vfx`（`AfterCastSpell`）：处理波浪形态精确落点校准与原生水爆特效，以及清理变体打击/变形的待消费选格目标。
 - `morphling.attribute_shift`（`AfterCastSpell`）：处理 E1 / E2 属性转换与血量联动。
 - `morphling.ebb_flow.speed`（`SpeedQuery`）：高敏捷移速加成。
 - `morphling.ebb_flow.attack_range`（`AttackRangeQuery`）：高敏捷远程射程加成。

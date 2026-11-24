@@ -66,12 +66,18 @@ DotaMechanicsMapper.RegisterFixedStartingStats(ClassName, StartingStats);
 
 ---
 
-## 4. 持续时间与召唤物生命周期规范
+## 4. 持续时间、治疗 / 吸血与召唤物生命周期规范
 
 1. **时间换算标尺：1 秒 DOTA2 时间 = 2 回合 Pathos**（`DotaMechanicsMapper.MapDurationTurns(seconds)`）：
    - Pathos 走位与回合流逝极快，1 秒 = 1 回合会导致 4~5 秒的技能走两步就结束；按 **1 秒 = 2 回合** 换算后，5 秒剑刃风暴为 `10` 回合，18~24 秒治疗守卫为 `36~48` 回合，1.5~3 秒控制为 `3~6` 回合；同时每秒持续伤害/治疗按每回合 `0.5 秒` 折算（保持总伤/总奶量与原版一致）。
-2. **召唤物到期 / 替换销毁**：
-   - 统一调用 `PathosEngineBridge.DespawnSummon(Engine, Summon, "expired")`（以 `Attacker = null` 结算死亡并彻底移出地图，无尸体、无运程惩罚）。
+2. **治疗、光环回复与吸血规范**：
+   - **百分比持续治疗（HoT / 光环）**：将 DOTA2 每秒回复比例除以 `TurnsPerSecond`（`2.0`）折算为每回合回复比例（如治疗守卫每秒 `2%~5%`、魔晶 `6.5%` → 每回合 `1.0%~2.5%`、Champion `3.25%`），单次保底回复 `1 HP`；在 `AfterExecuteCommand` 中遍历友军（`DotaCombatHelper.IsFriendly`），仅对不满血目标调用 `PathosEngineBridge.HealCharacter`，并可配合 `StoryDetecting` + `StoryStriking` 给出治疗反馈。
+   - **暴击吸血 / 伤害吸血（Lifesteal）**：在 `BeforeDamage` 最终伤害确定后（或 `AfterDamage`）按实际伤害乘以吸血比例（保底 `1 HP`）调用 `PathosEngineBridge.HealCharacter(engine, attacker, attacker, selfDir, healAmt)`（仅当不满血时触发）。
+   - **直接生命上限联动（如水人属性转换）**：涉及最大生命与当前生命同步增减时使用 `PathosEngineBridge.SetMeter(Life, newPoints, newTotal)`（而非 `HealCharacter`），保证转敏时只截断上限不扣残血、最低保底 `1 HP`。
+   - **生态/道具交互回复**：可在声明式 `AddReaction` / `AddObviousUse` 中直接使用 `HealEntity` / `EnergiseEntity`（如变体水灵遇水/水药水/喷泉回血回蓝）。
+3. **召唤物召唤与到期 / 替换销毁**：
+   - **点地精确召唤**：通过 `PathosEngineBridge.SummonAllyEntity` 召唤唯一随从（详见 [全射程选格与范围施法体系](range-targeting.md#33-关键避坑点地召唤技能禁止在声明式-plain-射线上直接挂-summonentity)）。
+   - **到期 / 替换彻底销毁**：统一调用 `PathosEngineBridge.DespawnSummon(Engine, Summon, "expired")`（以 `Attacker = null` 结算死亡并彻底移出地图，无尸体、无运程惩罚）。
    - **禁止使用 `DismissAlly`**：`DismissAlly` 只会解除盟友关系并把单位留在场上变野生/中立生物，导致地图堆积大量残留召唤物。
 
 ---
@@ -90,7 +96,7 @@ Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等
 
 ## 6. 天赋树系统与「减冷却 → 减蓝耗」映射规范
 
-所有 DOTA2 英雄共享 `Framework/Talents/` 通用天赋框架与独立 `Inv` 天赋树面板（HUD 顶部「天赋」按钮或快捷键 `F2` 打开，原生 `TalentPanel` 自动隐藏内部持久化标记）：
+所有 DOTA2 英雄共享 `Framework/Talents/` 通用天赋框架与独立原生风格侧边面板（左下角「休息」按钮右侧的原生 `MenuButton` 或快捷键 `F2` 打开，原生 `TalentPanel` 与百科自动隐藏内部持久化标记；完整架构详见 [天赋树与长/短期技能状态体系](talents-and-skills.md)）：
 
 1. **Pathos 节奏解锁阶梯（选定不可重置）**：
    - **四层二选一**：`Lv 5 / 10 / 15 / 20` 依次解锁 T1 ~ T4。
@@ -107,17 +113,22 @@ Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等
 
 ## 7. 常见 DOTA2 机制在 Pathos 中的实现套路
 
-| DOTA2 机制类型 | 推荐实现方式 | 现有参考 |
+| DOTA2 机制类型 | 推荐实现方式（优先复用 Framework 基建） | 现有参考 |
 | :--- | :--- | :--- |
 | **固定初始六维与蓝量** | `DotaMechanicsMapper.MapStartingStats` + `RegisterFixedStartingStats` | 主宰、变体精灵 |
-| **先天技能（Innate）** | 声明式注册 1 级职业专长（在天赋栏可见） + Hook 实时驱动效果 | 水人「潮涨潮落」、主宰「剑心犹在」 |
+| **长效技能（先天 / 被动）** | `Ctx.RegisterPassiveProperty` + `Class.AddFeat(1, ...)` + `DotaHookBus` 实时驱动 | 水人「潮涨潮落」、主宰「剑心犹在」「剑舞」 |
+| **短期主动技能状态** | `Ctx.RegisterSkillStatusProperty`（自动从原生天赋栏与百科隐藏）+ `ApplyTransient` | 主宰「剑刃风暴」「无敌斩」 |
+| **左上角动态叠层徽章** | `DotaStatusBarBridge.RegisterProvider`（复用原生 `StatusIcon`，支持计数与点击查说明） | 主宰「剑心犹在」 |
+| **全射程选格 / 点地施法** | `DotaRangeTargetingBridge.RegisterSpell` + `DotaCombatHelper.ResolveHostileTarget` / `ResolveOpenPointTarget` + `RefundMana` | 主宰「无敌斩」「治疗守卫」、水人 Q/W/R |
 | **被动加甲 / 减甲光环** | `RegisterDefenceQuery` + `DotaMechanicsMapper.MapArmorToDefence` | 框架内置支持 |
-| **概率暴击 / 法球被动** | 声明式注册被动专长 + `BeforeDamage`（结合 `ActiveAttack` / `ActiveSpellCast`） | 主宰「剑舞」 |
-| **持续光环 / 每回合伤害** | 状态标记（`Property` + `HasTransient`） + `AfterExecuteCommand` 驱动每回合 Tick | 主宰「剑刃风暴」「治疗守卫」 |
-| **状态免疫 / 减益驱散** | 施法后 `RemoveTransient` 驱散 + `BeforeApplyTransient` 拦截负面状态 | 主宰「剑刃风暴」、水人高力免疫减速 |
-| **无敌位移多段斩击** | `AfterCastSpell` 中维护 `HashSet<Character>` 无敌集合 + `BeforeDamage` 取消伤害 + `TeleportCharacter` + `StrikeCharacter` | 主宰「无敌斩」 |
-| **永久属性转换** | `AfterCastSpell` 中同步修改 `CurrentForm` 与 `MaximumForm`，确保总量守恒，避免复活/恢复药水白嫖 | 水人「属性转换」 |
-| **角色私有运行时状态** | 使用 `ConditionalWeakTable<Character, TState>` 绑定角色实例，避免内存泄漏 | 主宰 `BladeformStates` / `WardStates` |
+| **概率暴击 / 吸血 / 法球** | `BeforeDamage`（结合 `ActiveAttack` / `ActiveSpellCast`）+ `HealCharacter` | 主宰「剑舞」（含 T4 暴击吸血） |
+| **持续光环 / 每回合转伤 / 治疗** | `AfterExecuteCommand` + `DotaCombatHelper.FindHostilesInRadius` / `IsFriendly` + `HealCharacter` | 主宰「剑刃风暴」「治疗守卫」 |
+| **基础驱散 / 减益免疫** | `DotaCombatHelper.DispelNegativeDebuffs` + `BeforeApplyTransient`（`DotaCombatHelper.IsNegativeDebuff`） | 主宰「剑刃风暴」、水人高力免疫减速 |
+| **多回合自动连斩 / 引导** | `ConditionalWeakTable` Session + `BeforeDamage` 无敌 + `PathosEngineBridge.QueueWaitDecision` | 主宰「无敌斩」 |
+| **召唤物精确召唤与消散** | `PathosEngineBridge.SummonAllyEntity` + `PathosEngineBridge.DespawnSummon` | 主宰「治疗守卫」 |
+| **自定义像素特效（VFX）** | `Ctx.RegisterStrikeVfx` / `RegisterBeamVfx` / `RegisterExplosion3x3Vfx` + `PathosEngineBridge.Story*` / `DotaCombatHelper.PlayBeamTrail` | 主宰全套技能、水人水爆 |
+| **永久属性转换** | `AfterCastSpell` 中 `SetPermanentAbilityScore`（同步 `CurrentForm` / `MaximumForm`）+ `SetMeter` | 水人「属性转换」 |
+| **角色私有运行时状态** | 使用 `ConditionalWeakTable<Character, TState>` 绑定角色实例，避免内存泄漏 | 主宰 `BladeformStates` / `WardStates` / `ActiveOmnislashSessions` |
 
 ---
 

@@ -84,14 +84,7 @@ namespace Pathos.DotaHeroes.Heroes
         MorphRevertSpell);
 
       // 8. 注册预设英雄：Morphling（可在选人界面一键选中）
-      Ctx.Heroes.Add(H =>
-      {
-        H.Name = "Morphling";
-        H.Race = WaterkinRace;
-        H.Class = MorphlingClass;
-        H.Gender = Ctx.Genders.male;
-        H.CustomGlyph = MorphlingGlyph;
-      });
+      Ctx.RegisterPresetHero("Morphling", WaterkinRace, MorphlingClass, Ctx.Genders.male, MorphlingGlyph);
     }
 
     public void RegisterHooks(DotaHeroContext Ctx)
@@ -134,9 +127,7 @@ namespace Pathos.DotaHeroes.Heroes
           var Pending = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
           if (Pending?.TargetSquare != null &&
               Pending.TargetSquare.Map == Caster.Square.Map &&
-              Pending.TargetSquare.Character == null &&
-              !Pending.TargetSquare.IsBlocked(Vision: false) &&
-              !Pending.TargetSquare.IsVoid())
+              DotaCombatHelper.IsOpenSquare(Pending.TargetSquare))
           {
             PathosEngineBridge.TeleportCharacter(Args.Engine, Caster, Pending.TargetSquare, MasterMode: false);
           }
@@ -238,7 +229,7 @@ namespace Pathos.DotaHeroes.Heroes
           float Ratio = Str / (float)Dex;
           float Scale = Math.Clamp((Ratio - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
 
-          int MasteryTier = GetSkillTier(Ctx, ActiveCast.Character, Ctx.Skills.evocation);
+          int MasteryTier = DotaCombatHelper.GetSkillTier(Ctx, ActiveCast.Character, Ctx.Skills.evocation);
           // 对应 DOTA2 变体打击最短 0.5 秒（1 回合）、最长 1.5 / 2.0 / 2.5 / 3.0 秒（3 / 4 / 5 / 6 回合，Champion 7 回合）
           int MaxStun = DotaMechanicsMapper.MapDurationTurns(1.0f + MasteryTier * 0.5f);
           int FinalStun = Math.Max(1, (int)MathF.Round(1.0f + (MaxStun - 1.0f) * Scale));
@@ -273,7 +264,7 @@ namespace Pathos.DotaHeroes.Heroes
       if (Character?.CurrentForm == null || Character.MaximumForm == null)
         return;
 
-      int Step = GetSkillTier(Ctx, Character, Ctx.Skills.transmutation);
+      int Step = DotaCombatHelper.GetSkillTier(Ctx, Character, Ctx.Skills.transmutation);
 
       int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Character, "strength");
       int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Character, "constitution");
@@ -400,33 +391,13 @@ namespace Pathos.DotaHeroes.Heroes
     }
 
     private static bool IsMorphling(Character Character)
-    {
-      return Character?.Class != null &&
-             string.Equals(Character.Class.Name, MorphlingClassName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static int GetSkillTier(DotaHeroContext Ctx, Character Character, Skill Skill)
-    {
-      if (Character == null || Skill == null)
-        return 1;
-
-      var Qual = PathosEngineBridge.GetQualification(Character, Skill);
-      if (Qual == Ctx.Qualifications.champion) return 5;
-      if (Qual == Ctx.Qualifications.master) return 4;
-      if (Qual == Ctx.Qualifications.expert) return 3;
-      if (Qual == Ctx.Qualifications.specialist) return 2;
-      return 1;
-    }
+      => DotaCombatHelper.IsClass(Character, MorphlingClassName);
 
     private static Property RegisterEbbAndFlowTalent(DotaHeroContext Ctx, Glyph Icon)
-    {
-      return Ctx.Properties.Add(P =>
-      {
-        P.Name = "ebb and flow";
-        P.Description = "Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.";
-        P.Glyph = Icon;
-      });
-    }
+      => Ctx.RegisterPassiveProperty(
+        Name: "ebb and flow",
+        Description: "Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.",
+        Icon: Icon);
 
     private static Item RegisterTidalOrbItem(DotaHeroContext Ctx, Glyph Icon)
     {
