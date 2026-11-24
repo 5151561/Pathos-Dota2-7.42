@@ -150,38 +150,38 @@ namespace Pathos.DotaHeroes.Heroes
         IconGlyph: IconGlyph,
         T1Left: new TalentNode(
           Id: TalentT1BladeformInterval,
-          Title: "剑心犹在叠层加速",
-          Description: "每 2 回合未受伤害叠加 1 层剑心犹在（默认 4 回合）。"),
+          Title: "剑心犹在叠层间隔减半",
+          Description: "4 回合 → 2 回合"),
         T1Right: new TalentNode(
           Id: TalentT1HealingWardMana,
-          Title: "治疗守卫蓝耗 -20%",
-          Description: $"治疗守卫法力消耗降低（{HealingWardManaCost} → {ReducedWardMana}）。",
+          Title: "-20% 治疗守卫蓝耗",
+          Description: $"蓝耗 {HealingWardManaCost} → {ReducedWardMana}",
           ManaReductions: new[] { new SpellManaReductionRule(HealingWardSpellName, HealingWardTalentCdr) }),
         T2Left: new TalentNode(
           Id: TalentT2BladeFurySpeed,
-          Title: "剑刃风暴移速 +15%",
-          Description: "剑刃风暴持续期间移动速度提升 15%。"),
+          Title: "+15% 剑刃风暴移速",
+          Description: string.Empty),
         T2Right: new TalentNode(
           Id: TalentT2OmnislashMana,
-          Title: "无敌斩蓝耗 -12.5%",
-          Description: $"无敌斩法力消耗降低（{OmnislashManaCost} → {ReducedOmniMana}）。",
+          Title: "-12.5% 无敌斩蓝耗",
+          Description: $"蓝耗 {OmnislashManaCost} → {ReducedOmniMana}",
           ManaReductions: new[] { new SpellManaReductionRule(OmnislashSpellName, OmnislashTalentCdr) }),
         T3Left: new TalentNode(
           Id: TalentT3BladeFuryDamage,
-          Title: "剑刃风暴每回合基础伤害 +4",
-          Description: "原 +120 每秒伤害：剑刃风暴每回合基础伤害 +4（受敏捷与剑心犹在攻速频率缩放）。"),
+          Title: "+4 剑刃风暴基础伤害",
+          Description: "受敏捷与剑心犹在攻速频率缩放"),
         T3Right: new TalentNode(
           Id: TalentT3BladeDanceCrit,
-          Title: "剑舞暴击倍率 +15%",
-          Description: "剑舞暴击倍率由 1.8× 提升至 1.95×。"),
+          Title: "+15% 剑舞暴击倍率",
+          Description: "1.8× → 1.95×"),
         T4Left: new TalentNode(
           Id: TalentT4BladeDanceLifesteal,
-          Title: "剑舞暴击吸血 +40%",
-          Description: "触发剑舞暴击时，回复本次伤害 40% 的生命值。"),
+          Title: "+40% 剑舞暴击吸血",
+          Description: string.Empty),
         T4Right: new TalentNode(
           Id: TalentT4OmnislashSlashes,
-          Title: "无敌斩斩击 +3",
-          Description: "无敌斩总斩击次数 +3（最高 15 斩）。"));
+          Title: "+3 无敌斩斩击次数",
+          Description: "最高 15 斩"));
 
       TalentRegistry.Register(Ctx, Tree);
     }

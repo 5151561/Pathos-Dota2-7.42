@@ -14,14 +14,14 @@ EntityName,healing ward,治療守衛
 EntityName,waterkin,變體水靈
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的遠程水彈，可作為彈弓無限彈藥發射。
 ItemName,tidal orb,潮汐水彈
-PropertyDescription,[DOTA2 Talent] 劍刃風暴每回合基礎傷害 +4: 原 +120 每秒傷害：劍刃風暴每回合基礎傷害 +4（受敏捷與劍心猶在攻速頻率縮放）。,
-PropertyDescription,[DOTA2 Talent] 劍刃風暴移速 +15%: 劍刃風暴持續期間移動速度提升 15%。,
-PropertyDescription,[DOTA2 Talent] 劍舞暴擊倍率 +15%: 劍舞暴擊倍率由 1.8× 提升至 1.95×。,
-PropertyDescription,[DOTA2 Talent] 劍舞暴擊吸血 +40%: 觸發劍舞暴擊時，回復本次傷害 40% 的生命值。,
-PropertyDescription,[DOTA2 Talent] 劍心猶在疊層加速: 每 2 回合未受傷害疊加 1 層劍心猶在（默認 4 回合）。,
-PropertyDescription,[DOTA2 Talent] 無敵斬藍耗 -12.5%: 無敵斬法力消耗降低（12 → 10）。,
-PropertyDescription,[DOTA2 Talent] 無敵斬斬擊 +3: 無敵斬總斬擊次數 +3（最高 15 斬）。,
-PropertyDescription,[DOTA2 Talent] 治療守衛藍耗 -20%: 治療守衛法力消耗降低（7 → 6）。,
+PropertyDescription,[DOTA2 Talent] -12.5% 無敵斬藍耗: 藍耗 12 → 10,
+PropertyDescription,[DOTA2 Talent] -20% 治療守衛藍耗: 藍耗 7 → 6,
+PropertyDescription,[DOTA2 Talent] +15% 劍刃風暴移速:,
+PropertyDescription,[DOTA2 Talent] +15% 劍舞暴擊倍率: 1.8× → 1.95×,
+PropertyDescription,[DOTA2 Talent] +3 無敵斬斬擊次數: 最高 15 斬,
+PropertyDescription,[DOTA2 Talent] +4 劍刃風暴基礎傷害: 受敏捷與劍心猶在攻速頻率縮放,
+PropertyDescription,[DOTA2 Talent] +40% 劍舞暴擊吸血:,
+PropertyDescription,[DOTA2 Talent] 劍心猶在疊層間隔減半: 4 回合 → 2 回合,
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,先天技能「劍心猶在」：每連續 4 回合未受傷害疊加 1 層（上限 10 層），每層提供 +1% 移速與 +2.5% 等效敏捷攻速及近戰/無敵斬額外傷害；受傷後保留 4 回合粘滯期。
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,先天技能「潮漲潮落」：敏捷提供額外移速與遠程攻擊距離；力量提供額外施法距離與減速抗性（變形期間持續保留）。
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% to 35% chance (by Medium Blade mastery) to critically strike for 1.8x damage.",被動技能「劍舞」：近戰普攻、無敵斬與劍刃風暴有 20% ~ 35% 概率（隨中刃熟練度提升）觸發 1.8 倍致命一擊。

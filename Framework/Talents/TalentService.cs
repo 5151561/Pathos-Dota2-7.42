@@ -112,11 +112,12 @@ namespace Pathos.DotaHeroes.Framework.Talents
       }
 
       Glyph Icon = TalentRegistry.TryGetTree(Character, out var Tree) ? Tree.IconGlyph : null;
+      string Detail = string.IsNullOrWhiteSpace(Node.Description) ? Node.Title : $"{Node.Title} ({Node.Description})";
       PathosEngineBridge.WriteInternalLog(
         Engine,
         Character,
         Icon,
-        $"Learned Talent [Lv {Tier.UnlockLevel}]: {Node.Title} — {Node.Description}");
+        $"Learned Talent [Lv {Tier.UnlockLevel}]: {Detail}");
 
       return true;
     }

@@ -694,7 +694,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
       {
         var Node = Tier.GetNode(Branch);
 
-        Inv.Colour Bg, Border, TitleCol, DescCol, TagCol;
+        Inv.Colour Bg, Border, TitleCol, TagCol;
         string TagText = null;
 
         switch (State)
@@ -703,7 +703,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
             Bg = LearnedBgColour;
             Border = LearnedBorderColour;
             TitleCol = TextPrimaryColour;
-            DescCol = TextSecondaryColour;
             TagCol = LearnedTagColour;
             TagText = "✓ 已学习";
             break;
@@ -712,7 +711,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
             Bg = AvailableBgColour;
             Border = AvailableBorderColour;
             TitleCol = TextPrimaryColour;
-            DescCol = TextPrimaryColour;
             TagCol = AvailableTagColour;
             TagText = "点击学习";
             break;
@@ -720,30 +718,26 @@ namespace Pathos.DotaHeroes.Framework.Talents
           default:
             Bg = TileSubBgColour;
             Border = LockedBorderColour;
-            TitleCol = TextPrimaryColour;
-            DescCol = TextMutedColour;
+            TitleCol = TextSecondaryColour;
             TagCol = TextMutedColour;
             break;
         }
 
         var InnerStack = Surface.NewVerticalStack();
+        InnerStack.Alignment.Center();
 
-        var TitleLabel = CreateLabel(TitleCol, FontSize: 16);
+        var TitleLabel = CreateLabel(TitleCol, FontSize: 15);
         TitleLabel.Text = Node.Title;
+        TitleLabel.Justify.Center();
         TitleLabel.LineWrapping = true;
-        TitleLabel.Margin.Set(0, 0, 0, 4);
         InnerStack.AddPanel(TitleLabel);
-
-        var DescLabel = CreateLabel(DescCol, FontSize: 14);
-        DescLabel.Text = Node.Description;
-        DescLabel.LineWrapping = true;
-        InnerStack.AddPanel(DescLabel);
 
         if (!string.IsNullOrEmpty(TagText))
         {
-          var TagLabel = CreateLabel(TagCol, FontSize: 14);
+          var TagLabel = CreateLabel(TagCol, FontSize: 13);
           TagLabel.Text = TagText;
-          TagLabel.Margin.Set(0, 5, 0, 0);
+          TagLabel.Justify.Center();
+          TagLabel.Margin.Set(0, 4, 0, 0);
           InnerStack.AddPanel(TagLabel);
         }
 
@@ -754,7 +748,9 @@ namespace Pathos.DotaHeroes.Framework.Talents
           Btn.Background.Colour = Bg;
           Btn.Border.Set(1);
           Btn.Border.Colour = Border;
-          Btn.Padding.Set(8, 7);
+          Btn.Padding.Set(8, 10);
+          if (!string.IsNullOrWhiteSpace(Node.Description))
+            Btn.Hint = Node.Description;
           Btn.Content = InnerStack;
           Btn.SingleTapEvent += () => HandleSelectTalent(Tier, Branch);
           return Btn;
@@ -766,7 +762,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
           Frame.Background.Colour = Bg;
           Frame.Border.Set(1);
           Frame.Border.Colour = Border;
-          Frame.Padding.Set(8, 7);
+          Frame.Padding.Set(8, 10);
           Frame.Content = InnerStack;
           return Frame;
         }
