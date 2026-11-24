@@ -6,4 +6,5 @@ Atlases/
 *.suo
 *.log
 LocalPathos.props
+dist/
 

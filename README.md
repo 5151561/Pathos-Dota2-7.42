@@ -6,13 +6,36 @@
 
 ---
 
-## 快速开始
+## 玩家安装指南（免编译，下载即玩）
+
+> 适用平台：**桌面端 Steam / 独立版 Pathos**（Windows / macOS / Linux）。无需安装 .NET SDK 或自行编译。
+
+1. 前往本仓库右侧的 **[Releases](../../releases)** 页面，下载最新的 `DotaHeroesExpansion-v*.zip` 压缩包并**完整解压**。
+2. **完全关闭 Pathos 游戏**（运行中会占用文件导致无法安装或覆盖）。
+3. 选择以下任意一种方式安装：
+   - **Windows 一键安装（推荐）**：直接双击解压出来的 `一键安装(Windows).bat`，脚本会自动识别 Steam / 本地 Pathos 安装目录并完成部署。
+   - **手动安装（Windows / macOS / Linux 通用）**：
+     1. 打开 Pathos 安装目录下的 `Expansions` 文件夹（Steam 版：库中右键 **Pathos** → **管理** → **浏览本地文件** → 打开 `Expansions`）。
+     2. 将解压后 `files/` 文件夹内的**全部文件**（`.dll`、`.Atlas`、`.Dictionary` 等，**不要只复制 `.dll`**）复制到 `Expansions/` 中。
+4. 启动游戏，在新建角色界面即可选择 DOTA2 英雄！
+
+> **卸载**：运行 `卸载Mod(Windows).bat`，或删除 `Expansions/` 目录中所有文件名包含 `DotaHeroesExpansion` 的文件即可。
+
+---
+
+## 开发者快速开始（编译与打包）
 
 1. 复制 [LocalPathos.props.example](LocalPathos.props.example) 为 `LocalPathos.props`，将 `<PathosInstallation>` 改为本机 Pathos 安装路径（或设置环境变量 `PATHOS_INSTALL_DIR`）。
 2. 在项目根目录执行构建与自动部署：
 
 ```powershell
 dotnet build .\DotaHeroesExpansion.csproj -c Release
+```
+
+3. 打包可直接上传至 GitHub Releases 的免编译 `.zip` 安装包（输出至 `dist/`）：
+
+```powershell
+.\scripts\package-release.ps1 -Version "v0.1.0"
 ```
 
 详细构建流程与调试日志说明请见 [编译、部署与调试指南](docs/guides/build-and-debug.md)。
