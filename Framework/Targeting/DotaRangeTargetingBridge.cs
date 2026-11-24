@@ -20,6 +20,7 @@ namespace Pathos.DotaHeroes.Framework.Targeting
   {
     public string SpellName { get; }
     public string DisplayTitle { get; }
+    public Func<string> ResolveDisplayTitle { get; }
     public DotaTargetMode Mode { get; }
     public Func<Character, int> ResolveRange { get; }
     public bool AllowSelf { get; }
@@ -29,14 +30,18 @@ namespace Pathos.DotaHeroes.Framework.Targeting
       string DisplayTitle,
       DotaTargetMode Mode,
       Func<Character, int> ResolveRange,
-      bool AllowSelf = false)
+      bool AllowSelf = false,
+      Func<string> ResolveDisplayTitle = null)
     {
       this.SpellName = SpellName;
       this.DisplayTitle = DisplayTitle;
+      this.ResolveDisplayTitle = ResolveDisplayTitle;
       this.Mode = Mode;
       this.ResolveRange = ResolveRange;
       this.AllowSelf = AllowSelf;
     }
+
+    public string GetDisplayTitle() => ResolveDisplayTitle?.Invoke() ?? DisplayTitle;
   }
 
   public sealed class PendingSpellTarget
@@ -253,7 +258,7 @@ namespace Pathos.DotaHeroes.Framework.Targeting
         var Shell = StageShellProp?.GetValue(CurrentCastStage);
         var Engine = Shell != null ? ShellEngineProp?.GetValue(Shell) : null;
         if (Engine != null)
-          PathosEngineBridge.StoryCaption(Engine, Caster.Square, Colour.White, $"{Spec.DisplayTitle} ({MaxRange})", false);
+          PathosEngineBridge.StoryCaption(Engine, Caster.Square, Colour.White, $"{Spec.GetDisplayTitle()} ({MaxRange})", false);
 
         return false;
       }

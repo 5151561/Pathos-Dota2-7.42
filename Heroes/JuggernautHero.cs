@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using Inv;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Localization;
 using Pathos.DotaHeroes.Framework.Skills;
 using Pathos.DotaHeroes.Framework.Talents;
 using Pathos.DotaHeroes.Framework.Targeting;
@@ -217,46 +218,67 @@ namespace Pathos.DotaHeroes.Heroes
     {
       var Build = HeroSkillBuild.CreateStandard(
         ClassName: JuggernautClassName,
-        HeroDisplayName: "主宰 · 尤涅若",
+        HeroDisplayName: "Juggernaut",
         HeroId: "jugg",
         IconGlyph: HeroGlyph,
         SlotQ: DotaSkillSlot.CreateActive(
           Id: SkillBladeFuryId,
           Hotkey: "Q",
-          Title: "剑刃风暴",
+          Title: "Blade Fury",
           IconGlyph: BladeFuryGlyph,
           Spell: BladeFurySpell,
           DescribeLevel: Lv => Lv <= 0
-            ? "学习后获得「剑刃风暴」；升星额外 +15%/级旋转伤害，满级 +2 回合"
-            : $"升星伤害 ×{1.0f + (Lv - 1) * 0.15f:0.00}{(Lv >= 4 ? "，满级持续 +2 回合" : "（下级 +15% 伤害并升星减蓝耗）")}"),
+            ? DotaLocalization.T("jugg.skill.q.desc_0")
+            : DotaLocalization.Format(
+                "jugg.skill.q.desc_lv",
+                $"{1.0f + (Lv - 1) * 0.15f:0.00}",
+                Lv >= 4 ? DotaLocalization.T("jugg.skill.q.desc_max_suffix") : DotaLocalization.T("jugg.skill.q.desc_next_suffix")),
+          TitleResolver: () => DotaLocalization.T("jugg.skill.q.title")),
         SlotW: DotaSkillSlot.CreateActive(
           Id: SkillHealingWardId,
           Hotkey: "W",
-          Title: "治疗守卫",
+          Title: "Healing Ward",
           IconGlyph: HealingWardGlyph,
           Spell: HealingWardSpell,
           DescribeLevel: Lv => Lv <= 0
-            ? "学习后获得「治疗守卫」；升星额外 +0.5%/回合回血与 +4 回合持续"
-            : $"升星附加 +{(Lv - 1) * 0.5f:0.#}%/回合回血、+{(Lv - 1) * 4} 回合持续{(Lv < 4 ? "（下级继续升星强化）" : "")}"),
+            ? DotaLocalization.T("jugg.skill.w.desc_0")
+            : DotaLocalization.Format(
+                "jugg.skill.w.desc_lv",
+                $"{(Lv - 1) * 0.5f:0.#}",
+                (Lv - 1) * 4,
+                Lv < 4 ? DotaLocalization.T("jugg.skill.w.desc_next_suffix") : string.Empty),
+          TitleResolver: () => DotaLocalization.T("jugg.skill.w.title")),
         SlotE: DotaSkillSlot.CreatePassive(
           Id: SkillBladeDanceId,
           Hotkey: "E",
-          Title: "剑舞",
+          Title: "Blade Dance",
           IconGlyph: BladeDanceGlyph,
           PassiveProperty: BladeDanceTalent,
           DescribeLevel: Lv => Lv <= 0
-            ? "被动：普攻/无敌斩/剑刃风暴 20%/25%/30%/35% 触发 1.8× 暴击"
-            : $"当前暴击率 {GetBladeDanceCritChanceByLevel(Lv) * 100:0}%（1.8× 暴击{(Lv < 4 ? $"，下级 {GetBladeDanceCritChanceByLevel(Lv + 1) * 100:0}%" : "，已满级")}）"),
+            ? DotaLocalization.T("jugg.skill.e.desc_0")
+            : DotaLocalization.Format(
+                "jugg.skill.e.desc_lv",
+                $"{GetBladeDanceCritChanceByLevel(Lv) * 100:0}",
+                Lv < 4
+                  ? DotaLocalization.Format("jugg.skill.e.desc_next_suffix", $"{GetBladeDanceCritChanceByLevel(Lv + 1) * 100:0}")
+                  : DotaLocalization.T("jugg.skill.e.desc_max_suffix")),
+          TitleResolver: () => DotaLocalization.T("jugg.skill.e.title")),
         SlotR: DotaSkillSlot.CreateActive(
           Id: SkillOmnislashId,
           Hotkey: "R",
-          Title: "无敌斩",
+          Title: "Omnislash",
           IconGlyph: OmnislashGlyph,
           Spell: OmnislashSpell,
           IsUltimate: true,
           DescribeLevel: Lv => Lv <= 0
-            ? "终极技能（Lv 6 解锁）：升星额外 +2 斩、+2 斩击攻击力/级"
-            : $"升星附加 +{(Lv - 1) * 2} 斩、+{(Lv - 1) * 2} 斩击攻击力{(Lv < 3 ? "（下级再 +2 斩与 +2 攻击力）" : "")}"));
+            ? DotaLocalization.T("jugg.skill.r.desc_0")
+            : DotaLocalization.Format(
+                "jugg.skill.r.desc_lv",
+                (Lv - 1) * 2,
+                (Lv - 1) * 2,
+                Lv < 3 ? DotaLocalization.T("jugg.skill.r.desc_next_suffix") : string.Empty),
+          TitleResolver: () => DotaLocalization.T("jugg.skill.r.title")),
+        HeroDisplayNameResolver: () => DotaLocalization.T("jugg.hero_display"));
 
       HeroSkillRegistry.Register(Ctx, Build);
     }
@@ -268,42 +290,40 @@ namespace Pathos.DotaHeroes.Heroes
 
       var Tree = HeroTalentTree.CreateStandard(
         ClassName: JuggernautClassName,
-        HeroDisplayName: "主宰 · 尤涅若",
+        HeroDisplayNameResolver: () => DotaLocalization.T("jugg.hero_display"),
         IconGlyph: IconGlyph,
         T1Left: new TalentNode(
           Id: TalentT1BladeformInterval,
-          Title: "剑心犹在叠层间隔减半",
-          Description: "4 回合 → 2 回合"),
+          TitleResolver: () => DotaLocalization.T("jugg.talent.t1l.title"),
+          DescriptionResolver: () => DotaLocalization.T("jugg.talent.t1l.desc")),
         T1Right: new TalentNode(
           Id: TalentT1HealingWardMana,
-          Title: "-20% 治疗守卫蓝耗",
-          Description: $"蓝耗 {HealingWardManaCost} → {ReducedWardMana}",
+          TitleResolver: () => DotaLocalization.T("jugg.talent.t1r.title"),
+          DescriptionResolver: () => DotaLocalization.Format("jugg.talent.t1r.desc", HealingWardManaCost, ReducedWardMana),
           ManaReductions: new[] { new SpellManaReductionRule(HealingWardSpellName, HealingWardTalentCdr) }),
         T2Left: new TalentNode(
           Id: TalentT2BladeFurySpeed,
-          Title: "+15% 剑刃风暴移速",
-          Description: string.Empty),
+          TitleResolver: () => DotaLocalization.T("jugg.talent.t2l.title")),
         T2Right: new TalentNode(
           Id: TalentT2OmnislashMana,
-          Title: "-12.5% 无敌斩蓝耗",
-          Description: $"蓝耗 {OmnislashManaCost} → {ReducedOmniMana}",
+          TitleResolver: () => DotaLocalization.T("jugg.talent.t2r.title"),
+          DescriptionResolver: () => DotaLocalization.Format("jugg.talent.t2r.desc", OmnislashManaCost, ReducedOmniMana),
           ManaReductions: new[] { new SpellManaReductionRule(OmnislashSpellName, OmnislashTalentCdr) }),
         T3Left: new TalentNode(
           Id: TalentT3BladeFuryDamage,
-          Title: "+4 剑刃风暴基础伤害",
-          Description: "受敏捷与剑心犹在攻速频率缩放"),
+          TitleResolver: () => DotaLocalization.T("jugg.talent.t3l.title"),
+          DescriptionResolver: () => DotaLocalization.T("jugg.talent.t3l.desc")),
         T3Right: new TalentNode(
           Id: TalentT3BladeDanceCrit,
-          Title: "+15% 剑舞暴击倍率",
-          Description: "1.8× → 1.95×"),
+          TitleResolver: () => DotaLocalization.T("jugg.talent.t3r.title"),
+          DescriptionResolver: () => DotaLocalization.T("jugg.talent.t3r.desc")),
         T4Left: new TalentNode(
           Id: TalentT4BladeDanceLifesteal,
-          Title: "+40% 剑舞暴击吸血",
-          Description: string.Empty),
+          TitleResolver: () => DotaLocalization.T("jugg.talent.t4l.title")),
         T4Right: new TalentNode(
           Id: TalentT4OmnislashSlashes,
-          Title: "+3 无敌斩斩击次数",
-          Description: "最高 15 斩"));
+          TitleResolver: () => DotaLocalization.T("jugg.talent.t4r.title"),
+          DescriptionResolver: () => DotaLocalization.T("jugg.talent.t4r.desc")));
 
       TalentRegistry.Register(Ctx, Tree);
     }
@@ -316,17 +336,19 @@ namespace Pathos.DotaHeroes.Heroes
       // 0.1 注册 Pathos 原生选框扩距（无敌斩 4~7 格敌方目标选定；治疗守卫 3~5 格点地召唤）
       DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
         SpellName: OmnislashSpellName,
-        DisplayTitle: "无敌斩",
+        DisplayTitle: "Omnislash",
         Mode: DotaTargetMode.UnitHostile,
         ResolveRange: Caster => GetOmnislashCastRange(Ctx, Caster),
-        AllowSelf: false));
+        AllowSelf: false,
+        ResolveDisplayTitle: () => DotaLocalization.T("jugg.skill.r.title")));
 
       DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
         SpellName: HealingWardSpellName,
-        DisplayTitle: "治疗守卫",
+        DisplayTitle: "Healing Ward",
         Mode: DotaTargetMode.PointOpen,
         ResolveRange: Caster => GetHealingWardCastRange(Ctx, Caster),
-        AllowSelf: true));
+        AllowSelf: true,
+        ResolveDisplayTitle: () => DotaLocalization.T("jugg.skill.w.title")));
 
       // 0.2 注册「剑心犹在」左上角状态栏动态叠层显示（叠层 > 0 时展示层数，受击粘滞期以橙色高亮提示）
       DotaStatusBarBridge.RegisterProvider("juggernaut.bladeform", Character =>
@@ -342,7 +364,9 @@ namespace Pathos.DotaHeroes.Heroes
         {
           Key = "juggernaut.bladeform",
           Glyph = BladeformGlyph,
-          Text = (BladeformTalentProperty != null ? PathosEngineBridge.GetLocalizedName(BladeformTalentProperty) : "剑心犹在").ToUpper(),
+          Text = (BladeformTalentProperty != null
+            ? PathosEngineBridge.GetLocalizedName(BladeformTalentProperty)
+            : DotaLocalization.T("jugg.status.bladeform_fallback")).ToUpper(),
           Count = $"×{State.Stacks}",
           Colour = State.LingerTurns > 0 ? Colour.DarkOrange : Colour.Black,
           HelpProperty = BladeformTalentProperty
@@ -540,7 +564,7 @@ namespace Pathos.DotaHeroes.Heroes
               int HealAmt = Math.Max(1, (int)MathF.Round(Args.DamagePoints * 0.40f));
               var SelfDir = Attacker.Square != null ? Attacker.Square.AsDirection(Attacker.Square) : default;
               PathosEngineBridge.HealCharacter(Args.Engine, Attacker, Attacker, SelfDir, HealAmt);
-              LifestealNote = $"（吸血 +{HealAmt} HP）";
+              LifestealNote = DotaLocalization.Format("jugg.log.crit_lifesteal", HealAmt);
             }
 
             if (IsOmnislash)
@@ -550,18 +574,22 @@ namespace Pathos.DotaHeroes.Heroes
             else if (Args.Defender?.Square != null)
             {
               PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, Args.Defender.Square, BladeDanceCritStrike ?? Ctx.Strikes.flame);
-              PathosEngineBridge.StoryCaption(Args.Engine, Args.Defender.Square, Colour.OrangeRed, "暴击!", Delayed: false);
+              PathosEngineBridge.StoryCaption(Args.Engine, Args.Defender.Square, Colour.OrangeRed, DotaLocalization.T("ui.caption.crit"), Delayed: false);
             }
 
-            string SourceTag = IsOmnislash ? "（无敌斩）" : IsBladeFurySpin ? "（剑刃风暴）" : string.Empty;
+            string SourceTag = IsOmnislash
+              ? DotaLocalization.T("jugg.log.crit_src_omni")
+              : IsBladeFurySpin
+                ? DotaLocalization.T("jugg.log.crit_src_fury")
+                : string.Empty;
             string TargetName = Args.Defender?.Entity != null
               ? PathosEngineBridge.GetLocalizedName(Args.Defender.Entity)
-              : "目标";
+              : DotaLocalization.T("jugg.log.crit_target_fallback");
             PathosEngineBridge.WriteInternalLog(
               Args.Engine,
               Attacker,
               BladeDanceGlyph,
-              $"剑舞暴击{SourceTag}！对 {TargetName} 造成 {Args.DamagePoints} 点伤害{LifestealNote}！");
+              DotaLocalization.Format("jugg.log.blade_dance_crit", SourceTag, Args.DamagePoints, TargetName, LifestealNote));
           }
         }
       });
@@ -594,7 +622,7 @@ namespace Pathos.DotaHeroes.Heroes
             Engine,
             Juggernaut,
             BladeformGlyph,
-            "剑心犹在层数因受伤已消散。");
+            DotaLocalization.T("jugg.log.bladeform_lost"));
         }
         return;
       }
@@ -616,7 +644,7 @@ namespace Pathos.DotaHeroes.Heroes
               Engine,
               Juggernaut,
               BladeformGlyph,
-              "剑心犹在已叠满（10 层）：移速 +10%，敏捷攻速与伤害 +25%！");
+              DotaLocalization.T("jugg.log.bladeform_maxed"));
           }
         }
       }
@@ -807,7 +835,7 @@ namespace Pathos.DotaHeroes.Heroes
           Args.Engine,
           Caster,
           OmnislashGlyph,
-          "无敌斩：射程内无敌方目标（已返还法力）。");
+          DotaLocalization.T("jugg.log.omni_no_target"));
         return;
       }
 
@@ -933,7 +961,7 @@ namespace Pathos.DotaHeroes.Heroes
             : (OmnislashStrike ?? Ctx.Strikes.sever));
 
         if (LastOmnislashStrikeCritted)
-          PathosEngineBridge.StoryCaption(Engine, TargetSq, Colour.OrangeRed, "暴击!", Delayed: false);
+          PathosEngineBridge.StoryCaption(Engine, TargetSq, Colour.OrangeRed, DotaLocalization.T("ui.caption.crit"), Delayed: false);
 
         Session.SlashesDone++;
         Session.RemainingSlashes = Math.Max(0, Session.RemainingSlashes - 1);
@@ -962,7 +990,7 @@ namespace Pathos.DotaHeroes.Heroes
           Engine,
           Caster,
           OmnislashGlyph,
-          $"无敌斩发动完毕，共斩出 {Session.SlashesDone} 次无敌斩击！");
+          DotaLocalization.Format("jugg.log.omni_finished", Session.SlashesDone));
       }
     }
 
@@ -1091,13 +1119,13 @@ namespace Pathos.DotaHeroes.Heroes
           bool HasSpeedTalent = TalentService.HasTalent(Ch, TalentT2BladeFurySpeed);
 
           string TalentDmgNote = HasDmgTalent
-            ? $"，{DotaHelpColor.Talent("T3 天赋 +120 DPS")}"
+            ? DotaLocalization.Format("ui.common.comma_item", DotaHelpColor.Talent(DotaLocalization.T("jugg.help.q.tag_t3_dps")))
             : string.Empty;
           string StarDmgNote = StarMult > 1.001f
-            ? $"，{DotaHelpColor.Skill($"升星 ×{StarMult:0.00}")}"
+            ? DotaLocalization.Format("ui.common.comma_item", DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.tag_star_mult", $"{StarMult:0.00}")))
             : string.Empty;
           string TalentSpeedNote = HasSpeedTalent
-            ? $" + {DotaHelpColor.Talent("15% 移速（T2）")}"
+            ? $" + {DotaHelpColor.Talent(DotaLocalization.T("jugg.help.q.tag_t2_speed"))}"
             : string.Empty;
           string CritMultText = HasCritTalent
             ? DotaHelpColor.Talent($"{CritMult:0.##}×")
@@ -1105,18 +1133,43 @@ namespace Pathos.DotaHeroes.Heroes
 
           var Rows = new List<(string, string)>
           {
-            ("持续时间", $"{DotaHelpColor.Control($"{Turns} 回合")}（施法当回合即触发首次转伤{(ExtraTurns > 0 ? $"，满星 +{ExtraTurns} 回合" : "")}）"),
-            ("生效范围", $"自身周围 {DotaHelpColor.Control("3×3 格")}（半径 {DotaHelpColor.Control("1 格")}）"),
-            ("每回合伤害", $"{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(SpinDice))} 魔法伤害（均伤 {DotaHelpColor.Magic($"{SpinDice.Average():0.#}")}）"),
-            ("倍率缩放", $"{DotaHelpColor.Stat($"×{Cadence * StarMult:0.##}")}（{DotaHelpColor.Stat($"敏捷 {Dex}")}，{DotaHelpColor.Passive($"剑心犹在 {BladeformStacks} 层")}{StarDmgNote}{TalentDmgNote}）"),
-            ("防御与暴击", $"基础驱散 + 减益免疫 + {DotaHelpColor.Control("80% 魔法减伤")}{TalentSpeedNote}；{DotaHelpColor.Passive($"剑舞 {CritChance * 100:0}%")} 暴击（{CritMultText}）")
+            (DotaLocalization.T("jugg.help.q.key_duration"), DotaLocalization.Format(
+              "jugg.help.q.val_duration",
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", Turns)),
+              ExtraTurns > 0 ? DotaLocalization.Format("jugg.help.q.max_star_extra_turns", ExtraTurns) : string.Empty)),
+            (DotaLocalization.T("jugg.help.q.key_area"), DotaLocalization.Format(
+              "jugg.help.q.val_area",
+              DotaHelpColor.Control(DotaLocalization.T("jugg.help.tiles_3x3")),
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 1)))),
+            (DotaLocalization.T("jugg.help.q.key_dmg"), DotaLocalization.Format(
+              "jugg.help.q.val_dmg",
+              DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(SpinDice)),
+              DotaHelpColor.Magic($"{SpinDice.Average():0.#}"))),
+            (DotaLocalization.T("jugg.help.q.key_scale"), DotaLocalization.Format(
+              "jugg.help.q.val_scale",
+              DotaHelpColor.Stat($"×{Cadence * StarMult:0.##}"),
+              DotaHelpColor.Stat(DotaLocalization.Format("jugg.help.dex_val", Dex)),
+              DotaHelpColor.Passive(DotaLocalization.Format("jugg.help.bladeform_stacks", BladeformStacks)),
+              StarDmgNote,
+              TalentDmgNote)),
+            (DotaLocalization.T("jugg.help.q.key_def_crit"), DotaLocalization.Format(
+              "jugg.help.q.val_def_crit",
+              DotaHelpColor.Control(DotaLocalization.T("jugg.help.q.magic_dr_tag")),
+              TalentSpeedNote,
+              DotaHelpColor.Passive(DotaLocalization.Format("jugg.help.q.blade_dance_pct", $"{CritChance * 100:0}")),
+              CritMultText))
           };
           return Rows;
         },
         BuildMechanicsNotes = _ => new[]
         {
-          $"基础驱散自身负面状态，期间减益免疫并获得 {DotaHelpColor.Control("80% 魔法/元素减伤")}",
-          $"周围 {DotaHelpColor.Control("3×3 格")}每回合造成魔法伤害（随{DotaHelpColor.Stat("敏捷")}与{DotaHelpColor.Passive("剑心犹在")}攻速频率缩放），可触发{DotaHelpColor.Passive("剑舞暴击")}；期间普攻不造成常规伤害"
+          DotaLocalization.Format("jugg.help.q.mech_1", DotaHelpColor.Control(DotaLocalization.T("jugg.help.q.magic_elem_dr_tag"))),
+          DotaLocalization.Format(
+            "jugg.help.q.mech_2",
+            DotaHelpColor.Control(DotaLocalization.T("jugg.help.tiles_3x3")),
+            DotaHelpColor.Stat(DotaLocalization.T("jugg.help.word.dex")),
+            DotaHelpColor.Passive(DotaLocalization.T("jugg.help.word.bladeform")),
+            DotaHelpColor.Passive(DotaLocalization.T("jugg.help.word.blade_dance_crit")))
         },
         BuildTiers = _ =>
         {
@@ -1128,10 +1181,10 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = $"自身施法 持续 {Turns} 回合",
+              HeaderSuffix = DotaLocalization.Format("jugg.help.q.tier_suffix", Turns),
               Bullets = new[]
               {
-                $"基础每回合伤害：{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice))} 魔法伤害"
+                DotaLocalization.Format("jugg.help.q.tier_bullet", DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice)))
               }
             });
           }
@@ -1163,18 +1216,34 @@ namespace Pathos.DotaHeroes.Heroes
 
           var Rows = new List<(string, string)>
           {
-            ("实际蓝耗", HasManaTalent
-              ? $"{DotaHelpColor.Mana($"{ActualMana}")}（基础 {HealingWardManaCost}，{DotaHelpColor.Talent("T1 天赋 -20%")}）"
+            (DotaLocalization.T("jugg.help.key_actual_mana"), HasManaTalent
+              ? DotaLocalization.Format(
+                  "jugg.help.mana_with_talent",
+                  DotaHelpColor.Mana($"{ActualMana}"),
+                  HealingWardManaCost,
+                  DotaHelpColor.Talent(DotaLocalization.T("jugg.help.w.t1_mana_tag")))
               : DotaHelpColor.Mana($"{ActualMana}")),
-            ("施法与光环", $"施法范围 {DotaHelpColor.Control($"{Range} 格")}，治疗光环半径 {DotaHelpColor.Control("2 格")}"),
-            ("持续时间", $"{DotaHelpColor.Control($"{Duration} 回合")}（1 HP 可移动图腾，同时上限 1 个）"),
-            ("每回合回复", $"{DotaHelpColor.Heal($"{HealPct * 100:0.##}%")} 最大生命值（自身约 {DotaHelpColor.Heal($"+{SelfHealPerTurn} HP/回合")}，总计约 {DotaHelpColor.Heal($"+{SelfHealPerTurn * Duration} HP")}）")
+            (DotaLocalization.T("jugg.help.w.key_cast_aura"), DotaLocalization.Format(
+              "jugg.help.w.val_cast_aura",
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", Range)),
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 2)))),
+            (DotaLocalization.T("jugg.help.q.key_duration"), DotaLocalization.Format(
+              "jugg.help.w.val_duration",
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", Duration)))),
+            (DotaLocalization.T("jugg.help.w.key_heal"), DotaLocalization.Format(
+              "jugg.help.w.val_heal",
+              DotaHelpColor.Heal($"{HealPct * 100:0.##}%"),
+              DotaHelpColor.Heal(DotaLocalization.Format("jugg.help.hp_per_turn", SelfHealPerTurn)),
+              DotaHelpColor.Heal(DotaLocalization.Format("jugg.help.hp_total", SelfHealPerTurn * Duration))))
           };
           return Rows;
         },
         BuildMechanicsNotes = _ => new[]
         {
-          $"召唤 1 HP 可移动治疗守卫（同时上限 1 个），每回合治疗周围 {DotaHelpColor.Control("2 格")}所有友军（最低 {DotaHelpColor.Heal("1 HP")}）"
+          DotaLocalization.Format(
+            "jugg.help.w.mech_1",
+            DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 2)),
+            DotaHelpColor.Heal("1 HP"))
         },
         BuildTiers = _ =>
         {
@@ -1187,10 +1256,13 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = $"施咒 范围 {Range}",
+              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", Range),
               Bullets = new[]
               {
-                $"持续 {DotaHelpColor.Control($"{Duration} 回合")}，每回合回复 {DotaHelpColor.Heal($"{HealPct * 100:0.##}% 最大生命值")}"
+                DotaLocalization.Format(
+                  "jugg.help.w.tier_bullet",
+                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", Duration)),
+                  DotaHelpColor.Heal(DotaLocalization.Format("jugg.help.w.pct_max_hp", $"{HealPct * 100:0.##}")))
               }
             });
           }
@@ -1240,11 +1312,11 @@ namespace Pathos.DotaHeroes.Heroes
           bool HasCritTalent = TalentService.HasTalent(Ch, TalentT3BladeDanceCrit);
           float CritMult = HasCritTalent ? 1.95f : 1.80f;
 
-          string WeaponPart = $"{DotaHelpColor.Physical(DotaSpellHelpBridge.FormatDiceNotation(WeaponDice))}（武器）";
-          string StatPart = $"{DotaHelpColor.Stat($"+{StatBonus}")}（属性）";
-          string SkillPart = $"{DotaHelpColor.Skill($"+{OmniBonus}")}（技能）";
+          string WeaponPart = DotaLocalization.Format("jugg.help.r.part_weapon", DotaHelpColor.Physical(DotaSpellHelpBridge.FormatDiceNotation(WeaponDice)));
+          string StatPart = DotaLocalization.Format("jugg.help.r.part_stat", DotaHelpColor.Stat($"+{StatBonus}"));
+          string SkillPart = DotaLocalization.Format("jugg.help.r.part_skill", DotaHelpColor.Skill($"+{OmniBonus}"));
           string Breakdown = BladeformBonus > 0
-            ? $"{WeaponPart} {StatPart} {SkillPart} {DotaHelpColor.Passive($"+{BladeformBonus}")}（剑心）"
+            ? $"{WeaponPart} {StatPart} {SkillPart} {DotaLocalization.Format("jugg.help.r.part_bladeform", DotaHelpColor.Passive($"+{BladeformBonus}"))}"
             : $"{WeaponPart} {StatPart} {SkillPart}";
 
           string CritMultText = HasCritTalent
@@ -1253,23 +1325,58 @@ namespace Pathos.DotaHeroes.Heroes
 
           var Rows = new List<(string, string)>
           {
-            ("实际蓝耗", HasManaTalent
-              ? $"{DotaHelpColor.Mana($"{ActualMana}")}（基础 {OmnislashManaCost}，{DotaHelpColor.Talent("T2 天赋 -12.5%")}）"
+            (DotaLocalization.T("jugg.help.key_actual_mana"), HasManaTalent
+              ? DotaLocalization.Format(
+                  "jugg.help.mana_with_talent",
+                  DotaHelpColor.Mana($"{ActualMana}"),
+                  OmnislashManaCost,
+                  DotaHelpColor.Talent(DotaLocalization.T("jugg.help.r.t2_mana_tag")))
               : DotaHelpColor.Mana($"{ActualMana}")),
-            ("施法与跳斩", $"施法范围 {DotaHelpColor.Control($"{CastRange} 格")}，连斩跳斩半径 {DotaHelpColor.Control("3 格")}"),
-            ("预计斩数", HasSlashTalent
-              ? $"{DotaHelpColor.Skill($"{TotalSlashes} 斩")}（基础 {DotaHelpColor.Skill($"{BaseSlashes}")} + {DotaHelpColor.Talent("T4 天赋 +3")}）"
-              : $"{DotaHelpColor.Skill($"{TotalSlashes} 斩")}（随{DotaHelpColor.Stat("敏捷")}最高 {DotaHelpColor.Skill("12 斩")}）"),
-            ("单斩伤害", $"{DotaHelpColor.Physical($"{MinSlash}~{MaxSlash}")}（均伤 {DotaHelpColor.Physical($"{AvgSlash:0.#}")}；{Breakdown}）"),
-            ("理论总伤", $"{DotaHelpColor.Physical($"{MinSlash * TotalSlashes}~{MaxSlash * TotalSlashes}")}（未计暴击；{DotaHelpColor.Passive($"剑舞 {CritChance * 100:0}%")} 触发 {CritMultText} 暴击）")
+            (DotaLocalization.T("jugg.help.r.key_cast_jump"), DotaLocalization.Format(
+              "jugg.help.r.val_cast_jump",
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", CastRange)),
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 3)))),
+            (DotaLocalization.T("jugg.help.r.key_slashes"), HasSlashTalent
+              ? DotaLocalization.Format(
+                  "jugg.help.r.val_slashes_talent",
+                  DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.slashes_val", TotalSlashes)),
+                  DotaHelpColor.Skill($"{BaseSlashes}"),
+                  DotaHelpColor.Talent(DotaLocalization.T("jugg.help.r.t4_slashes_tag")))
+              : DotaLocalization.Format(
+                  "jugg.help.r.val_slashes_dex",
+                  DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.slashes_val", TotalSlashes)),
+                  DotaHelpColor.Stat(DotaLocalization.T("jugg.help.word.dex")),
+                  DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.slashes_val", 12)))),
+            (DotaLocalization.T("jugg.help.r.key_per_slash"), DotaLocalization.Format(
+              "jugg.help.r.val_per_slash",
+              DotaHelpColor.Physical($"{MinSlash}~{MaxSlash}"),
+              DotaHelpColor.Physical($"{AvgSlash:0.#}"),
+              Breakdown)),
+            (DotaLocalization.T("jugg.help.r.key_total"), DotaLocalization.Format(
+              "jugg.help.r.val_total",
+              DotaHelpColor.Physical($"{MinSlash * TotalSlashes}~{MaxSlash * TotalSlashes}"),
+              DotaHelpColor.Passive(DotaLocalization.Format("jugg.help.q.blade_dance_pct", $"{CritChance * 100:0}")),
+              CritMultText))
           };
           return Rows;
         },
         BuildMechanicsNotes = _ => new[]
         {
-          $"单斩伤害 = {DotaHelpColor.Physical("装备武器骰")} + {DotaHelpColor.Stat("力/敏高者修正")} + {DotaHelpColor.Skill("技能额外攻击力")}（跳斩半径 {DotaHelpColor.Control("3 格")}）",
-          $"每超出 14 点{DotaHelpColor.Stat("敏捷")} 6 点额外 {DotaHelpColor.Stat("+1 斩")}（基础上限 12 斩，{DotaHelpColor.Talent("T4 天赋 +3 斩")}）",
-          $"全程免疫一切伤害与负面状态，每斩可触发{DotaHelpColor.Passive("剑舞暴击")}与{DotaHelpColor.Passive("剑心犹在")}加成"
+          DotaLocalization.Format(
+            "jugg.help.r.mech_1",
+            DotaHelpColor.Physical(DotaLocalization.T("jugg.help.r.tag_weapon_dice")),
+            DotaHelpColor.Stat(DotaLocalization.T("jugg.help.r.tag_stat_mod")),
+            DotaHelpColor.Skill(DotaLocalization.T("jugg.help.r.tag_skill_atk")),
+            DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", 3))),
+          DotaLocalization.Format(
+            "jugg.help.r.mech_2",
+            DotaHelpColor.Stat(DotaLocalization.T("jugg.help.word.dex")),
+            DotaHelpColor.Stat(DotaLocalization.T("jugg.help.r.tag_plus_1_slash")),
+            DotaHelpColor.Talent(DotaLocalization.T("jugg.help.r.tag_t4_plus_3"))),
+          DotaLocalization.Format(
+            "jugg.help.r.mech_3",
+            DotaHelpColor.Passive(DotaLocalization.T("jugg.help.word.blade_dance_crit")),
+            DotaHelpColor.Passive(DotaLocalization.T("jugg.help.word.bladeform")))
         },
         BuildTiers = _ =>
         {
@@ -1282,10 +1389,13 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = $"施咒 范围 {Range}",
+              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", Range),
               Bullets = new[]
               {
-                $"基础斩数 {DotaHelpColor.Skill($"{MinSlashes}~12 斩")}，单斩额外攻击力 {DotaHelpColor.Skill($"+{BonusDmg}")}"
+                DotaLocalization.Format(
+                  "jugg.help.r.tier_bullet",
+                  DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.slashes_val", $"{MinSlashes}~12")),
+                  DotaHelpColor.Skill($"+{BonusDmg}"))
               }
             });
           }

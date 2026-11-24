@@ -1,52 +1,52 @@
-﻿BeamName,omnislash dash,
-CharacterName,Juggernaut,
-CharacterName,Morphling,
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
-ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",
-ClassName,juggernaut//female,
-ClassName,juggernaut//male,
-ClassName,juggernaut//non-binary,
-ClassName,morphling//female,
-ClassName,morphling//male,
-ClassName,morphling//non-binary,
-EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,
-EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",
-EntityName,healing ward,
-EntityName,waterkin,
-ExplosionName,blade fury spin,
-ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,
-ItemName,tidal orb,
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-PropertyName,blade dance,
-PropertyName,blade fury,
-PropertyName,bladeform,
-PropertyName,ebb and flow,
-PropertyName,omnislash,
-RaceName,waterkin//female,
-RaceName,waterkin//male,
-RaceName,waterkin//non-binary,
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
-SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
-SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
-SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
-SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
-SpellDescription,Release your morphed form and immediately return to your true waterkin body.,
-SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
-SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
-SpellName,adaptive strike,
-SpellName,blade fury,
-SpellName,healing ward,
-SpellName,morph,
-SpellName,morph agility,
-SpellName,morph revert,
-SpellName,morph strength,
-SpellName,omnislash,
-SpellName,waveform,
-StrikeName,blade dance crit,
-StrikeName,healing ward pulse,
-StrikeName,omnislash slash,
+﻿BeamName,omnislash dash,הסתערות אומניסלאש
+CharacterName,Juggernaut,ג'אגרנאוט
+CharacterName,Morphling,מורפלינג
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","גיבור DOTA2 זורם השולט בגלים גואים, מעביר בחופשיות בין כוח לזריזות, מתחזק באמצעות גאות ושפל ומשנה את צורתו לצורת אויביו."
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","אמן חרב עוטה מסכה מ-DOTA2 הצובר תנופה בלתי ניתנת לעצירה דרך צורת הלהב, מבתר קסמים בזעם הלהב, תומך בבני ברית עם טוטם ריפוי וקוצר אויבים בריקוד הלהב ואומניסלאש."
+ClassName,juggernaut//female,ג'אגרנאוט
+ClassName,juggernaut//male,ג'אגרנאוט
+ClassName,juggernaut//non-binary,ג'אגרנאוט
+ClassName,morphling//female,מורפלינג
+ClassName,morphling//male,מורפלינג
+ClassName,morphling//non-binary,מורפלינג
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,"טוטם מרפא מרחף שזומן בידי ג'אגרנאוט, המרפא בני ברית קרובים באחוז מ-HP המרבי שלהם בכל תור."
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","יסודן תבוני שנוצר ממי גאות חיים, המסוגל לעצב מחדש את תכונותיו הגופניות כרצונו."
+EntityName,healing ward,טוטם ריפוי
+EntityName,waterkin,רוח מים
+ExplosionName,blade fury spin,מערבולת זעם הלהב
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,כדור דחוס של מי גאות חיים הנורה מקלע כתחמושת טווח אינסופית.
+ItemName,tidal orb,כדור גאות
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,מולדת (צורת הלהב): קבל 1 צבירה בכל 4 תורות ללא ספיגת נזק (עד 10 צבירות). כל צבירה מעניקה +1% מהירות תנועה ו-+2.5% עוצמת מכת זריזות ומהירות התקפה; נותרת 4 תורות לאחר ספיגת נזק.
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,מולדת (גאות ושפל): זריזות מעניקה תוספת למהירות תנועה וטווח התקפה מרחוק; כוח מעניק תוספת לטווח לחשים ועמידות להאטה. נשמרת במהלך שינוי צורה.
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,מזנק בין אויבים קרובים בסערת מכות חסינות: חסין לכל נזק והשפעות שליליות בעודו משסף אויב קרוב בכל תור.
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","פסיבית (ריקוד הלהב): התקפות קפא""פ, מכות אומניסלאש וסיבובי זעם הלהב זוכות לסיכוי של 20% / 25% / 30% / 35% (לפי רמה 1–4 של ריקוד הלהב) לפגיעה קריטית של פי 1.8 נזק."
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","מסתחרר בסופת להבים הרסנית: חסין להשפעות שליליות, 80% הפחתת נזק קסום וגרימת נזק קסום סביבך בכל תור."
+PropertyName,blade dance,ריקוד הלהב
+PropertyName,blade fury,זעם הלהב
+PropertyName,bladeform,צורת הלהב
+PropertyName,ebb and flow,גאות ושפל
+PropertyName,omnislash,אומניסלאש
+RaceName,waterkin//female,רוח מים
+RaceName,waterkin//male,רוח מים
+RaceName,waterkin//non-binary,רוח מים
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","עטה את צורתו של יצור נבחר, והעתק את גופו, תכונותיו, כישוריו ולחשיו תוך שמירה על גאות ושפל."
+SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","הסר השפעות שליליות והסתחרר למשך 10 עד 12 תורות: חסינות להשפעות שליליות, 80% הפחתת נזק קסום ו-1d4 עד 2d4+2 נזק קסום בסיסי לתור (85-205 DPS לפי K_dmg=15, מותאם ל-DEX ומהירות צורת הלהב) לאויבים סמוכים ב-3x3; יכול לפגוע קריטית עם ריקוד הלהב."
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","התמוסס לגל גואה, הבלח קדימה, התז נזק מים סביבך וקבל לזמן קצר מעבר דרך קירות והסטה."
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","שגר גל מים הגורם נזק בסיסי, הודף ומהמם את המטרה. הנזק הנוסף גדל לפי יחס הזריזות לכוח ומשך ההמם גדל לפי יחס הכוח לזריזות."
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","זנק אל אויב מטרה ושחרר 5 עד 12 שיסופי נשק מהירים ובלתי פגיעים (נשק + תכונה + 2 עד 3 נזק נוסף לשיסוף) בין אויבים קרובים, תוך הפעלת פגיעות קריטיות של ריקוד הלהב ותוספי צורת הלהב."
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,שחרר את צורתך המשתנה וחזור מיד לגוף רוח המים האמיתי שלך.
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","המר זריזות לכוח ולחוסן (1 עד 5 נקודות לפי מיומנות), תוך שמירת סך התכונות והעלאת ה-HP המרבי והנוכחי כאחד."
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","המר כוח וחוסן לזריזות (1 עד 5 נקודות לפי מיומנות), תוך שמירת סך התכונות והורדת ה-HP המרבי מבלי לגרוע מה-HP הנוכחי."
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","זמן טוטם ריפוי נייד ושביר (1 HP, מקס' 1 פעיל) ל-36 עד 48 תורות שמרפא את כל בני הברית בטווח 2 משבצות ב-1% עד 3.25% מ-HP המרבי שלהם בכל תור."
+SpellName,adaptive strike,מכה מסתגלת
+SpellName,blade fury,זעם הלהב
+SpellName,healing ward,טוטם ריפוי
+SpellName,morph,שינוי צורה
+SpellName,morph agility,המרה לזריזות
+SpellName,morph revert,ביטול שינוי צורה
+SpellName,morph strength,המרה לכוח
+SpellName,omnislash,אומניסלאש
+SpellName,waveform,צורת גל
+StrikeName,blade dance crit,קריטי ריקוד הלהב
+StrikeName,healing ward pulse,פעימת טוטם ריפוי
+StrikeName,omnislash slash,שיסוף אומניסלאש

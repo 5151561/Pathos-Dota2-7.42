@@ -49,6 +49,11 @@ namespace Pathos.DotaHeroes.Framework.Talents
   /// </summary>
   public sealed class TalentNode
   {
+    private readonly string StaticTitle;
+    private readonly string StaticDescription;
+    private readonly Func<string> TitleResolver;
+    private readonly Func<string> DescriptionResolver;
+
     public TalentNode(
       string Id,
       string Title,
@@ -60,15 +65,34 @@ namespace Pathos.DotaHeroes.Framework.Talents
         throw new ArgumentException("TalentNode Id cannot be null or empty.", nameof(Id));
 
       this.Id = Id;
-      this.Title = Title ?? Id;
-      this.Description = Description ?? string.Empty;
+      this.StaticTitle = Title ?? Id;
+      this.StaticDescription = Description ?? string.Empty;
+      this.ManaReductions = ManaReductions ?? Array.Empty<SpellManaReductionRule>();
+      this.OnLearn = OnLearn;
+    }
+
+    public TalentNode(
+      string Id,
+      Func<string> TitleResolver,
+      Func<string> DescriptionResolver = null,
+      IReadOnlyList<SpellManaReductionRule> ManaReductions = null,
+      Action<object, Character> OnLearn = null)
+    {
+      if (string.IsNullOrWhiteSpace(Id))
+        throw new ArgumentException("TalentNode Id cannot be null or empty.", nameof(Id));
+
+      this.Id = Id;
+      this.StaticTitle = Id;
+      this.StaticDescription = string.Empty;
+      this.TitleResolver = TitleResolver;
+      this.DescriptionResolver = DescriptionResolver;
       this.ManaReductions = ManaReductions ?? Array.Empty<SpellManaReductionRule>();
       this.OnLearn = OnLearn;
     }
 
     public string Id { get; }
-    public string Title { get; }
-    public string Description { get; }
+    public string Title => TitleResolver?.Invoke() ?? StaticTitle;
+    public string Description => DescriptionResolver?.Invoke() ?? StaticDescription;
     public IReadOnlyList<SpellManaReductionRule> ManaReductions { get; }
     public Action<object, Character> OnLearn { get; }
 
@@ -111,6 +135,9 @@ namespace Pathos.DotaHeroes.Framework.Talents
     public static readonly int[] DefaultUnlockLevels = { 10, 15, 20, 25 };
     public static readonly int[] DefaultDualUnlockLevels = { 27, 28, 29, 30 };
 
+    private readonly string StaticHeroDisplayName;
+    private readonly Func<string> HeroDisplayNameResolver;
+
     public HeroTalentTree(
       string ClassName,
       string HeroDisplayName,
@@ -121,13 +148,29 @@ namespace Pathos.DotaHeroes.Framework.Talents
         throw new ArgumentException("ClassName cannot be null or empty.", nameof(ClassName));
 
       this.ClassName = ClassName;
-      this.HeroDisplayName = string.IsNullOrWhiteSpace(HeroDisplayName) ? ClassName : HeroDisplayName;
+      this.StaticHeroDisplayName = string.IsNullOrWhiteSpace(HeroDisplayName) ? ClassName : HeroDisplayName;
+      this.Tiers = Tiers ?? throw new ArgumentNullException(nameof(Tiers));
+      this.IconGlyph = IconGlyph;
+    }
+
+    public HeroTalentTree(
+      string ClassName,
+      Func<string> HeroDisplayNameResolver,
+      IReadOnlyList<TalentTier> Tiers,
+      Glyph IconGlyph = null)
+    {
+      if (string.IsNullOrWhiteSpace(ClassName))
+        throw new ArgumentException("ClassName cannot be null or empty.", nameof(ClassName));
+
+      this.ClassName = ClassName;
+      this.StaticHeroDisplayName = ClassName;
+      this.HeroDisplayNameResolver = HeroDisplayNameResolver;
       this.Tiers = Tiers ?? throw new ArgumentNullException(nameof(Tiers));
       this.IconGlyph = IconGlyph;
     }
 
     public string ClassName { get; }
-    public string HeroDisplayName { get; }
+    public string HeroDisplayName => HeroDisplayNameResolver?.Invoke() ?? StaticHeroDisplayName;
     public IReadOnlyList<TalentTier> Tiers { get; }
     public Glyph IconGlyph { get; }
 
@@ -140,15 +183,36 @@ namespace Pathos.DotaHeroes.Framework.Talents
       TalentNode T3Left, TalentNode T3Right,
       TalentNode T4Left, TalentNode T4Right)
     {
-      var Tiers = new[]
+      var Tiers = BuildStandardTiers(T1Left, T1Right, T2Left, T2Right, T3Left, T3Right, T4Left, T4Right);
+      return new HeroTalentTree(ClassName, HeroDisplayName, Tiers, IconGlyph);
+    }
+
+    public static HeroTalentTree CreateStandard(
+      string ClassName,
+      Func<string> HeroDisplayNameResolver,
+      Glyph IconGlyph,
+      TalentNode T1Left, TalentNode T1Right,
+      TalentNode T2Left, TalentNode T2Right,
+      TalentNode T3Left, TalentNode T3Right,
+      TalentNode T4Left, TalentNode T4Right)
+    {
+      var Tiers = BuildStandardTiers(T1Left, T1Right, T2Left, T2Right, T3Left, T3Right, T4Left, T4Right);
+      return new HeroTalentTree(ClassName, HeroDisplayNameResolver, Tiers, IconGlyph);
+    }
+
+    private static TalentTier[] BuildStandardTiers(
+      TalentNode T1Left, TalentNode T1Right,
+      TalentNode T2Left, TalentNode T2Right,
+      TalentNode T3Left, TalentNode T3Right,
+      TalentNode T4Left, TalentNode T4Right)
+    {
+      return new[]
       {
         new TalentTier(0, DefaultUnlockLevels[0], DefaultDualUnlockLevels[0], T1Left, T1Right),
         new TalentTier(1, DefaultUnlockLevels[1], DefaultDualUnlockLevels[1], T2Left, T2Right),
         new TalentTier(2, DefaultUnlockLevels[2], DefaultDualUnlockLevels[2], T3Left, T3Right),
         new TalentTier(3, DefaultUnlockLevels[3], DefaultDualUnlockLevels[3], T4Left, T4Right),
       };
-
-      return new HeroTalentTree(ClassName, HeroDisplayName, Tiers, IconGlyph);
     }
   }
 }

@@ -1,5 +1,6 @@
 using System;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Localization;
 
 namespace Pathos.DotaHeroes.Framework.Skills
 {
@@ -133,7 +134,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
           Stars = Math.Max(Stars, NativeLevel - 1);
       }
 
-      return Stars > 0 ? new string('★', Stars) : "已学会";
+      return Stars > 0 ? new string('★', Stars) : DotaLocalization.T("ui.skill.learned_short");
     }
 
     /// <summary>
@@ -184,12 +185,12 @@ namespace Pathos.DotaHeroes.Framework.Skills
 
       Glyph LogIcon = Slot.IconGlyph ?? (HeroSkillRegistry.TryGetBuild(Character, out var Build) ? Build.IconGlyph : null);
       string StarNote = Slot.Kind == DotaSkillSlotKind.Active && NextLv > 1
-        ? $"（{new string('★', NextLv - 1)} 升星强化）"
+        ? DotaLocalization.Format("ui.skill.star_note", new string('★', NextLv - 1))
         : string.Empty;
 
       string ActionLabel = NextLv == 1 && Slot.Kind != DotaSkillSlotKind.AttributeBonus
-        ? $"学会技能 [{Slot.Hotkey}] {Slot.Title} Lv 1"
-        : $"升级技能 [{Slot.Hotkey}] {Slot.Title} → Lv {NextLv}/{Slot.MaxLevel}{StarNote}";
+        ? DotaLocalization.Format("ui.skill.log.learned", Slot.Hotkey, Slot.Title)
+        : DotaLocalization.Format("ui.skill.log.upgraded", Slot.Hotkey, Slot.Title, NextLv, Slot.MaxLevel, StarNote);
 
       PathosEngineBridge.WriteInternalLog(Engine, Character, LogIcon, ActionLabel);
       return true;
@@ -225,8 +226,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       }
 
       string Msg = UnlockedUltimate
-        ? $"技能加点：终极技能可升级！（当前可用 {Points} 点技能点 — 点击左下角按钮或按 F2）"
-        : $"技能加点：获得新技能点！（当前可用 {Points} 点 — 点击左下角按钮或按 F2）";
+        ? DotaLocalization.Format("ui.skill.notify.ultimate", Points)
+        : DotaLocalization.Format("ui.skill.notify.point", Points);
 
       PathosEngineBridge.WriteInternalLog(Args.Engine, Args.Character, Build.IconGlyph, Msg);
     }

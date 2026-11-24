@@ -1,52 +1,52 @@
-﻿BeamName,omnislash dash,
-CharacterName,Juggernaut,
-CharacterName,Morphling,
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
-ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",
-ClassName,juggernaut//female,
-ClassName,juggernaut//male,
-ClassName,juggernaut//non-binary,
-ClassName,morphling//female,
-ClassName,morphling//male,
-ClassName,morphling//non-binary,
-EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,
-EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",
-EntityName,healing ward,
-EntityName,waterkin,
-ExplosionName,blade fury spin,
-ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,
-ItemName,tidal orb,
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-PropertyName,blade dance,
-PropertyName,blade fury,
-PropertyName,bladeform,
-PropertyName,ebb and flow,
-PropertyName,omnislash,
-RaceName,waterkin//female,
-RaceName,waterkin//male,
-RaceName,waterkin//non-binary,
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
-SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
-SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
-SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
-SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
-SpellDescription,Release your morphed form and immediately return to your true waterkin body.,
-SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
-SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
-SpellName,adaptive strike,
-SpellName,blade fury,
-SpellName,healing ward,
-SpellName,morph,
-SpellName,morph agility,
-SpellName,morph revert,
-SpellName,morph strength,
-SpellName,omnislash,
-SpellName,waveform,
-StrikeName,blade dance crit,
-StrikeName,healing ward pulse,
-StrikeName,omnislash slash,
+﻿BeamName,omnislash dash,พุ่งทะยานออมนิสแลช
+CharacterName,Juggernaut,จั๊กเกอร์นอต
+CharacterName,Morphling,มอร์ฟลิง
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",ฮีโร่สายวารีแห่ง DOTA2 ผู้ควบคุมเกลียวคลื่นเชี่ยวกราก สับเปลี่ยนค่าระหว่างพละกำลังและความว่องไวได้อย่างอิสระ เสริมพลังด้วยสกิลติดตัวน้ำขึ้นน้ำลง และแปลงกายเป็นศัตรูได้
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",ยอดนักดาบสวมหน้ากากจาก DOTA2 ผู้สั่งสมโมเมนตัมไร้เทียมทานผ่านท่วงท่าดาบ ผ่าเวทมนตร์ด้วยพายุดาบพิโรธ ฟื้นฟูพันธมิตรด้วยเสาฟื้นฟูพลัง และปลิดชีพศัตรูด้วยระบำดาบกับออมนิสแลช
+ClassName,juggernaut//female,จั๊กเกอร์นอต
+ClassName,juggernaut//male,จั๊กเกอร์นอต
+ClassName,juggernaut//non-binary,จั๊กเกอร์นอต
+ClassName,morphling//female,มอร์ฟลิง
+ClassName,morphling//male,มอร์ฟลิง
+ClassName,morphling//non-binary,มอร์ฟลิง
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,โทเท็มฟื้นฟูพลังลอยได้ที่ถูกอัญเชิญโดยจั๊กเกอร์นอต คอยรักษาพันธมิตรรอบข้างเป็นเปอร์เซ็นต์ของ HP สูงสุดในทุกเทิร์น
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",ภูตธาตุผู้มีสติปัญญาซึ่งหลอมรวมขึ้นจากกระแสน้ำที่มีชีวิต สามารถปรับเปลี่ยนคุณสมบัติทางกายภาพของตนเองได้ตามใจนึก
+EntityName,healing ward,เสาฟื้นฟูพลัง
+EntityName,waterkin,วิญญาณวารี
+ExplosionName,blade fury spin,พายุหมุนดาบพิโรธ
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,ลูกแก้วกระแสน้ำมีชีวิตที่ควบแน่นขึ้นเพื่อใช้ยิงจากหนังสติ๊กเป็นกระสุนระยะไกลแบบไม่จำกัด
+ItemName,tidal orb,ลูกแก้วกระแสน้ำ
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,ติดตัวกำเนิด (ท่วงท่าดาบ): ได้รับ 1 สแตกทุกๆ 4 เทิร์นที่ไม่ได้รับความเสียหาย (สูงสุด 10 สแตก) แต่ละสแตกเพิ่มความเร็วเคลื่อนที่ +1% และพลังโจมตีกับความเร็วโจมตีสายความว่องไว +2.5%; คงอยู่ต่ออีก 4 เทิร์นหลังถูกโจมตี
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,ติดตัวกำเนิด (น้ำขึ้นน้ำลง): ความว่องไวเพิ่มความเร็วเคลื่อนที่และระยะโจมตีไกล พละกำลังเพิ่มระยะร่ายเวทและต้านทานการชะลอตัว คงอยู่ตลอดระหว่างการแปลงร่าง
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,พุ่งกระโจนระหว่างศัตรูใกล้เคียงด้วยคมดาบที่ไร้เทียมทาน: ป้องกันความเสียหายและดีบัฟทั้งหมดขณะฟาดฟันศัตรูใกล้ตัวในทุกเทิร์น
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",สกิลติดตัว (ระบำดาบ): การโจมตีระยะประชิด การฟันของออมนิสแลช และการหมุนของพายุดาบพิโรธมีโอกาส 20% / 25% / 30% / 35% (ตามเลเวลระบำดาบ 1-4) ที่จะโจมตีคริติคอล 1.8 เท่า
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",หมุนตัวในพายุดาบทำลายล้าง: ต้านทานดีบัฟทั้งหมด ลดความเสียหายเวทลง 80% และสร้างความเสียหายเวทมนตร์รอบตัวในทุกเทิร์น
+PropertyName,blade dance,ระบำดาบ
+PropertyName,blade fury,พายุดาบพิโรธ
+PropertyName,bladeform,ท่วงท่าดาบ
+PropertyName,ebb and flow,น้ำขึ้นน้ำลง
+PropertyName,omnislash,ออมนิสแลช
+RaceName,waterkin//female,วิญญาณวารี
+RaceName,waterkin//male,วิญญาณวารี
+RaceName,waterkin//non-binary,วิญญาณวารี
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",สวมร่างของสิ่งมีชีวิตเป้าหมาย โดยคัดลอกรูปลักษณ์ ค่าสถานะ ทักษะ และเวทมนตร์ทั้งหมดไว้พร้อมคงสกิลน้ำขึ้นน้ำลงเอาไว้
+SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",ลบล้างดีบัฟและหมุนตัวเป็นเวลา 10 ถึง 12 เทิร์น: ต้านทานดีบัฟ ลดความเสียหายเวท 80% และสร้างความเสียหายเวทพื้นฐาน 1d4 ถึง 2d4+2 ต่อเทิร์น (85-205 DPS คำนวณผ่าน K_dmg=15 ปรับตาม DEX และความเร็วโจมตีท่วงท่าดาบ) แก่ศัตรูรอบข้าง 3x3; สามารถติดคริติคอลจากระบำดาบได้
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",หลอมรวมเป็นเกลียวคลื่นพุ่งทะยานไปข้างหน้า สาดความเสียหายธาตุน้ำรอบตัว และได้รับสถานะทะลุสิ่งกีดขวางกับการหลบหลีกชั่วคราว
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",ปล่อยคลื่นน้ำสร้างความเสียหายพื้นฐาน ผลักถอยหลัง และทำให้เป้าหมายมึนงง ความเสียหายโบนัสเพิ่มขึ้นตามอัตราส่วนความว่องไวต่อพละกำลัง ส่วนระยะเวลามึนงงเพิ่มขึ้นตามอัตราส่วนพละกำลังต่อความว่องไว
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",กระโจนเข้าใส่ศัตรูเป้าหมายและปลดปล่อยการฟาดฟันอาวุธที่ไร้เทียมทานอย่างรวดเร็ว 5 ถึง 12 ครั้ง (อาวุธ + ค่าสถานะ + โบนัสความเสียหาย 2 ถึง 3 ต่อครั้ง) ใส่ศัตรูใกล้เคียง พร้อมเปิดใช้คริติคอลระบำดาบและโบนัสท่วงท่าดาบ
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,ปลดปล่อยร่างที่แปลงกายไว้และกลับคืนสู่ร่างวิญญาณวารีที่แท้จริงทันที
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",แปรเปลี่ยนความว่องไวเป็นพละกำลังและความอึด (1 ถึง 5 แต้มตามความชำนาญ) โดยรักษาผลรวมค่าสถานะไว้และเพิ่มทั้ง HP สูงสุดและ HP ปัจจุบัน
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",แปรเปลี่ยนพละกำลังและความอึดเป็นความว่องไว (1 ถึง 5 แต้มตามความชำนาญ) โดยรักษาผลรวมค่าสถานะไว้และลด HP สูงสุดลงโดยไม่หัก HP ปัจจุบัน
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","อัญเชิญเสาฟื้นฟูพลังที่เคลื่อนที่ได้แต่เปราะบาง (1 HP, สูงสุด 1 ต้น) เป็นเวลา 36 ถึง 48 เทิร์น ซึ่งจะฟื้นฟู HP 1% ถึง 3.25% ของ HP สูงสุดให้พันธมิตรทั้งหมดในระยะ 2 ช่องทุกเทิร์น"
+SpellName,adaptive strike,โจมตีปรับสภาพ
+SpellName,blade fury,พายุดาบพิโรธ
+SpellName,healing ward,เสาฟื้นฟูพลัง
+SpellName,morph,แปลงร่าง
+SpellName,morph agility,แปลงค่าความว่องไว
+SpellName,morph revert,คืนร่างเดิม
+SpellName,morph strength,แปลงค่าพละกำลัง
+SpellName,omnislash,ออมนิสแลช
+SpellName,waveform,ร่างคลื่นน้ำ
+StrikeName,blade dance crit,คริติคอลระบำดาบ
+StrikeName,healing ward pulse,คลื่นเสาฟื้นฟู
+StrikeName,omnislash slash,ฟาดฟันออมนิสแลช

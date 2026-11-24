@@ -1,5 +1,6 @@
 using System;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Localization;
 
 namespace Pathos.DotaHeroes.Framework.Talents
 {
@@ -109,12 +110,14 @@ namespace Pathos.DotaHeroes.Framework.Talents
       }
 
       Glyph Icon = TalentRegistry.TryGetTree(Character, out var Tree) ? Tree.IconGlyph : null;
-      string Detail = string.IsNullOrWhiteSpace(Node.Description) ? Node.Title : $"{Node.Title} ({Node.Description})";
+      string Detail = string.IsNullOrWhiteSpace(Node.Description)
+        ? Node.Title
+        : DotaLocalization.Format("ui.talent.log.learned_detail", Node.Title, Node.Description);
       PathosEngineBridge.WriteInternalLog(
         Engine,
         Character,
         Icon,
-        $"Learned Talent [Lv {Tier.UnlockLevel}]: {Detail}");
+        DotaLocalization.Format("ui.talent.log.learned", Tier.UnlockLevel, Detail));
 
       return true;
     }
@@ -175,28 +178,26 @@ namespace Pathos.DotaHeroes.Framework.Talents
       if (!TalentRegistry.TryGetTree(Args.Character, out var Tree))
         return;
 
-      bool UnlockedPrimary = false;
-      bool UnlockedDual = false;
+      bool Unlocked = false;
 
       foreach (var Tier in Tree.Tiers)
       {
-        if (Args.PreviousLevel < Tier.UnlockLevel && Args.NewLevel >= Tier.UnlockLevel)
-          UnlockedPrimary = true;
-        if (Args.PreviousLevel < Tier.DualUnlockLevel && Args.NewLevel >= Tier.DualUnlockLevel)
-          UnlockedDual = true;
+        if ((Args.PreviousLevel < Tier.UnlockLevel && Args.NewLevel >= Tier.UnlockLevel) ||
+            (Args.PreviousLevel < Tier.DualUnlockLevel && Args.NewLevel >= Tier.DualUnlockLevel))
+        {
+          Unlocked = true;
+          break;
+        }
       }
 
-      if (!UnlockedPrimary && !UnlockedDual)
+      if (!Unlocked)
         return;
 
       int Points = GetAvailableTalentPoints(Args.Character);
       if (Points <= 0)
         return;
 
-      string Msg = UnlockedDual
-        ? $"Talent Tree: Dual-branch talent unlocked! ({Points} point(s) available — click [Talents] or press F2)"
-        : $"Talent Tree: New talent tier unlocked! ({Points} point(s) available — click [Talents] or press F2)";
-
+      string Msg = DotaLocalization.Format("ui.talent.notify.point", Points);
       PathosEngineBridge.WriteInternalLog(Args.Engine, Args.Character, Tree.IconGlyph, Msg);
     }
   }

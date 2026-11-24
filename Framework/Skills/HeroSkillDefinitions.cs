@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Localization;
 
 namespace Pathos.DotaHeroes.Framework.Skills
 {
@@ -31,6 +32,9 @@ namespace Pathos.DotaHeroes.Framework.Skills
     public static readonly int[] UltimateUnlockLevels = { 6, 12, 18 };
     public static readonly int[] AttributeBonusUnlockLevels = { 1, 1, 1, 1, 1, 1, 1 };
 
+    private readonly string StaticTitle;
+    private readonly Func<string> TitleResolver;
+
     public DotaSkillSlot(
       string Id,
       string Hotkey,
@@ -42,7 +46,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       IReadOnlyList<Spell> Spells = null,
       Property PassiveProperty = null,
       Func<int, string> DescribeLevel = null,
-      Action<object, Character, int> OnUpgrade = null)
+      Action<object, Character, int> OnUpgrade = null,
+      Func<string> TitleResolver = null)
     {
       if (string.IsNullOrWhiteSpace(Id))
         throw new ArgumentException("DotaSkillSlot Id cannot be null or empty.", nameof(Id));
@@ -51,7 +56,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
 
       this.Id = Id;
       this.Hotkey = string.IsNullOrWhiteSpace(Hotkey) ? "•" : Hotkey;
-      this.Title = string.IsNullOrWhiteSpace(Title) ? Id : Title;
+      this.StaticTitle = string.IsNullOrWhiteSpace(Title) ? Id : Title;
+      this.TitleResolver = TitleResolver;
       this.Kind = Kind;
       this.MaxLevel = MaxLevel;
       this.UnlockLevels = UnlockLevels ?? BuildDefaultUnlockLevels(MaxLevel);
@@ -64,7 +70,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
 
     public string Id { get; }
     public string Hotkey { get; }
-    public string Title { get; }
+    public string Title => TitleResolver?.Invoke() ?? StaticTitle;
     public DotaSkillSlotKind Kind { get; }
     public int MaxLevel { get; }
     public IReadOnlyList<int> UnlockLevels { get; }
@@ -91,7 +97,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       Spell Spell,
       Func<int, string> DescribeLevel = null,
       bool IsUltimate = false,
-      Action<object, Character, int> OnUpgrade = null)
+      Action<object, Character, int> OnUpgrade = null,
+      Func<string> TitleResolver = null)
     {
       return CreateActiveGroup(
         Id,
@@ -101,7 +108,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
         Spell != null ? new[] { Spell } : Array.Empty<Spell>(),
         DescribeLevel,
         IsUltimate,
-        OnUpgrade);
+        OnUpgrade,
+        TitleResolver);
     }
 
     public static DotaSkillSlot CreateActiveGroup(
@@ -112,7 +120,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       IReadOnlyList<Spell> Spells,
       Func<int, string> DescribeLevel = null,
       bool IsUltimate = false,
-      Action<object, Character, int> OnUpgrade = null)
+      Action<object, Character, int> OnUpgrade = null,
+      Func<string> TitleResolver = null)
     {
       return new DotaSkillSlot(
         Id: Id,
@@ -125,7 +134,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
         Spells: Spells,
         PassiveProperty: null,
         DescribeLevel: DescribeLevel,
-        OnUpgrade: OnUpgrade);
+        OnUpgrade: OnUpgrade,
+        TitleResolver: TitleResolver);
     }
 
     public static DotaSkillSlot CreatePassive(
@@ -136,7 +146,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       Property PassiveProperty,
       Func<int, string> DescribeLevel = null,
       bool IsUltimate = false,
-      Action<object, Character, int> OnUpgrade = null)
+      Action<object, Character, int> OnUpgrade = null,
+      Func<string> TitleResolver = null)
     {
       return new DotaSkillSlot(
         Id: Id,
@@ -149,7 +160,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
         Spells: null,
         PassiveProperty: PassiveProperty,
         DescribeLevel: DescribeLevel,
-        OnUpgrade: OnUpgrade);
+        OnUpgrade: OnUpgrade,
+        TitleResolver: TitleResolver);
     }
 
     /// <summary>
@@ -160,15 +172,16 @@ namespace Pathos.DotaHeroes.Framework.Skills
       return new DotaSkillSlot(
         Id: $"{HeroId}.attr_bonus",
         Hotkey: "+",
-        Title: "全属性加成",
+        Title: "Attribute Bonus",
         Kind: DotaSkillSlotKind.AttributeBonus,
         MaxLevel: 7,
         UnlockLevels: AttributeBonusUnlockLevels,
         IconGlyph: IconGlyph,
         DescribeLevel: Lv => Lv <= 0
-          ? "每级永久 +1 全六维属性（最高 7 级）"
-          : $"已累计 +{Lv} 全六维属性（下级再 +1，受上限约束）",
-        OnUpgrade: ApplyAllAttributesBonus);
+          ? DotaLocalization.T("ui.skill.attr_bonus.desc_zero")
+          : DotaLocalization.Format("ui.skill.attr_bonus.desc_lv", Lv),
+        OnUpgrade: ApplyAllAttributesBonus,
+        TitleResolver: () => DotaLocalization.T("ui.skill.attr_bonus.title"));
     }
 
     private static readonly string[] AllAttributeNames =
@@ -201,7 +214,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
           Engine,
           Character,
           null,
-          $"全属性加成 Lv {NewLevel}：永久提升 {Increased} 项属性 +1。");
+          DotaLocalization.Format("ui.skill.attr_bonus.log", NewLevel, Increased));
       }
     }
 
@@ -219,23 +232,28 @@ namespace Pathos.DotaHeroes.Framework.Skills
   /// </summary>
   public sealed class HeroSkillBuild
   {
+    private readonly string StaticHeroDisplayName;
+    private readonly Func<string> HeroDisplayNameResolver;
+
     public HeroSkillBuild(
       string ClassName,
       string HeroDisplayName,
       IReadOnlyList<DotaSkillSlot> Slots,
-      Glyph IconGlyph = null)
+      Glyph IconGlyph = null,
+      Func<string> HeroDisplayNameResolver = null)
     {
       if (string.IsNullOrWhiteSpace(ClassName))
         throw new ArgumentException("ClassName cannot be null or empty.", nameof(ClassName));
 
       this.ClassName = ClassName;
-      this.HeroDisplayName = string.IsNullOrWhiteSpace(HeroDisplayName) ? ClassName : HeroDisplayName;
+      this.StaticHeroDisplayName = string.IsNullOrWhiteSpace(HeroDisplayName) ? ClassName : HeroDisplayName;
+      this.HeroDisplayNameResolver = HeroDisplayNameResolver;
       this.Slots = Slots ?? throw new ArgumentNullException(nameof(Slots));
       this.IconGlyph = IconGlyph;
     }
 
     public string ClassName { get; }
-    public string HeroDisplayName { get; }
+    public string HeroDisplayName => HeroDisplayNameResolver?.Invoke() ?? StaticHeroDisplayName;
     public IReadOnlyList<DotaSkillSlot> Slots { get; }
     public Glyph IconGlyph { get; }
 
@@ -247,7 +265,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       DotaSkillSlot SlotQ,
       DotaSkillSlot SlotW,
       DotaSkillSlot SlotE,
-      DotaSkillSlot SlotR)
+      DotaSkillSlot SlotR,
+      Func<string> HeroDisplayNameResolver = null)
     {
       var Slots = new[]
       {
@@ -258,7 +277,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
         DotaSkillSlot.CreateStandardAttributeBonus(HeroId, IconGlyph)
       };
 
-      return new HeroSkillBuild(ClassName, HeroDisplayName, Slots, IconGlyph);
+      return new HeroSkillBuild(ClassName, HeroDisplayName, Slots, IconGlyph, HeroDisplayNameResolver);
     }
   }
 }

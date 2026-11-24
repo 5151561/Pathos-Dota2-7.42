@@ -6,6 +6,7 @@ using System.Reflection;
 using HarmonyLib;
 using Inv;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Localization;
 
 namespace Pathos.DotaHeroes.Framework.UI
 {
@@ -128,7 +129,14 @@ namespace Pathos.DotaHeroes.Framework.UI
         new[] { typeof(Qualification) },
         null);
 
-    private static readonly string[] FallbackTierNames = { "熟练", "精通", "专家", "大师", "冠军" };
+    private static string[] GetFallbackTierNames() => new[]
+    {
+      DotaLocalization.T("help.tier.1"),
+      DotaLocalization.T("help.tier.2"),
+      DotaLocalization.T("help.tier.3"),
+      DotaLocalization.T("help.tier.4"),
+      DotaLocalization.T("help.tier.5")
+    };
 
     /// <summary>
     /// 使用内部语义色标记包装文本，渲染阶段由 HelpRender 补丁拆分为多色 HelpBlock Run。
@@ -192,7 +200,7 @@ namespace Pathos.DotaHeroes.Framework.UI
       if (Min == Max)
         return Min.ToString();
 
-      return $"{Notation}（{Min}~{Max}）";
+      return DotaLocalization.Format("help.dice_range", Notation, Min, Max);
     }
 
     /// <summary>
@@ -541,7 +549,7 @@ namespace Pathos.DotaHeroes.Framework.UI
           var LiveRows = Spec.BuildLiveStats(HelpCtx);
           if (LiveRows != null && LiveRows.Count > 0)
           {
-            InvokeHighlight(__result, LayoutSectionPrefix + "当前实时面板", Colour.Gold);
+            InvokeHighlight(__result, LayoutSectionPrefix + DotaLocalization.T("help.section.live_stats"), Colour.Gold);
             foreach (var (Key, Value) in LiveRows)
             {
               if (!string.IsNullOrEmpty(Key) && !string.IsNullOrEmpty(Value))
@@ -556,7 +564,7 @@ namespace Pathos.DotaHeroes.Framework.UI
           var Notes = Spec.BuildMechanicsNotes(HelpCtx);
           if (Notes != null && Notes.Count > 0)
           {
-            InvokeProperty(__result, LayoutTierHdrPrefix + "技能机制", "全阶通用");
+            InvokeProperty(__result, LayoutTierHdrPrefix + DotaLocalization.T("help.section.mechanics"), DotaLocalization.T("help.section.all_tiers"));
             foreach (var Note in Notes)
             {
               if (!string.IsNullOrWhiteSpace(Note))
@@ -581,20 +589,20 @@ namespace Pathos.DotaHeroes.Framework.UI
           if (Tier == null)
             continue;
 
-          int ClampedIdx = Math.Clamp(Tier.Tier - 1, 0, FallbackTierNames.Length - 1);
+          int ClampedIdx = Math.Clamp(Tier.Tier - 1, 0, TierQualNames.Length - 1);
           string TierName = TierQualNames[ClampedIdx];
           string Suffix = Tier.HeaderSuffix ?? string.Empty;
 
           if (CurrentTier > 0 && Tier.Tier == CurrentTier)
           {
             string HighlightHeader = string.IsNullOrEmpty(Suffix)
-              ? $"{TierName}（当前）"
-              : $"{TierName} {Suffix}（当前）";
+              ? DotaLocalization.Format("help.tier.current_no_suffix", TierName)
+              : DotaLocalization.Format("help.tier.current_with_suffix", TierName, Suffix);
             InvokeHighlight(__result, LayoutSectionPrefix + HighlightHeader, Colour.DarkOrange);
           }
           else
           {
-            InvokeProperty(__result, LayoutTierHdrPrefix + TierName, string.IsNullOrEmpty(Suffix) ? "效果" : Suffix);
+            InvokeProperty(__result, LayoutTierHdrPrefix + TierName, string.IsNullOrEmpty(Suffix) ? DotaLocalization.T("help.tier.effect_fallback") : Suffix);
           }
 
           if (Tier.Bullets != null)
@@ -644,7 +652,7 @@ namespace Pathos.DotaHeroes.Framework.UI
 
     private static string[] ResolveLocalizedTierNames(Spell Spell)
     {
-      var Names = (string[])FallbackTierNames.Clone();
+      var Names = GetFallbackTierNames();
 
       try
       {

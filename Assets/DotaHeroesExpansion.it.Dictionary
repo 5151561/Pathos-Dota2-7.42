@@ -1,52 +1,52 @@
-﻿BeamName,omnislash dash,
-CharacterName,Juggernaut,
-CharacterName,Morphling,
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
-ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",
-ClassName,juggernaut//female,
-ClassName,juggernaut//male,
-ClassName,juggernaut//non-binary,
-ClassName,morphling//female,
-ClassName,morphling//male,
-ClassName,morphling//non-binary,
-EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,
-EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",
-EntityName,healing ward,
-EntityName,waterkin,
-ExplosionName,blade fury spin,
-ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,
-ItemName,tidal orb,
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-PropertyName,blade dance,
-PropertyName,blade fury,
-PropertyName,bladeform,
-PropertyName,ebb and flow,
-PropertyName,omnislash,
-RaceName,waterkin//female,
-RaceName,waterkin//male,
-RaceName,waterkin//non-binary,
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
-SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
-SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
-SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
-SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
-SpellDescription,Release your morphed form and immediately return to your true waterkin body.,
-SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
-SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
-SpellName,adaptive strike,
-SpellName,blade fury,
-SpellName,healing ward,
-SpellName,morph,
-SpellName,morph agility,
-SpellName,morph revert,
-SpellName,morph strength,
-SpellName,omnislash,
-SpellName,waveform,
-StrikeName,blade dance crit,
-StrikeName,healing ward pulse,
-StrikeName,omnislash slash,
+﻿BeamName,omnislash dash,scatto di omnitaglio
+CharacterName,Juggernaut,Juggernaut
+CharacterName,Morphling,Morphling
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Un fluido eroe di DOTA2 che comanda onde impetuose, sposta liberamente punti tra Forza e Agilità, si potenzia con Flusso e Riflusso e assume la forma dei nemici."
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Uno spadaccino mascherato di DOTA2 che accumula slancio inarrestabile con Forma di Lama, fende la magia con Furia della Lama, sostiene gli alleati con il Totem Curativo e falcia i nemici con Danza della Lama e Omnitaglio."
+ClassName,juggernaut//female,juggernaut
+ClassName,juggernaut//male,juggernaut
+ClassName,juggernaut//non-binary,juggernaut
+ClassName,morphling//female,morphling
+ClassName,morphling//male,morphling
+ClassName,morphling//non-binary,morphling
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,Un totem rigenerante fluttuante evocato da Juggernaut che cura gli alleati vicini di una percentuale dei loro PV massimi ogni turno.
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Un elementale senziente forgiato dalle maree viventi, capace di rimodellare a piacimento i propri attributi fisici."
+EntityName,healing ward,totem curativo
+EntityName,waterkin,spirito acquatico
+ExplosionName,blade fury spin,vortice di furia della lama
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Una sfera condensata di acqua di marea vivente lanciata come munizione infinita da una fionda.
+ItemName,tidal orb,sfera delle maree
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Innata (Forma di Lama): Ottieni 1 carica ogni 4 turni senza subire danni (fino a 10 cariche). Ogni carica conferisce +1% velocità di movimento e +2,5% potenza di colpo su Agilità e velocità d'attacco; persiste per 4 turni dopo aver subito danni."
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Innata (Flusso e Riflusso): L'Agilità aumenta la velocità di movimento e la gittata a distanza; la Forza aumenta la gittata degli incantesimi e la resistenza ai rallentamenti. Persiste durante la metamorfosi.
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Balza tra i nemici vicini in una scia di fendenti invulnerabili: immune a tutti i danni e malus mentre colpisce un nemico vicino ogni turno.
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Passiva (Danza della Lama): Gli attacchi in mischia, i colpi di Omnitaglio e i giri di Furia della Lama hanno il 20% / 25% / 30% / 35% di probabilità (in base al livello 1-4 di Danza della Lama) di infliggere un colpo critico da 1,8x danni."
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Roteando in una tempesta distruttiva di lame: immune ai malus, 80% di riduzione dei danni magici e infligge danni magici intorno a te ogni turno."
+PropertyName,blade dance,danza della lama
+PropertyName,blade fury,furia della lama
+PropertyName,bladeform,forma di lama
+PropertyName,ebb and flow,flusso e riflusso
+PropertyName,omnislash,omnitaglio
+RaceName,waterkin//female,spirito acquatico
+RaceName,waterkin//male,spirito acquatico
+RaceName,waterkin//non-binary,spirito acquatico
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Assumi la forma di una creatura bersaglio, copiandone corpo, attributi, abilità e incantesimi mantenendo Flusso e Riflusso."
+SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Dissolvi i malus e rotea per 10-12 turni: immunità ai malus, 80% di riduzione dei danni magici e da 1d4 a 2d4+2 danni magici base per turno (85-205 DPS calcolati via K_dmg=15, scalati su DEX e velocità di Forma di Lama) ai nemici adiacenti 3x3; può infliggere critici con Danza della Lama."
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Dissolviti in un'onda impetuosa, teletrasportandoti in avanti, spruzzando danni d'acqua intorno a te e ottenendo brevemente attraversamento e dislocazione."
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Scaglia un'ondata d'acqua che infligge danni base, respinge e stordisce il bersaglio. I danni bonus scalano col rapporto Agilità/Forza mentre la durata dello stordimento scala col rapporto Forza/Agilità."
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Balza su un nemico bersaglio e sferra da 5 a 12 rapidi fendenti invulnerabili (arma + attributo + 2-3 danni bonus per colpo) tra i nemici vicini, attivando i critici di Danza della Lama e i bonus di Forma di Lama."
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Abbandona la tua forma metamorfosata e torna immediatamente al tuo vero corpo di spirito acquatico.
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Sposta punti da Agilità a Forza e Costituzione (da 1 a 5 punti in base alla maestria), conservando il totale delle statistiche e aumentando sia i PV massimi che quelli attuali."
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Sposta punti da Forza e Costituzione ad Agilità (da 1 a 5 punti in base alla maestria), conservando il totale delle statistiche e riducendo i PV massimi senza drenare i PV attuali."
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Evoca un fragile Totem Curativo mobile (1 PV, max 1 attivo) per 36-48 turni che cura tutti gli alleati entro 2 caselle dell'1%-3,25% dei loro PV massimi ogni turno."
+SpellName,adaptive strike,colpo adattivo
+SpellName,blade fury,furia della lama
+SpellName,healing ward,totem curativo
+SpellName,morph,metamorfosi
+SpellName,morph agility,conversione agilità
+SpellName,morph revert,annulla metamorfosi
+SpellName,morph strength,conversione forza
+SpellName,omnislash,omnitaglio
+SpellName,waveform,forma d'onda
+StrikeName,blade dance crit,critico danza della lama
+StrikeName,healing ward pulse,impulso totem curativo
+StrikeName,omnislash slash,fendente di omnitaglio

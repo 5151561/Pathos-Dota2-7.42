@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Threading;
 using HarmonyLib;
+using Pathos.DotaHeroes.Framework.Localization;
 
 namespace Pathos.DotaHeroes.Framework.Hooks
 {
@@ -612,7 +613,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
             PathosEngineBridge.SetBusy(Engine, Character, AtkDelay);
             PathosEngineBridge.StoryAttacking(Engine, Delay.FromTurns(10), Character, Direction);
             if (Target.Square != null)
-              PathosEngineBridge.StoryCaption(Engine, Target.Square, Inv.Colour.Silver, "无敌", Delayed: false);
+              PathosEngineBridge.StoryCaption(Engine, Target.Square, Inv.Colour.Silver, DotaLocalization.T("ui.caption.invulnerable"), Delayed: false);
             return false;
           }
         }

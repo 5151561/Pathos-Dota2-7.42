@@ -1,52 +1,52 @@
-﻿BeamName,omnislash dash,
-CharacterName,Juggernaut,
-CharacterName,Morphling,
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
-ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",
-ClassName,juggernaut//female,
-ClassName,juggernaut//male,
-ClassName,juggernaut//non-binary,
-ClassName,morphling//female,
-ClassName,morphling//male,
-ClassName,morphling//non-binary,
-EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,
-EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",
-EntityName,healing ward,
-EntityName,waterkin,
-ExplosionName,blade fury spin,
-ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,
-ItemName,tidal orb,
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-PropertyName,blade dance,
-PropertyName,blade fury,
-PropertyName,bladeform,
-PropertyName,ebb and flow,
-PropertyName,omnislash,
-RaceName,waterkin//female,
-RaceName,waterkin//male,
-RaceName,waterkin//non-binary,
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
-SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
-SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
-SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
-SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
-SpellDescription,Release your morphed form and immediately return to your true waterkin body.,
-SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
-SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
-SpellName,adaptive strike,
-SpellName,blade fury,
-SpellName,healing ward,
-SpellName,morph,
-SpellName,morph agility,
-SpellName,morph revert,
-SpellName,morph strength,
-SpellName,omnislash,
-SpellName,waveform,
-StrikeName,blade dance crit,
-StrikeName,healing ward pulse,
-StrikeName,omnislash slash,
+﻿BeamName,omnislash dash,sibat ng omnislash
+CharacterName,Juggernaut,Juggernaut
+CharacterName,Morphling,Morphling
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Isang maliksing bayani ng DOTA2 na nag-uutos ng malalakas na alon, malayang naglilipat sa pagitan ng Lakas at Liksi, nagpapalakas sa pamamagitan ng Taas at Baba ng Alon, at nagpapalit-anyo bilang mga kalaban."
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Isang nakamaskarang dalubhasa sa talim mula sa DOTA2 na nag-iipon ng walang pigil na puwersa sa Anyo ng Talim, humihiwa ng mahika gamit ang Poot ng Talim, nagpapagaling ng kakampi sa Totem ng Paghilom, at pumapatay ng mga kaaway gamit ang Sayaw ng Talim at Omnislash."
+ClassName,juggernaut//female,juggernaut
+ClassName,juggernaut//male,juggernaut
+ClassName,juggernaut//non-binary,juggernaut
+ClassName,morphling//female,morphling
+ClassName,morphling//male,morphling
+ClassName,morphling//non-binary,morphling
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,Isang lumulutang na totem ng paghilom na tinawag ni Juggernaut na nagpapagaling ng mga kalapit na kakampi batay sa porsyento ng kanilang pinakamataas na HP bawat turno.
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Isang may-isip na elemental na hinubog mula sa buhay na tubig-alon, na kayang baguhin ang kanyang mga pisikal na katangian anumang oras."
+EntityName,healing ward,totem ng paghilom
+EntityName,waterkin,nilalang ng tubig
+ExplosionName,blade fury spin,ikot ng poot ng talim
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Isang siksik na bola ng buhay na tubig-alon na ibinabala nang walang katapusan mula sa tirador.
+ItemName,tidal orb,bolang agos
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,Likas (Anyo ng Talim): Makakuha ng 1 patong bawat 4 na turnong hindi tinatamaan ng pinsala (hanggang 10 patong). Bawat patong ay nagbibigay ng +1% bilis ng pagkilos at +2.5% lakas ng hampas sa liksi at bilis ng atake; nananatili ng 4 na turno matapos matamaan.
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Likas (Taas at Baba ng Alon): Ang Liksi ay nagbibigay ng dagdag na bilis ng pagkilos at layo ng pag-atake sa malayo; ang Lakas ay nagbibigay ng dagdag na layo ng mahika at laban sa pagbagal. Nananatili habang nagpapalit-anyo.
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Lumulundag sa pagitan ng mga kalapit na kalaban sa isang malabong ulan ng hindi matitinag na hampas: ligtas sa lahat ng pinsala at masamang epekto habang hinihiwa ang isang kalapit na kalaban bawat turno.
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Pasibo (Sayaw ng Talim): Ang mga malapitang atake, hampas ng Omnislash, at pag-ikot ng Poot ng Talim ay may 20% / 25% / 30% / 35% tsansa (ayon sa antas 1-4 ng Sayaw ng Talim) na magdulot ng kritikal na tama na 1.8x na pinsala."
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Umiikot sa isang mapanirang bagyo ng mga talim: ligtas sa mga masamang epekto, 80% bawas sa pinsalang mahika, at nagdudulot ng pinsalang mahika sa paligid mo bawat turno."
+PropertyName,blade dance,sayaw ng talim
+PropertyName,blade fury,poot ng talim
+PropertyName,bladeform,anyo ng talim
+PropertyName,ebb and flow,taas at baba ng alon
+PropertyName,omnislash,omnislash
+RaceName,waterkin//female,nilalang ng tubig
+RaceName,waterkin//male,nilalang ng tubig
+RaceName,waterkin//non-binary,nilalang ng tubig
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Gayahin ang anyo ng target na nilalang, kinokopya ang katawan, mga katangian, kasanayan, at mahika nito habang pinapanatili ang Taas at Baba ng Alon."
+SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Alisin ang masasamang epekto at umikot nang 10 hanggang 12 turno: kaligtasan sa masamang epekto, 80% bawas sa pinsalang mahika, at 1d4 hanggang 2d4+2 batayang pinsalang mahika bawat turno (85-205 DPS gamit ang K_dmg=15, nakabatay sa DEX at bilis ng Anyo ng Talim) sa mga katabing 3x3 kalaban; maaaring magkritikal gamit ang Sayaw ng Talim."
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Matunaw sa isang malakas na alon, sumugod pasulong, magsaboy ng pinsalang tubig sa paligid, at panandaliang makakuha ng paglusot at paglipat."
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Magpakawala ng daluyong ng tubig na nagdudulot ng batayang pinsala, nagtutulak pabalik, at nagpapatigil sa target. Ang dagdag na pinsala ay umaayon sa rasyo ng Liksi-sa-Lakas habang ang tagal ng pagkatulala ay sa rasyo ng Lakas-sa-Liksi."
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Lumundag sa isang target na kalaban at magpakawala ng 5 hanggang 12 mabilis at hindi matitinag na hiwa ng sandata (sandata + katangian + 2 hanggang 3 dagdag pinsala bawat hiwa) sa mga kalapit na kalaban, na nagpapagana ng kritikal ng Sayaw ng Talim at bonus ng Anyo ng Talim."
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Pakawalan ang iyong binagong anyo at agad na bumalik sa iyong tunay na katawan ng nilalang ng tubig.
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Ilipat ang Liksi patungong Lakas at Pangangatawan (1 hanggang 5 puntos ayon sa kahusayan), pinapanatili ang kabuuang katangian habang itinataas ang parehong pinakamataas at kasalukuyang HP."
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Ilipat ang Lakas at Pangangatawan patungong Liksi (1 hanggang 5 puntos ayon sa kahusayan), pinapanatili ang kabuuang katangian at binababa ang pinakamataas na HP nang hindi inuubos ang kasalukuyang HP."
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Tumawag ng marupok at gumagalaw na Totem ng Paghilom (1 HP, max 1 aktibo) sa loob ng 36 hanggang 48 turno na nagpapagaling sa lahat ng kakampi sa loob ng 2 puwang ng 1% hanggang 3.25% ng kanilang pinakamataas na HP bawat turno."
+SpellName,adaptive strike,umaangkop na hampas
+SpellName,blade fury,poot ng talim
+SpellName,healing ward,totem ng paghilom
+SpellName,morph,pagbabagong-anyo
+SpellName,morph agility,ilipat sa liksi
+SpellName,morph revert,ibalik ang anyo
+SpellName,morph strength,ilipat sa lakas
+SpellName,omnislash,omnislash
+SpellName,waveform,anyong alon
+StrikeName,blade dance crit,kritikal ng sayaw ng talim
+StrikeName,healing ward pulse,pintig ng totem ng paghilom
+StrikeName,omnislash slash,hiwa ng omnislash

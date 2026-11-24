@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Localization;
 using Pathos.DotaHeroes.Framework.Skills;
 using Pathos.DotaHeroes.Framework.UI;
 
@@ -582,13 +583,17 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         string HintText;
         if (SkillPoints > 0 && TalentPoints > 0)
-          HintText = $"技能与天赋 (技能 {SkillPoints} / 天赋 {TalentPoints}) [F2]";
+          HintText = DotaLocalization.Format("ui.panel.hint.both", SkillPoints, TalentPoints);
         else if (SkillPoints > 0)
-          HintText = $"技能加点 ({SkillPoints} 点可用) [F2]";
+          HintText = DotaLocalization.Format("ui.panel.hint.skills", SkillPoints);
         else if (TalentPoints > 0)
-          HintText = $"天赋树 ({TalentPoints} 点可用) [F2]";
+          HintText = DotaLocalization.Format("ui.panel.hint.talents", TalentPoints);
         else
-          HintText = HasBuild && HasTree ? "技能与天赋 [F2]" : HasBuild ? "技能加点 [F2]" : "天赋树 [F2]";
+          HintText = HasBuild && HasTree
+            ? DotaLocalization.T("ui.panel.hint.none_both")
+            : HasBuild
+              ? DotaLocalization.T("ui.panel.hint.none_skills")
+              : DotaLocalization.T("ui.panel.hint.none_talents");
 
         MenuButtonHintProp?.SetValue(MenuButtonObj, HintText);
         MenuButtonIsCheckedProp?.SetValue(MenuButtonObj, PanelOpen);
@@ -815,25 +820,27 @@ namespace Pathos.DotaHeroes.Framework.Talents
         int SkillPoints = HasBuild ? HeroSkillService.GetAvailableSkillPoints(Character) : 0;
         int TalentPoints = HasTree ? TalentService.GetAvailableTalentPoints(Character) : 0;
 
-        string HeroName = SkillBuild?.HeroDisplayName ?? Tree?.HeroDisplayName ?? "英雄";
-        string SectionName = ActiveTab == GrowthTab.Skills ? "技能加点" : "天赋树";
-        HeaderTitleLabel.Text = $"{HeroName} · {SectionName}";
+        string HeroName = SkillBuild?.HeroDisplayName ?? Tree?.HeroDisplayName ?? DotaLocalization.T("ui.panel.hero_fallback");
+        string SectionName = ActiveTab == GrowthTab.Skills
+          ? DotaLocalization.T("ui.panel.section.skills")
+          : DotaLocalization.T("ui.panel.section.talents");
+        HeaderTitleLabel.Text = DotaLocalization.Format("ui.panel.header_fmt", HeroName, SectionName);
 
         if (SkillPoints > 0 && TalentPoints > 0)
         {
-          PointsBadgeLabel.Text = $"技能 {SkillPoints} · 天赋 {TalentPoints}";
+          PointsBadgeLabel.Text = DotaLocalization.Format("ui.panel.badge.both", SkillPoints, TalentPoints);
           PointsBadgeLabel.Font.Colour = AvailableTagColour;
           PointsBadgeLabel.Visibility.Show();
         }
         else if (SkillPoints > 0)
         {
-          PointsBadgeLabel.Text = $"技能点 {SkillPoints}";
+          PointsBadgeLabel.Text = DotaLocalization.Format("ui.panel.badge.skills", SkillPoints);
           PointsBadgeLabel.Font.Colour = AvailableTagColour;
           PointsBadgeLabel.Visibility.Show();
         }
         else if (TalentPoints > 0)
         {
-          PointsBadgeLabel.Text = $"天赋点 {TalentPoints}";
+          PointsBadgeLabel.Text = DotaLocalization.Format("ui.panel.badge.talents", TalentPoints);
           PointsBadgeLabel.Font.Colour = AvailableTagColour;
           PointsBadgeLabel.Visibility.Show();
         }
@@ -880,8 +887,12 @@ namespace Pathos.DotaHeroes.Framework.Talents
         var ColRight = Table.AddStarColumn(1);
         var Row = Table.AddAutoRow();
 
-        string SkillTitle = SkillPoints > 0 ? $"技能加点 ({SkillPoints})" : "技能加点";
-        string TalentTitle = TalentPoints > 0 ? $"天赋树 ({TalentPoints})" : "天赋树";
+        string SkillTitle = SkillPoints > 0
+          ? DotaLocalization.Format("ui.panel.tab.skills_pts", SkillPoints)
+          : DotaLocalization.T("ui.panel.section.skills");
+        string TalentTitle = TalentPoints > 0
+          ? DotaLocalization.Format("ui.panel.tab.talents_pts", TalentPoints)
+          : DotaLocalization.T("ui.panel.section.talents");
 
         Table.GetCell(ColLeft, Row).Content = BuildTabButton(SkillTitle, GrowthTab.Skills, SkillPoints > 0);
         Table.GetCell(ColRight, Row).Content = BuildTabButton(TalentTitle, GrowthTab.Talents, TalentPoints > 0);
@@ -943,7 +954,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
         var Layout = Surface.NewTable();
         var ColIcon = Layout.AddFixedColumn(46);
         var ColInfo = Layout.AddStarColumn(1);
-        var ColAction = Layout.AddFixedColumn(84);
+        var ColAction = Layout.AddFixedColumn(96);
         var Row = Layout.AddAutoRow();
 
         // 1. 左侧：技能图标 + 快捷键徽章
@@ -976,6 +987,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
         var TitleDock = Surface.NewHorizontalDock();
         var NameLabel = CreateLabel(TextPrimaryColour, FontSize: 16);
         NameLabel.Text = Slot.Title;
+        NameLabel.LineWrapping = true;
         NameLabel.Alignment.CenterLeft();
         TitleDock.AddClient(NameLabel);
 
@@ -985,20 +997,20 @@ namespace Pathos.DotaHeroes.Framework.Talents
         {
           string Stars = HeroSkillService.GetActiveStarsBadge(Character, Slot);
           BadgeText = CurrentLv > 0
-            ? $"Lv {CurrentLv}/{Slot.MaxLevel} · {Stars}"
-            : $"未学习 (0/{Slot.MaxLevel})";
+            ? DotaLocalization.Format("ui.skill.level_stars", CurrentLv, Slot.MaxLevel, Stars)
+            : DotaLocalization.Format("ui.skill.unlearned", Slot.MaxLevel);
           BadgeColour = CurrentLv > 1 ? StarGoldColour : (CurrentLv == 1 ? LearnedTagColour : TextMutedColour);
         }
         else if (Slot.Kind == DotaSkillSlotKind.Passive)
         {
           BadgeText = CurrentLv > 0
-            ? $"Lv {CurrentLv}/{Slot.MaxLevel} · 被动"
-            : $"未学习 (0/{Slot.MaxLevel})";
+            ? DotaLocalization.Format("ui.skill.level_passive", CurrentLv, Slot.MaxLevel)
+            : DotaLocalization.Format("ui.skill.unlearned", Slot.MaxLevel);
           BadgeColour = CurrentLv > 0 ? LearnedTagColour : TextMutedColour;
         }
         else
         {
-          BadgeText = $"Lv {CurrentLv}/{Slot.MaxLevel}";
+          BadgeText = DotaLocalization.Format("ui.skill.level_plain", CurrentLv, Slot.MaxLevel);
           BadgeColour = CurrentLv > 0 ? StarGoldColour : TextMutedColour;
         }
 
@@ -1036,12 +1048,14 @@ namespace Pathos.DotaHeroes.Framework.Talents
         if (State == DotaSkillUpgradeState.Available)
         {
           string BtnText = CurrentLv == 0 && Slot.Kind != DotaSkillSlotKind.AttributeBonus
-            ? "学习"
-            : (Slot.Kind == DotaSkillSlotKind.Active ? "+ 升星" : "+ 升级");
+            ? DotaLocalization.T("ui.skill.btn.learn")
+            : (Slot.Kind == DotaSkillSlotKind.Active
+              ? DotaLocalization.T("ui.skill.btn.star_up")
+              : DotaLocalization.T("ui.skill.btn.upgrade"));
 
           var Btn = Surface.NewFlatButton();
           Btn.Alignment.Center();
-          Btn.Size.SetWidth(78);
+          Btn.Size.SetWidth(90);
           Btn.Background.Colour = AvailableBgColour;
           Btn.Border.Set(1);
           Btn.Border.Colour = AvailableBorderColour;
@@ -1050,6 +1064,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
           var Label = CreateLabel(AvailableTagColour, FontSize: 14);
           Label.Text = BtnText;
           Label.Justify.Center();
+          Label.LineWrapping = true;
           Btn.Content = Label;
           Btn.SingleTapEvent += () => HandleUpgradeSkill(Slot);
           return Btn;
@@ -1063,21 +1078,21 @@ namespace Pathos.DotaHeroes.Framework.Talents
         switch (State)
         {
           case DotaSkillUpgradeState.Maxed:
-            StatusText = "已满级";
+            StatusText = DotaLocalization.T("ui.skill.status.maxed");
             Bg = LearnedBgColour;
             Border = LearnedBorderColour;
             TextCol = LearnedTagColour;
             break;
 
           case DotaSkillUpgradeState.LevelLocked:
-            StatusText = $"需 Lv {RequiredHeroLv}";
+            StatusText = DotaLocalization.Format("ui.skill.status.req_lv", RequiredHeroLv);
             Bg = TileSubBgColour;
             Border = LockedBorderColour;
             TextCol = TextMutedColour;
             break;
 
           default:
-            StatusText = "无点数";
+            StatusText = DotaLocalization.T("ui.skill.status.no_points");
             Bg = TileSubBgColour;
             Border = LockedBorderColour;
             TextCol = TextMutedColour;
@@ -1086,7 +1101,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         var Frame = Surface.NewFrame();
         Frame.Alignment.Center();
-        Frame.Size.SetWidth(78);
+        Frame.Size.SetWidth(90);
         Frame.Background.Colour = Bg;
         Frame.Border.Set(1);
         Frame.Border.Colour = Border;
@@ -1095,6 +1110,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
         var StatusLabel = CreateLabel(TextCol, FontSize: 13);
         StatusLabel.Text = StatusText;
         StatusLabel.Justify.Center();
+        StatusLabel.LineWrapping = true;
         Frame.Content = StatusLabel;
         return Frame;
       }
@@ -1127,7 +1143,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
         BlockFrame.Content = BlockStack;
 
         var TierTitle = CreateLabel(SectionBlueColour, FontSize: 15);
-        TierTitle.Text = $"{Tier.UnlockLevel}级天赋（{Tier.DualUnlockLevel}级双修）";
+        TierTitle.Text = DotaLocalization.Format("ui.talent.tier_title", Tier.UnlockLevel);
         TierTitle.Margin.Set(2, 0, 0, 6);
         BlockStack.AddPanel(TierTitle);
 
@@ -1158,7 +1174,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
             Border = LearnedBorderColour;
             TitleCol = TextPrimaryColour;
             TagCol = LearnedTagColour;
-            TagText = "✓ 已学习";
+            TagText = DotaLocalization.T("ui.talent.learned_tag");
             break;
 
           case TalentNodeState.Available:
@@ -1166,7 +1182,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
             Border = AvailableBorderColour;
             TitleCol = TextPrimaryColour;
             TagCol = AvailableTagColour;
-            TagText = "点击学习";
+            TagText = DotaLocalization.T("ui.talent.click_tag");
             break;
 
           default:

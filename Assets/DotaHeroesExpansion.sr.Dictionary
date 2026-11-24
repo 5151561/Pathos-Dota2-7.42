@@ -1,52 +1,52 @@
-﻿BeamName,omnislash dash,
-CharacterName,Juggernaut,
-CharacterName,Morphling,
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
-ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",
-ClassName,juggernaut//female,
-ClassName,juggernaut//male,
-ClassName,juggernaut//non-binary,
-ClassName,morphling//female,
-ClassName,morphling//male,
-ClassName,morphling//non-binary,
-EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,
-EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",
-EntityName,healing ward,
-EntityName,waterkin,
-ExplosionName,blade fury spin,
-ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,
-ItemName,tidal orb,
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-PropertyName,blade dance,
-PropertyName,blade fury,
-PropertyName,bladeform,
-PropertyName,ebb and flow,
-PropertyName,omnislash,
-RaceName,waterkin//female,
-RaceName,waterkin//male,
-RaceName,waterkin//non-binary,
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
-SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
-SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
-SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
-SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
-SpellDescription,Release your morphed form and immediately return to your true waterkin body.,
-SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
-SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
-SpellName,adaptive strike,
-SpellName,blade fury,
-SpellName,healing ward,
-SpellName,morph,
-SpellName,morph agility,
-SpellName,morph revert,
-SpellName,morph strength,
-SpellName,omnislash,
-SpellName,waveform,
-StrikeName,blade dance crit,
-StrikeName,healing ward pulse,
-StrikeName,omnislash slash,
+﻿BeamName,omnislash dash,nalet omnislasha
+CharacterName,Juggernaut,Juggernaut
+CharacterName,Morphling,Morphling
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Fluidni heroj iz DOTA2 koji zapoveda uzburkanim talasima, slobodno preliva Snagu i Okretnost, jača kroz Plimu i oseku i poprima oblik neprijatelja."
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Maskirani majstor sečiva iz DOTA2 koji gradi nezaustavljiv zamah kroz Oblik sečiva, seče kroz magiju Besom sečiva, leči saveznike Totemom isceljenja i obara neprijatelje Plesom sečiva i Omnislashom."
+ClassName,juggernaut//female,juggernaut
+ClassName,juggernaut//male,juggernaut
+ClassName,juggernaut//non-binary,juggernaut
+ClassName,morphling//female,morphling
+ClassName,morphling//male,morphling
+ClassName,morphling//non-binary,morphling
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,Lebdeći isceljujući totem koji priziva Juggernaut i koji svakog poteza leči obližnje saveznike za procenat njihovog maksimalnog HP-a.
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Svesni elemental iskovan od žive plimske vode, sposoban da po volji preoblikuje svoje fizičke osobine."
+EntityName,healing ward,totem isceljenja
+EntityName,waterkin,vodeni duh
+ExplosionName,blade fury spin,vrtlog besa sečiva
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Zgusnuta sfera žive plimske vode koja se ispaljuje iz praćke kao beskonačna dalekometna municija.
+ItemName,tidal orb,sfera plime
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Urođeno (Oblik sečiva): Stičite po 1 naslagu svaka 4 poteza bez primljene štete (do 10 naslaga). Svaka naslaga daje +1% brzine kretanja i +2,5% snage udarca od okretnosti i brzine napada; traje 4 poteza nakon primanja štete."
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Urođeno (Plima i oseka): Okretnost daje bonus brzinu kretanja i dalekometni domet napada; Snaga daje bonus domet čarolija i otpornost na usporavanje. Ostaje tokom preobražaja.
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Skače između obližnjih neprijatelja u naletu neranjivih udaraca: imun na svu štetu i slabljenja dok svakog poteza seče obližnjeg neprijatelja.
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Pasivno (Ples sečiva): Napadi iz blizine, udarci Omnislasha i okreti Besa sečiva imaju 20% / 25% / 30% / 35% šanse (prema nivou 1–4 Plesa sečiva) da zadaju kritičan udarac sa 1,8x štete."
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Okretanje u razornoj oluji sečiva: imunost na slabljenja, 80% smanjenja magijske štete i nanošenje magijske štete okolo svakog poteza."
+PropertyName,blade dance,ples sečiva
+PropertyName,blade fury,bes sečiva
+PropertyName,bladeform,oblik sečiva
+PropertyName,ebb and flow,plima i oseka
+PropertyName,omnislash,omnislash
+RaceName,waterkin//female,vodeni duh
+RaceName,waterkin//male,vodeni duh
+RaceName,waterkin//non-binary,vodeni duh
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Poprimite oblik ciljanog stvorenja, kopirajući njegovo telo, osobine, veštine i čarolije uz zadržavanje Plime i oseke."
+SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Raspršite slabljenja i vrtite se 10 do 12 poteza: imunost na slabljenja, 80% smanjenja magijske štete i 1d4 do 2d4+2 osnovne magijske štete po potezu (85–205 DPS preko K_dmg=15, skalirano sa DEX i brzinom Oblika sečiva) susednim 3x3 neprijateljima; može da zada kritičan udarac Plesom sečiva."
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Rastopite se u uzburkani talas, trepnuvši napred, zapljuskujući okolinu vodenom štetom i nakratko dobijajući prolazak kroz zidove i izmeštanje."
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Ispalite vodeni talas koji nanosi osnovnu štetu, odbacuje i ošamućuje metu. Dodatna šteta zavisi od odnosa Okretnosti i Snage, dok trajanje ošamućenosti zavisi od odnosa Snage i Okretnosti."
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Skočite na ciljanog neprijatelja i zadajte 5 do 12 brzih neranjivih zamaha oružjem (oružje + atribut + 2 do 3 bonus štete po zamahu) po obližnjim neprijateljima, aktivirajući kritične udarce Plesa sečiva i bonuse Oblika sečiva."
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Odbacite svoj preobraženi oblik i odmah se vratite u svoje pravo telo vodenog duha.
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Prebacite Okretnost u Snagu i Konstituciju (1 do 5 poena prema majstorstvu), čuvajući ukupan zbir osobina i podižući i maksimalan i trenutni HP."
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Prebacite Snagu i Konstituciju u Okretnost (1 do 5 poena prema majstorstvu), čuvajući ukupan zbir osobina i smanjujući maksimalan HP bez oduzimanja trenutnog HP-a."
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Prizovite krhki pokretni Totem isceljenja (1 HP, maks. 1 aktivan) na 36 do 48 poteza koji leči sve saveznike u krugu od 2 polja za 1% do 3,25% njihovog maksimalnog HP-a svakog poteza."
+SpellName,adaptive strike,prilagodljivi udarac
+SpellName,blade fury,bes sečiva
+SpellName,healing ward,totem isceljenja
+SpellName,morph,preobražaj
+SpellName,morph agility,preliv u okretnost
+SpellName,morph revert,poništavanje preobražaja
+SpellName,morph strength,preliv u snagu
+SpellName,omnislash,omnislash
+SpellName,waveform,talasni oblik
+StrikeName,blade dance crit,kritični ples sečiva
+StrikeName,healing ward pulse,puls totema isceljenja
+StrikeName,omnislash slash,rez omnislasha

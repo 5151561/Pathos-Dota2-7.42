@@ -1,52 +1,52 @@
-﻿BeamName,omnislash dash,
-CharacterName,Juggernaut,
-CharacterName,Morphling,
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
-ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",
-ClassName,juggernaut//female,
-ClassName,juggernaut//male,
-ClassName,juggernaut//non-binary,
-ClassName,morphling//female,
-ClassName,morphling//male,
-ClassName,morphling//non-binary,
-EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,
-EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",
-EntityName,healing ward,
-EntityName,waterkin,
-ExplosionName,blade fury spin,
-ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,
-ItemName,tidal orb,
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-PropertyName,blade dance,
-PropertyName,blade fury,
-PropertyName,bladeform,
-PropertyName,ebb and flow,
-PropertyName,omnislash,
-RaceName,waterkin//female,
-RaceName,waterkin//male,
-RaceName,waterkin//non-binary,
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
-SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
-SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
-SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
-SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
-SpellDescription,Release your morphed form and immediately return to your true waterkin body.,
-SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
-SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
-SpellName,adaptive strike,
-SpellName,blade fury,
-SpellName,healing ward,
-SpellName,morph,
-SpellName,morph agility,
-SpellName,morph revert,
-SpellName,morph strength,
-SpellName,omnislash,
-SpellName,waveform,
-StrikeName,blade dance crit,
-StrikeName,healing ward pulse,
-StrikeName,omnislash slash,
+﻿BeamName,omnislash dash,xung kích vô ảnh trảm
+CharacterName,Juggernaut,Juggernaut
+CharacterName,Morphling,Morphling
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Một tướng DOTA2 uyển chuyển điều khiển những con sóng cuộn trào, tự do chuyển đổi giữa Sức mạnh và Nhanh nhẹn, cường hóa bản thân qua Triều lên triều xuống và biến hình thành kẻ địch."
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Một kiếm sĩ đeo mặt nạ từ DOTA2 tích lũy đà tiến không thể cản qua Kiếm thế, chém xuyên phép thuật với Kiếm bão, hồi phục cho đồng minh bằng Cọc hồi máu và hạ gục kẻ địch với Kiếm vũ cùng Vô ảnh trảm."
+ClassName,juggernaut//female,juggernaut
+ClassName,juggernaut//male,juggernaut
+ClassName,juggernaut//non-binary,juggernaut
+ClassName,morphling//female,morphling
+ClassName,morphling//male,morphling
+ClassName,morphling//non-binary,morphling
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,"Một vật tổ hồi phục bay lơ lửng do Juggernaut triệu hồi, mỗi lượt hồi cho đồng minh lân cận một tỷ lệ phần trăm HP tối đa của họ."
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Một tinh linh có tri giác được rèn từ dòng thủy triều sống, có thể tùy ý tái định hình các chỉ số thể chất của mình."
+EntityName,healing ward,cọc hồi máu
+EntityName,waterkin,thủy linh
+ExplosionName,blade fury spin,xoáy kiếm bão
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Quả cầu nước thủy triều sống cô đặc được bắn ra từ ná như đạn tầm xa vô tận.
+ItemName,tidal orb,cầu thủy triều
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Bẩm sinh (Kiếm thế): Nhận 1 cộng dồn mỗi 4 lượt không chịu sát thương (tối đa 10 cộng dồn). Mỗi cộng dồn tăng +1% tốc độ di chuyển và +2,5% uy lực đòn đánh theo nhanh nhẹn cùng tốc độ đánh; duy trì thêm 4 lượt sau khi chịu sát thương."
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Bẩm sinh (Triều lên triều xuống): Nhanh nhẹn tăng thêm tốc độ di chuyển và tầm đánh xa; Sức mạnh tăng thêm tầm thi triển phép và kháng làm chậm. Vẫn duy trì khi biến hình.
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Lao nhảy giữa các kẻ địch lân cận trong làn nhát chém bất tử: miễn nhiễm mọi sát thương và hiệu ứng bất lợi trong khi chém một kẻ địch gần bên mỗi lượt.
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Bị động (Kiếm vũ): Đòn đánh cận chiến, nhát chém Vô ảnh trảm và vòng xoay Kiếm bão có 20% / 25% / 30% / 35% xác suất (theo cấp 1-4 của Kiếm vũ) gây chí mạng 1,8x sát thương."
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Xoay tròn trong cơn bão kiếm hủy diệt: miễn nhiễm hiệu ứng bất lợi, giảm 80% sát thương phép và gây sát thương phép xung quanh mỗi lượt."
+PropertyName,blade dance,kiếm vũ
+PropertyName,blade fury,kiếm bão
+PropertyName,bladeform,kiếm thế
+PropertyName,ebb and flow,triều lên triều xuống
+PropertyName,omnislash,vô ảnh trảm
+RaceName,waterkin//female,thủy linh
+RaceName,waterkin//male,thủy linh
+RaceName,waterkin//non-binary,thủy linh
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Biến thành hình dạng của một sinh vật mục tiêu, sao chép cơ thể, thuộc tính, kỹ năng và phép thuật của nó trong khi vẫn giữ Triều lên triều xuống."
+SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Giải trừ hiệu ứng bất lợi và xoay trong 10 đến 12 lượt: miễn nhiễm hiệu ứng bất lợi, giảm 80% sát thương phép và gây 1d4 đến 2d4+2 sát thương phép cơ bản mỗi lượt (85-205 DPS quy đổi qua K_dmg=15, tỷ lệ theo DEX và tốc độ đánh Kiếm thế) lên kẻ địch 3x3 lân cận; có thể chí mạng với Kiếm vũ."
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Hòa tan thành con sóng cuộn trào, lướt biến về phía trước, tung sát thương nước quanh bạn và nhận hiệu ứng xuyên tường cùng dịch chuyển trong chốc lát."
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Phóng ra một đợt sóng nước gây sát thương cơ bản, đẩy lùi và làm choáng mục tiêu. Sát thương cộng thêm tăng theo tỷ lệ Nhanh nhẹn/Sức mạnh, còn thời gian choáng tăng theo tỷ lệ Sức mạnh/Nhanh nhẹn."
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Nhảy tới một kẻ địch mục tiêu và tung ra 5 đến 12 nhát chém vũ khí bất tử liên hoàn (vũ khí + chỉ số + 2 đến 3 sát thương cộng thêm mỗi nhát) lên các kẻ địch gần đó, kích hoạt chí mạng Kiếm vũ và cộng thêm từ Kiếm thế."
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Giải phóng hình dạng biến hình và lập tức quay về cơ thể thủy linh thực sự của bạn.
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Chuyển Nhanh nhẹn thành Sức mạnh và Thể chất (1 đến 5 điểm tùy tinh thông), bảo toàn tổng chỉ số đồng thời tăng cả HP tối đa lẫn HP hiện tại."
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Chuyển Sức mạnh và Thể chất thành Nhanh nhẹn (1 đến 5 điểm tùy tinh thông), bảo toàn tổng chỉ số và giảm HP tối đa mà không làm hao hụt HP hiện tại."
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Triệu hồi một Cọc hồi máu di động mong manh (1 HP, tối đa 1 cọc hoạt động) trong 36 đến 48 lượt, mỗi lượt hồi 1% đến 3,25% HP tối đa cho toàn bộ đồng minh trong phạm vi 2 ô."
+SpellName,adaptive strike,đòn thích ứng
+SpellName,blade fury,kiếm bão
+SpellName,healing ward,cọc hồi máu
+SpellName,morph,biến hình
+SpellName,morph agility,chuyển đổi nhanh nhẹn
+SpellName,morph revert,hủy biến hình
+SpellName,morph strength,chuyển đổi sức mạnh
+SpellName,omnislash,vô ảnh trảm
+SpellName,waveform,dạng sóng
+StrikeName,blade dance crit,chí mạng kiếm vũ
+StrikeName,healing ward pulse,nhịp cọc hồi máu
+StrikeName,omnislash slash,nhát chém vô ảnh trảm

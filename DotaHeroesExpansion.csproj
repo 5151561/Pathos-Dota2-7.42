@@ -28,6 +28,8 @@
     <PackageReference Include="Lib.Harmony" Version="2.4.3" PrivateAssets="all" GeneratePathProperty="true" />
     <!-- 将 0Harmony.dll 内嵌为资源，使最终仍保持单 DLL 部署（兼容 Windows/macOS/Linux 与 PathosMaker） -->
     <EmbeddedResource Include="$(PkgLib_Harmony)/lib/net10.0/0Harmony.dll" LogicalName="0Harmony.dll" />
+    <!-- 将全部 UI 多语言词表内嵌进扩展 DLL，禁止 MSBuild 按语言后缀拆分卫星程序集，保持单 DLL 部署 -->
+    <EmbeddedResource Include="Resources\Localization\ui.*.json" LogicalName="Localization.%(Filename)%(Extension)" WithCulture="false" Culture="" />
   </ItemGroup>
 
   <ItemGroup>

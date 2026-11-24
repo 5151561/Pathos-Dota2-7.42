@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Localization;
 using Pathos.DotaHeroes.Framework.Skills;
 using Pathos.DotaHeroes.Framework.Targeting;
 using Pathos.DotaHeroes.Framework.UI;
@@ -123,46 +124,65 @@ namespace Pathos.DotaHeroes.Heroes
     {
       var Build = HeroSkillBuild.CreateStandard(
         ClassName: MorphlingClassName,
-        HeroDisplayName: "变体精灵 · 水人",
+        HeroDisplayName: "Morphling",
         HeroId: "morph",
         IconGlyph: HeroGlyph,
         SlotQ: DotaSkillSlot.CreateActive(
           Id: SkillWaveformId,
           Hotkey: "Q",
-          Title: "波浪形态",
+          Title: "Waveform",
           IconGlyph: WaveformGlyph,
           Spell: WaveformSpell,
           DescribeLevel: Lv => Lv <= 0
-            ? "学习后获得「波浪形态」；升星额外 +15%/级水波伤害与 +1 格射程"
-            : $"升星伤害 ×{1.0f + (Lv - 1) * 0.15f:0.00}，射程 +{Lv - 1} 格{(Lv < 4 ? "（下级继续升星强化）" : "")}"),
+            ? DotaLocalization.T("morph.skill.q.desc_0")
+            : DotaLocalization.Format(
+                "morph.skill.q.desc_lv",
+                $"{1.0f + (Lv - 1) * 0.15f:0.00}",
+                Lv - 1,
+                Lv < 4 ? DotaLocalization.T("jugg.skill.w.desc_next_suffix") : string.Empty),
+          TitleResolver: () => DotaLocalization.T("morph.skill.q.title")),
         SlotW: DotaSkillSlot.CreateActive(
           Id: SkillAdaptiveStrikeId,
           Hotkey: "W",
-          Title: "变体打击",
+          Title: "Adaptive Strike",
           IconGlyph: AdaptiveStrikeGlyph,
           Spell: AdaptiveStrikeSpell,
           DescribeLevel: Lv => Lv <= 0
-            ? "学习后获得「变体打击」；升星额外 +15%/级敏捷爆发伤害与 +1 回合最大眩晕"
-            : $"升星爆发伤害 ×{1.0f + (Lv - 1) * 0.15f:0.00}，最大眩晕 +{Lv - 1} 回合{(Lv < 4 ? "（下级继续升星强化）" : "")}"),
+            ? DotaLocalization.T("morph.skill.w.desc_0")
+            : DotaLocalization.Format(
+                "morph.skill.w.desc_lv",
+                $"{1.0f + (Lv - 1) * 0.15f:0.00}",
+                Lv - 1,
+                Lv < 4 ? DotaLocalization.T("jugg.skill.w.desc_next_suffix") : string.Empty),
+          TitleResolver: () => DotaLocalization.T("morph.skill.w.title")),
         SlotE: DotaSkillSlot.CreateActiveGroup(
           Id: SkillAttributeShiftId,
           Hotkey: "E",
-          Title: "属性转换（敏/力）",
+          Title: "Attribute Shift (AGI/STR)",
           IconGlyph: AttributeShiftGlyph,
           Spells: new[] { MorphAgilitySpell, MorphStrengthSpell },
           DescribeLevel: Lv => Lv <= 0
-            ? "一次学习「属性转换·敏捷/力量」（0 蓝耗）；升星额外 +1/级单次转换步进"
-            : $"双技能同步升星：单次属性转换步进 +{Lv - 1}{(Lv < 4 ? "（下级步进再 +1）" : "")}"),
+            ? DotaLocalization.T("morph.skill.e.desc_0")
+            : DotaLocalization.Format(
+                "morph.skill.e.desc_lv",
+                Lv - 1,
+                Lv < 4 ? DotaLocalization.T("morph.skill.e.desc_next_suffix") : string.Empty),
+          TitleResolver: () => DotaLocalization.T("morph.skill.e.title")),
         SlotR: DotaSkillSlot.CreateActiveGroup(
           Id: SkillMorphId,
           Hotkey: "R",
-          Title: "变形 / 解除变形",
+          Title: "Morph / Morph Revert",
           IconGlyph: HeroGlyph,
           Spells: new[] { MorphSpell, MorphRevertSpell },
           IsUltimate: true,
           DescribeLevel: Lv => Lv <= 0
-            ? "终极技能（Lv 6 解锁）：同步学习变形与解除变形；升星 +1 格/级施法射程"
-            : $"升星施法射程 +{Lv - 1} 格并降低变形蓝耗{(Lv < 3 ? "（下级射程再 +1 格）" : "")}"));
+            ? DotaLocalization.T("morph.skill.r.desc_0")
+            : DotaLocalization.Format(
+                "morph.skill.r.desc_lv",
+                Lv - 1,
+                Lv < 3 ? DotaLocalization.T("morph.skill.r.desc_next_suffix") : string.Empty),
+          TitleResolver: () => DotaLocalization.T("morph.skill.r.title")),
+        HeroDisplayNameResolver: () => DotaLocalization.T("morph.hero_display"));
 
       HeroSkillRegistry.Register(Ctx, Build);
     }
@@ -175,24 +195,27 @@ namespace Pathos.DotaHeroes.Heroes
       // 0.1 注册 Pathos 原生选框扩距（波浪形态 / 变体打击 / 变形）
       DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
         SpellName: "waveform",
-        DisplayTitle: "波浪形态",
+        DisplayTitle: "Waveform",
         Mode: DotaTargetMode.PointOpen,
         ResolveRange: Caster => GetWaveformRange(Ctx, Caster),
-        AllowSelf: false));
+        AllowSelf: false,
+        ResolveDisplayTitle: () => DotaLocalization.T("morph.skill.q.title")));
 
       DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
         SpellName: "adaptive strike",
-        DisplayTitle: "变体打击",
+        DisplayTitle: "Adaptive Strike",
         Mode: DotaTargetMode.UnitHostile,
         ResolveRange: Caster => GetAdaptiveStrikeRange(Ctx, Caster),
-        AllowSelf: false));
+        AllowSelf: false,
+        ResolveDisplayTitle: () => DotaLocalization.T("morph.skill.w.title")));
 
       DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
         SpellName: "morph",
-        DisplayTitle: "变形",
+        DisplayTitle: "Morph",
         Mode: DotaTargetMode.UnitHostile,
         ResolveRange: Caster => GetMorphRange(Ctx, Caster),
-        AllowSelf: false));
+        AllowSelf: false,
+        ResolveDisplayTitle: () => DotaLocalization.T("morph.spell.morph.title")));
 
       // 0.2 注册变体精灵主动技能的帮助面板数值与 5 阶熟练度详情（含游戏内实时面板预览）
       RegisterSpellHelpSpecs(Ctx);
@@ -383,7 +406,7 @@ namespace Pathos.DotaHeroes.Heroes
             Args.Engine,
             Character,
             Args.Spell.Glyph,
-            "Attribute Shift (Agility): already at agility cap or minimum strength.");
+            DotaLocalization.T("morph.log.shift_agi_cap"));
           return;
         }
 
@@ -405,7 +428,7 @@ namespace Pathos.DotaHeroes.Heroes
           Args.Engine,
           Character,
           Args.Spell.Glyph,
-          $"Attribute Shift (Agility): DEX +{Shift}, STR/CON -{Shift} (Max HP -{HpDelta}).");
+          DotaLocalization.Format("morph.log.shift_agi_ok", Shift, HpDelta));
       }
       else
       {
@@ -419,7 +442,7 @@ namespace Pathos.DotaHeroes.Heroes
             Args.Engine,
             Character,
             Args.Spell.Glyph,
-            "Attribute Shift (Strength): already at strength cap or minimum agility.");
+            DotaLocalization.T("morph.log.shift_str_cap"));
           return;
         }
 
@@ -441,7 +464,7 @@ namespace Pathos.DotaHeroes.Heroes
           Args.Engine,
           Character,
           Args.Spell.Glyph,
-          $"Attribute Shift (Strength): STR/CON +{Shift}, DEX -{Shift} (HP +{HpDelta}).");
+          DotaLocalization.Format("morph.log.shift_str_ok", Shift, HpDelta));
       }
     }
 
@@ -537,20 +560,34 @@ namespace Pathos.DotaHeroes.Heroes
           int Evasion = WaveformEvasionTurns[Idx];
           int TotalRange = BaseRange + StrBonus + StarRange;
           string RangeDetail = (StrBonus > 0 || StarRange > 0)
-            ? $"{DotaHelpColor.Control($"{TotalRange} 格")}（基础 {BaseRange}{(StrBonus > 0 ? $" + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}" : "")}{(StarRange > 0 ? $" + {DotaHelpColor.Skill($"升星 +{StarRange}")}" : "")}）"
-            : DotaHelpColor.Control($"{BaseRange} 格");
-          string StarDmgNote = StarMult > 1.001f ? $"，{DotaHelpColor.Skill($"升星 ×{StarMult:0.00}")}" : string.Empty;
+            ? DotaLocalization.Format(
+                "morph.help.range_detail",
+                DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", TotalRange)),
+                BaseRange,
+                StrBonus > 0 ? $" + {DotaHelpColor.Passive(DotaLocalization.Format("morph.help.ebb_tag", StrBonus))}" : string.Empty,
+                StarRange > 0 ? $" + {DotaHelpColor.Skill(DotaLocalization.Format("morph.help.star_range_tag", StarRange))}" : string.Empty)
+            : DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", BaseRange));
+          string StarDmgNote = StarMult > 1.001f
+            ? DotaLocalization.Format("ui.common.comma_item", DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.tag_star_mult", $"{StarMult:0.00}")))
+            : string.Empty;
 
           return new List<(string, string)>
           {
-            ("实际突进射程", RangeDetail),
-            ("落地水波伤害", $"{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice))} 水系伤害（均伤 {DotaHelpColor.Magic($"{WaveDice.Average() * StarMult:0.#}")}{StarDmgNote}，半径 {DotaHelpColor.Control($"{Radius} 格")}）"),
-            ("位移与生存", $"瞬移至目标格，获得穿墙与闪避位移 {DotaHelpColor.Control($"{Evasion} 回合")}")
+            (DotaLocalization.T("morph.help.q.key_range"), RangeDetail),
+            (DotaLocalization.T("morph.help.q.key_dmg"), DotaLocalization.Format(
+              "morph.help.q.val_dmg",
+              DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice)),
+              DotaHelpColor.Magic($"{WaveDice.Average() * StarMult:0.#}"),
+              StarDmgNote,
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", Radius)))),
+            (DotaLocalization.T("morph.help.q.key_mobility"), DotaLocalization.Format(
+              "morph.help.q.val_mobility",
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", Evasion))))
           };
         },
         BuildMechanicsNotes = _ => new[]
         {
-          $"瞬移至射程内目标空地，落地对周围造成水系伤害并获得短暂穿墙与闪避位移（射程受{DotaHelpColor.Passive("潮涨潮落")}力量加成）"
+          DotaLocalization.Format("morph.help.q.mech_1", DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
         },
         BuildTiers = _ =>
         {
@@ -562,10 +599,14 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = $"施咒 范围 {WaveformBaseRanges[Idx]}",
+              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", WaveformBaseRanges[Idx]),
               Bullets = new[]
               {
-                $"水波伤害 {DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice))}（半径 {DotaHelpColor.Control($"{WaveformRadii[Idx]} 格")}），穿墙与闪避 {DotaHelpColor.Control($"{WaveformEvasionTurns[Idx]} 回合")}"
+                DotaLocalization.Format(
+                  "morph.help.q.tier_bullet",
+                  DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice)),
+                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", WaveformRadii[Idx])),
+                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", WaveformEvasionTurns[Idx])))
               }
             });
           }
@@ -604,17 +645,37 @@ namespace Pathos.DotaHeroes.Heroes
 
           return new List<(string, string)>
           {
-            ("实际射程", StrBonus > 0
-              ? $"{DotaHelpColor.Control($"{BaseRange + StrBonus} 格")}（基础 {BaseRange} + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}）"
-              : DotaHelpColor.Control($"{BaseRange} 格")),
-            ("预计总伤害", $"{DotaHelpColor.Magic($"{TotalMin}~{TotalMax}")} 水系伤害（均伤 {DotaHelpColor.Magic($"{TotalAvg:0.#}")}；基础 {DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceNotation(BaseDice))} + {DotaHelpColor.Stat($"敏捷追加 +{BonusDmg}")}）"),
-            ("击退与眩晕", $"击退目标并眩晕 {DotaHelpColor.Control($"{FinalStun} 回合")}（当前阶上限 {DotaHelpColor.Control($"{MaxStun} 回合")}）"),
-            ("当前力敏比", $"{DotaHelpColor.Stat($"敏捷 {Dex}")} / {DotaHelpColor.Stat($"力量 {Str}")}（敏≥1.5×力达满额伤害；力≥1.5×敏达满额眩晕）")
+            (DotaLocalization.T("morph.help.w.key_range"), StrBonus > 0
+              ? DotaLocalization.Format(
+                  "morph.help.range_detail",
+                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", BaseRange + StrBonus)),
+                  BaseRange,
+                  $" + {DotaHelpColor.Passive(DotaLocalization.Format("morph.help.ebb_tag", StrBonus))}",
+                  string.Empty)
+              : DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", BaseRange))),
+            (DotaLocalization.T("morph.help.w.key_dmg"), DotaLocalization.Format(
+              "morph.help.w.val_dmg",
+              DotaHelpColor.Magic($"{TotalMin}~{TotalMax}"),
+              DotaHelpColor.Magic($"{TotalAvg:0.#}"),
+              DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceNotation(BaseDice)),
+              DotaHelpColor.Stat(DotaLocalization.Format("morph.help.w.agi_bonus", BonusDmg)))),
+            (DotaLocalization.T("morph.help.w.key_stun"), DotaLocalization.Format(
+              "morph.help.w.val_stun",
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", FinalStun)),
+              DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", MaxStun)))),
+            (DotaLocalization.T("morph.help.w.key_ratio"), DotaLocalization.Format(
+              "morph.help.w.val_ratio",
+              DotaHelpColor.Stat(DotaLocalization.Format("jugg.help.dex_val", Dex)),
+              DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", Str))))
           };
         },
         BuildMechanicsNotes = _ => new[]
         {
-          $"总伤害 = {DotaHelpColor.Magic("基础水伤")} + {DotaHelpColor.Stat("0.35× ~ 1.50× 敏捷")}（随敏/力比动态缩放），附带击退与{DotaHelpColor.Control("力量比眩晕")}"
+          DotaLocalization.Format(
+            "morph.help.w.mech_1",
+            DotaHelpColor.Magic(DotaLocalization.T("morph.help.w.tag_base_water")),
+            DotaHelpColor.Stat(DotaLocalization.T("morph.help.w.tag_agi_scale")),
+            DotaHelpColor.Control(DotaLocalization.T("morph.help.w.tag_str_stun")))
         },
         BuildTiers = _ =>
         {
@@ -627,10 +688,13 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = $"施咒 范围 {AdaptiveStrikeBaseRanges[Idx]}",
+              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", AdaptiveStrikeBaseRanges[Idx]),
               Bullets = new[]
               {
-                $"基础水伤 {DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice))}，眩晕 {DotaHelpColor.Control($"1~{MaxStun} 回合")}"
+                DotaLocalization.Format(
+                  "morph.help.w.tier_bullet",
+                  DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice)),
+                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.turns_val", $"1~{MaxStun}")))
               }
             });
           }
@@ -654,14 +718,23 @@ namespace Pathos.DotaHeroes.Heroes
 
           return new List<(string, string)>
           {
-            ("当前单次转换", $"{DotaHelpColor.Stat($"力量/体质 -{Step}")} → {DotaHelpColor.Stat($"敏捷 +{Step}")}（{DotaHelpColor.Mana("0 蓝耗")}）"),
-            ("血量联动", $"最大生命 {DotaHelpColor.Physical($"-{Step * HpPerShiftedPoint} HP")}（当前生命不扣减，仅超过新上限时截断）"),
-            ("当前属性", $"{DotaHelpColor.Stat($"力量 {CurStr}")} / {DotaHelpColor.Stat($"敏捷 {CurDex}")}（上限 {MaxDex}）/ {DotaHelpColor.Stat($"体质 {CurCon}")}（最低保留 {MinAttributeScore}）")
+            (DotaLocalization.T("morph.help.e.key_shift"),
+              $"{DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e1.str_con_minus", Step))} → {DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e1.agi_plus", Step))} ({DotaHelpColor.Mana(DotaLocalization.T("morph.help.e.zero_mana"))})"),
+            (DotaLocalization.T("morph.help.e.key_hp"), DotaLocalization.Format(
+              "morph.help.e1.val_hp",
+              DotaHelpColor.Physical($"-{Step * HpPerShiftedPoint} HP"))),
+            (DotaLocalization.T("morph.help.e.key_attrs"), DotaLocalization.Format(
+              "morph.help.e1.val_attrs",
+              DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", CurStr)),
+              DotaHelpColor.Stat(DotaLocalization.Format("jugg.help.dex_val", CurDex)),
+              MaxDex,
+              DotaHelpColor.Stat(DotaLocalization.Format("morph.help.con_val", CurCon)),
+              MinAttributeScore))
           };
         },
         BuildMechanicsNotes = _ => new[]
         {
-          $"总量守恒（力量/体质最低保留 {MinAttributeScore}），最大生命最低保留 {MinMaxLifePoints} HP，当前生命不主动扣减"
+          DotaLocalization.Format("morph.help.e1.mech_1", MinAttributeScore, MinMaxLifePoints)
         },
         BuildTiers = _ =>
         {
@@ -671,10 +744,13 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = "自身施法 0 蓝耗",
+              HeaderSuffix = DotaLocalization.T("morph.help.self_zero_mana"),
               Bullets = new[]
               {
-                $"单次转换 {DotaHelpColor.Stat($"{Tier} 点")}（最大生命 {DotaHelpColor.Physical($"-{Tier * HpPerShiftedPoint} HP")}）"
+                DotaLocalization.Format(
+                  "morph.help.e1.tier_bullet",
+                  DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Tier)),
+                  DotaHelpColor.Physical($"-{Tier * HpPerShiftedPoint} HP"))
               }
             });
           }
@@ -698,14 +774,23 @@ namespace Pathos.DotaHeroes.Heroes
 
           return new List<(string, string)>
           {
-            ("当前单次转换", $"{DotaHelpColor.Stat($"敏捷 -{Step}")} → {DotaHelpColor.Stat($"力量/体质 +{Step}")}（{DotaHelpColor.Mana("0 蓝耗")}）"),
-            ("血量联动", $"最大生命与当前生命同步 {DotaHelpColor.Heal($"+{Step * HpPerShiftedPoint} HP")}"),
-            ("当前属性", $"{DotaHelpColor.Stat($"力量 {CurStr}")}（上限 {MaxStr}）/ {DotaHelpColor.Stat($"敏捷 {CurDex}")}（最低保留 {MinAttributeScore}）/ {DotaHelpColor.Stat($"体质 {CurCon}")}")
+            (DotaLocalization.T("morph.help.e.key_shift"),
+              $"{DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e2.agi_minus", Step))} → {DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e2.str_con_plus", Step))} ({DotaHelpColor.Mana(DotaLocalization.T("morph.help.e.zero_mana"))})"),
+            (DotaLocalization.T("morph.help.e.key_hp"), DotaLocalization.Format(
+              "morph.help.e2.val_hp",
+              DotaHelpColor.Heal($"+{Step * HpPerShiftedPoint} HP"))),
+            (DotaLocalization.T("morph.help.e.key_attrs"), DotaLocalization.Format(
+              "morph.help.e2.val_attrs",
+              DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", CurStr)),
+              MaxStr,
+              DotaHelpColor.Stat(DotaLocalization.Format("jugg.help.dex_val", CurDex)),
+              MinAttributeScore,
+              DotaHelpColor.Stat(DotaLocalization.Format("morph.help.con_val", CurCon))))
           };
         },
         BuildMechanicsNotes = _ => new[]
         {
-          $"总量守恒（敏捷最低保留 {MinAttributeScore}），转力同时提升最大生命与当前生命"
+          DotaLocalization.Format("morph.help.e2.mech_1", MinAttributeScore)
         },
         BuildTiers = _ =>
         {
@@ -715,10 +800,13 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = "自身施法 0 蓝耗",
+              HeaderSuffix = DotaLocalization.T("morph.help.self_zero_mana"),
               Bullets = new[]
               {
-                $"单次转换 {DotaHelpColor.Stat($"{Tier} 点")}（最大与当前生命同步 {DotaHelpColor.Heal($"+{Tier * HpPerShiftedPoint} HP")}）"
+                DotaLocalization.Format(
+                  "morph.help.e2.tier_bullet",
+                  DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Tier)),
+                  DotaHelpColor.Heal($"+{Tier * HpPerShiftedPoint} HP"))
               }
             });
           }
@@ -742,15 +830,22 @@ namespace Pathos.DotaHeroes.Heroes
 
           return new List<(string, string)>
           {
-            ("实际施法射程", (StrBonus > 0 || StarRange > 0)
-              ? $"{DotaHelpColor.Control($"{TotalRange} 格")}（基础 {BaseRange}{(StrBonus > 0 ? $" + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}" : "")}{(StarRange > 0 ? $" + {DotaHelpColor.Skill($"升星 +{StarRange}")}" : "")}）"
-              : DotaHelpColor.Control($"{BaseRange} 格")),
-            ("变形机制", $"化身目标敌方生物，复制其外形、属性、技能与法术，且全程保留先天{DotaHelpColor.Passive("「潮涨潮落」")}")
+            (DotaLocalization.T("morph.help.r.key_range"), (StrBonus > 0 || StarRange > 0)
+              ? DotaLocalization.Format(
+                  "morph.help.range_detail",
+                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", TotalRange)),
+                  BaseRange,
+                  StrBonus > 0 ? $" + {DotaHelpColor.Passive(DotaLocalization.Format("morph.help.ebb_tag", StrBonus))}" : string.Empty,
+                  StarRange > 0 ? $" + {DotaHelpColor.Skill(DotaLocalization.Format("morph.help.star_range_tag", StarRange))}" : string.Empty)
+              : DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", BaseRange))),
+            (DotaLocalization.T("morph.help.r.key_mech"), DotaLocalization.Format(
+              "morph.help.r.val_mech",
+              DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name"))))
           };
         },
         BuildMechanicsNotes = _ => new[]
         {
-          $"复制目标外形、属性、技能与法术，全程保留先天{DotaHelpColor.Passive("「潮涨潮落」")}，可随时「解除变形」恢复本体"
+          DotaLocalization.Format("morph.help.r.mech_1", DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
         },
         BuildTiers = _ =>
         {
@@ -760,10 +855,13 @@ namespace Pathos.DotaHeroes.Heroes
             List.Add(new DotaSpellHelpTier
             {
               Tier = Tier,
-              HeaderSuffix = $"施咒 范围 {MorphBaseRanges[Tier - 1]}",
+              HeaderSuffix = DotaLocalization.Format("jugg.help.cast_range_suffix", MorphBaseRanges[Tier - 1]),
               Bullets = new[]
               {
-                $"基础施法范围 {DotaHelpColor.Control($"{MorphBaseRanges[Tier - 1]} 格")}（受{DotaHelpColor.Passive("潮涨潮落")}力量加成）"
+                DotaLocalization.Format(
+                  "morph.help.r.tier_bullet",
+                  DotaHelpColor.Control(DotaLocalization.Format("jugg.help.tiles_val", MorphBaseRanges[Tier - 1])),
+                  DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
               }
             });
           }

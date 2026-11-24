@@ -1,52 +1,52 @@
-﻿BeamName,omnislash dash,
-CharacterName,Juggernaut,
-CharacterName,Morphling,
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
-ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",
-ClassName,juggernaut//female,
-ClassName,juggernaut//male,
-ClassName,juggernaut//non-binary,
-ClassName,morphling//female,
-ClassName,morphling//male,
-ClassName,morphling//non-binary,
-EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,
-EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",
-EntityName,healing ward,
-EntityName,waterkin,
-ExplosionName,blade fury spin,
-ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,
-ItemName,tidal orb,
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-PropertyName,blade dance,
-PropertyName,blade fury,
-PropertyName,bladeform,
-PropertyName,ebb and flow,
-PropertyName,omnislash,
-RaceName,waterkin//female,
-RaceName,waterkin//male,
-RaceName,waterkin//non-binary,
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
-SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
-SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
-SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
-SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
-SpellDescription,Release your morphed form and immediately return to your true waterkin body.,
-SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
-SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
-SpellName,adaptive strike,
-SpellName,blade fury,
-SpellName,healing ward,
-SpellName,morph,
-SpellName,morph agility,
-SpellName,morph revert,
-SpellName,morph strength,
-SpellName,omnislash,
-SpellName,waveform,
-StrikeName,blade dance crit,
-StrikeName,healing ward pulse,
-StrikeName,omnislash slash,
+﻿BeamName,omnislash dash,omnislash roham
+CharacterName,Juggernaut,Juggernaut
+CharacterName,Morphling,Morphling
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Változékony DOTA2 hős, aki tajtékzó hullámokat ural, szabadon váltogat az Erő és az Ügyesség között, az Apály és dagály révén erősödik, és felveszi ellenségei alakját."
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Álarcos DOTA2 kardmester, aki a Pengealakkal megállíthatatlan lendületet gyűjt, a Pengeharaggal kettészeli a mágiát, a Gyógyító totemmel támogatja szövetségeseit, a Pengetánccal és az Omnislashsal pedig lekaszálja ellenségeit."
+ClassName,juggernaut//female,juggernaut
+ClassName,juggernaut//male,juggernaut
+ClassName,juggernaut//non-binary,juggernaut
+ClassName,morphling//female,morphling
+ClassName,morphling//male,morphling
+ClassName,morphling//non-binary,morphling
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,"A Juggernaut által megidézett lebegő gyógyító totem, amely minden körben maximális HP-juk egy százalékával gyógyítja a közeli szövetségeseket."
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Élő árapályvízből formált tudatos elementál, amely tetszése szerint képes átalakítani testi adottságait."
+EntityName,healing ward,gyógyító totem
+EntityName,waterkin,vízlény
+ExplosionName,blade fury spin,pengeharag örvény
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Élő árapályvízből sűrített gömb, amely végtelen távolsági lőszerként lőhető ki parittyából."
+ItemName,tidal orb,árapálygömb
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Veleszületett (Pengealak): Szerezz 1 jelzőt minden 4 sebzés nélkül töltött kör után (legfeljebb 10 jelző). Minden jelző +1% mozgási sebességet és +2,5% ügyességi csapáserőt valamint támadási sebességet ad; sebzés elszenvedése után még 4 körig megmarad."
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Veleszületett (Apály és dagály): Az Ügyesség bónusz mozgási sebességet és távolsági hatótávot ad; az Erő bónusz varázslási hatótávot és lassítás-ellenállást biztosít. Átváltozás közben is megmarad.
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,"Közeli ellenségek között szökell sebezhetetlen csapások viharában: minden sebzéssel és gyengítéssel szemben immunis, miközben minden körben megvág egy közeli ellenfelet."
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Passzív (Pengetánc): A közelharci támadások, az Omnislash csapások és a Pengeharag forgásai 20% / 25% / 30% / 35% eséllyel (a Pengetánc 1–4. szintje alapján) 1,8-szoros sebzésű kritikus csapást mérnek."
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Pusztító pengeviharban pörög: immunis a gyengítésekre, 80% mágikus sebzéscsökkentést kap, és minden körben mágikus sebzést okoz a körülötte lévőknek."
+PropertyName,blade dance,pengetánc
+PropertyName,blade fury,pengeharag
+PropertyName,bladeform,pengealak
+PropertyName,ebb and flow,apály és dagály
+PropertyName,omnislash,omnislash
+RaceName,waterkin//female,vízlény
+RaceName,waterkin//male,vízlény
+RaceName,waterkin//non-binary,vízlény
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Vedd fel egy célzott lény alakját, lemásolva testét, tulajdonságait, képességeit és varázslatait, miközben megtartod az Apály és dagály képességet."
+SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Űzd el a gyengítéseket és pörögj 10–12 körig: immunitás a gyengítésekre, 80% mágikus sebzéscsökkentés és körönként 1d4–2d4+2 alap mágikus sebzés (85–205 DPS K_dmg=15 alapon, a DEX és a Pengealak támadási sebessége alapján növelve) a szomszédos 3x3-as ellenfelekre; Pengetánccal kritikus lehet."
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Olvadj tajtékzó hullámmá, előrevillanva vízi sebzést szórj szét magad körül, és rövid időre nyerj áthatolást és elmozdulást."
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Indíts egy vízhullámot, amely alapsebzést okoz, hátralöki és elkábítja a célpontot. A bónusz sebzés az Ügyesség/Erő aránnyal, a kábítás időtartama pedig az Erő/Ügyesség aránnyal nő."
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Ugorj egy célzott ellenségre és zúdíts 5–12 gyors, sebezhetetlen fegyvercsapást (fegyver + tulajdonság + 2–3 bónusz sebzés csapásonként) a közeli ellenségekre, aktiválva a Pengetánc kritikust és a Pengealak bónuszait."
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,"Engedd el az átváltozott alakodat, és azonnal térj vissza valódi vízlény testedbe."
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Alakíts át Ügyességet Erővé és Állóképességgé (1–5 pontot jártasság szerint), megőrizve az összpontszámot, miközben nő a maximális és a jelenlegi HP is."
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Alakíts át Erőt és Állóképességet Ügyességgé (1–5 pontot jártasság szerint), megőrizve az összpontszámot és csökkentve a maximális HP-t a jelenlegi HP elszívása nélkül."
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Idézz meg egy törékeny, mozgatható Gyógyító totemet (1 HP, legfeljebb 1 aktív) 36–48 körre, amely minden körben 1%–3,25% maximális HP-val gyógyítja a 2 mezőn belüli szövetségeseket."
+SpellName,adaptive strike,alkalmazkodó csapás
+SpellName,blade fury,pengeharag
+SpellName,healing ward,gyógyító totem
+SpellName,morph,átváltozás
+SpellName,morph agility,átváltás ügyességre
+SpellName,morph revert,átváltozás feloldása
+SpellName,morph strength,átváltás erőre
+SpellName,omnislash,omnislash
+SpellName,waveform,hullámalak
+StrikeName,blade dance crit,pengetánc kritikus
+StrikeName,healing ward pulse,gyógyító totem pulzus
+StrikeName,omnislash slash,omnislash vágás

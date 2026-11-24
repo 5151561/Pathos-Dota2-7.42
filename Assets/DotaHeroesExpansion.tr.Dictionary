@@ -1,52 +1,52 @@
-﻿BeamName,omnislash dash,
-CharacterName,Juggernaut,
-CharacterName,Morphling,
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
-ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",
-ClassName,juggernaut//female,
-ClassName,juggernaut//male,
-ClassName,juggernaut//non-binary,
-ClassName,morphling//female,
-ClassName,morphling//male,
-ClassName,morphling//non-binary,
-EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,
-EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",
-EntityName,healing ward,
-EntityName,waterkin,
-ExplosionName,blade fury spin,
-ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,
-ItemName,tidal orb,
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-PropertyName,blade dance,
-PropertyName,blade fury,
-PropertyName,bladeform,
-PropertyName,ebb and flow,
-PropertyName,omnislash,
-RaceName,waterkin//female,
-RaceName,waterkin//male,
-RaceName,waterkin//non-binary,
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
-SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
-SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
-SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
-SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
-SpellDescription,Release your morphed form and immediately return to your true waterkin body.,
-SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
-SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
-SpellName,adaptive strike,
-SpellName,blade fury,
-SpellName,healing ward,
-SpellName,morph,
-SpellName,morph agility,
-SpellName,morph revert,
-SpellName,morph strength,
-SpellName,omnislash,
-SpellName,waveform,
-StrikeName,blade dance crit,
-StrikeName,healing ward pulse,
-StrikeName,omnislash slash,
+﻿BeamName,omnislash dash,omnislash atılımı
+CharacterName,Juggernaut,Juggernaut
+CharacterName,Morphling,Morphling
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Coşkun dalgalara hükmeden, Güç ve Çeviklik arasında özgürce geçiş yapan, Gelgit Akışı ile güçlenen ve düşmanlarının biçimine bürünebilen akışkan bir DOTA2 kahramanı."
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Kılıç Formu ile durdurulamaz bir ivme kazanan, Kılıç Öfkesi ile büyüyü yaran, Şifa Totemi ile müttefiklerini ayakta tutan ve Kılıç Dansı ile Omnislash kullanarak düşmanları biçen maskeli bir DOTA2 kılıç ustası."
+ClassName,juggernaut//female,juggernaut
+ClassName,juggernaut//male,juggernaut
+ClassName,juggernaut//non-binary,juggernaut
+ClassName,morphling//female,morphling
+ClassName,morphling//male,morphling
+ClassName,morphling//non-binary,morphling
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,"Juggernaut tarafından çağrılan, her tur yakındaki müttefikleri azami HP'lerinin belirli bir yüzdesi kadar iyileştiren uçan şifa totemi."
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Yaşayan gelgit sularından dövülmüş, fiziksel niteliklerini dilediği gibi yeniden şekillendirebilen bilinçli bir element."
+EntityName,healing ward,şifa totemi
+EntityName,waterkin,su ruhu
+ExplosionName,blade fury spin,kılıç öfkesi girdabı
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Bir sapandan sonsuz menzilli cephane olarak fırlatılan, yoğunlaştırılmış yaşayan gelgit suyu küresi."
+ItemName,tidal orb,gelgit küresi
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Doğuştan (Kılıç Formu): Hasar almadan geçen her 4 turda 1 yük kazan (en fazla 10 yük). Her yük +%1 hareket hızı ile +%2,5 çeviklik darbe gücü ve saldırı hızı sağlar; hasar aldıktan sonra 4 tur daha kalır."
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Doğuştan (Gelgit Akışı): Çeviklik ek hareket hızı ve menzilli saldırı menzili sağlar; Güç ise ek büyü menzili ve yavaşlatma direnci kazandırır. Dönüşüm sırasında da sürer.
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Dokunulmaz darbeler yağmuru içinde yakındaki düşmanlar arasında sıçrıyor: her tur yakındaki bir düşmanı keserken tüm hasarlara ve zayıflatmalara karşı bağışıklık.
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Pasif (Kılıç Dansı): Yakın dövüş saldırıları, Omnislash vuruşları ve Kılıç Öfkesi dönüşleri (Kılıç Dansı seviye 1-4'e göre) %20 / %25 / %30 / %35 ihtimalle 1,8 kat hasarlı kritik vuruş yapar."
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Yıkıcı bir kılıç fırtınasında dönüyor: zayıflatmalara bağışık, %80 büyü hasarı azaltması ve her tur etrafındaki düşmanlara büyü hasarı verir."
+PropertyName,blade dance,kılıç dansı
+PropertyName,blade fury,kılıç öfkesi
+PropertyName,bladeform,kılıç formu
+PropertyName,ebb and flow,gelgit akışı
+PropertyName,omnislash,omnislash
+RaceName,waterkin//female,su ruhu
+RaceName,waterkin//male,su ruhu
+RaceName,waterkin//non-binary,su ruhu
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Hedeflenen bir yaratığın biçimine bürün; Gelgit Akışı'nı koruyarak bedenini, niteliklerini, yeteneklerini ve büyülerini kopyala."
+SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Zayıflatmaları temizle ve 10 ila 12 tur dön: zayıflatma bağışıklığı, %80 büyü hasarı azaltması ve bitişik 3x3 düşmanlara tur başına 1d4 ila 2d4+2 temel büyü hasarı (K_dmg=15 üzerinden 85-205 DPS, DEX ve Kılıç Formu saldırı hızıyla ölçeklenir); Kılıç Dansı ile kritik vurabilir."
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Coşkun bir dalgaya dönüşerek ileri atıl, etrafına su hasarı saç ve kısa süreliğine duvarlardan geçme ile yer değiştirme kazan."
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Temel hasar veren, hedefi geri savuran ve sersemleten bir su dalgası fırlat. Ek hasar Çeviklik/Güç oranıyla, sersemletme süresi ise Güç/Çeviklik oranıyla artar."
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Hedeflenen düşmana sıçra ve yakındaki düşmanlara karşı 5 ila 12 hızlı, dokunulmaz silah darbesi (darbe başına silah + nitelik + 2 ila 3 ek hasar) savur; Kılıç Dansı kritiklerini ve Kılıç Formu bonuslarını tetikler."
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Dönüştüğün biçimi bırak ve derhal gerçek su ruhu bedenine geri dön.
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",Çevikliği Güç ve Dayanıklılığa dönüştür (ustalığa göre 1 ila 5 puan); toplam nitelikleri korurken hem azami hem mevcut HP'yi artırır.
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",Güç ve Dayanıklılığı Çevikliğe dönüştür (ustalığa göre 1 ila 5 puan); toplam nitelikleri korur ve mevcut HP'yi tüketmeden azami HP'yi düşürür.
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","36 ila 48 tur boyunca 2 kare içindeki tüm müttefikleri her tur azami HP'lerinin %1 ila %3,25'i kadar iyileştiren kırılgan, hareketli bir Şifa Totemi (1 HP, en fazla 1 aktif) çağır."
+SpellName,adaptive strike,uyumlu darbe
+SpellName,blade fury,kılıç öfkesi
+SpellName,healing ward,şifa totemi
+SpellName,morph,dönüşüm
+SpellName,morph agility,çevikliğe dönüştür
+SpellName,morph revert,dönüşümü iptal et
+SpellName,morph strength,güce dönüştür
+SpellName,omnislash,omnislash
+SpellName,waveform,dalga formu
+StrikeName,blade dance crit,kılıç dansı kritik
+StrikeName,healing ward pulse,şifa totemi nabzı
+StrikeName,omnislash slash,omnislash kesişi

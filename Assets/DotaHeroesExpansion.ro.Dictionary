@@ -1,52 +1,52 @@
-﻿BeamName,omnislash dash,
-CharacterName,Juggernaut,
-CharacterName,Morphling,
-ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",
-ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",
-ClassName,juggernaut//female,
-ClassName,juggernaut//male,
-ClassName,juggernaut//non-binary,
-ClassName,morphling//female,
-ClassName,morphling//male,
-ClassName,morphling//non-binary,
-EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,
-EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",
-EntityName,healing ward,
-EntityName,waterkin,
-ExplosionName,blade fury spin,
-ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,
-ItemName,tidal orb,
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-PropertyName,blade dance,
-PropertyName,blade fury,
-PropertyName,bladeform,
-PropertyName,ebb and flow,
-PropertyName,omnislash,
-RaceName,waterkin//female,
-RaceName,waterkin//male,
-RaceName,waterkin//non-binary,
-SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",
-SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",
-SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",
-SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",
-SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",
-SpellDescription,Release your morphed form and immediately return to your true waterkin body.,
-SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",
-SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",
-SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",
-SpellName,adaptive strike,
-SpellName,blade fury,
-SpellName,healing ward,
-SpellName,morph,
-SpellName,morph agility,
-SpellName,morph revert,
-SpellName,morph strength,
-SpellName,omnislash,
-SpellName,waveform,
-StrikeName,blade dance crit,
-StrikeName,healing ward pulse,
-StrikeName,omnislash slash,
+﻿BeamName,omnislash dash,năpustire omnislash
+CharacterName,Juggernaut,Juggernaut
+CharacterName,Morphling,Morphling
+ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Un erou fluid din DOTA2 care stăpânește valurile învolburate, își mută liber punctele între Forță și Agilitate, se întărește prin Flux și Reflux și ia forma inamicilor."
+ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Un maestru al sabiei mascat din DOTA2 care acumulează avânt de neoprit prin Forma Lamei, taie prin magie cu Furia Lamei, își susține aliații cu Totemul Vindecător și doboară inamicii cu Dansul Lamei și Omnislash."
+ClassName,juggernaut//female,juggernaut
+ClassName,juggernaut//male,juggernaut
+ClassName,juggernaut//non-binary,juggernaut
+ClassName,morphling//female,morphling
+ClassName,morphling//male,morphling
+ClassName,morphling//non-binary,morphling
+EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,Un totem plutitor regenerator invocat de Juggernaut care vindecă aliații apropiați cu un procent din PV-ul lor maxim la fiecare tură.
+EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Un elemental conștient făurit din apele vii ale mareei, capabil să își remodeleze atributele fizice după voie."
+EntityName,healing ward,totem vindecător
+EntityName,waterkin,spirit al apei
+ExplosionName,blade fury spin,vârtej furia lamei
+ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"O sferă condensată din apă vie a mareei, lansată ca muniție infinită la distanță dintr-o praștie."
+ItemName,tidal orb,sfera mareelor
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Înnăscut (Forma Lamei): Primești 1 cumul la fiecare 4 ture fără a suferi daune (până la 10 cumuluri). Fiecare cumul oferă +1% viteză de mișcare și +2,5% putere de lovire pe Agilitate și viteză de atac; persistă 4 ture după primirea daunelor."
+PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Înnăscut (Flux și Reflux): Agilitatea oferă bonus la viteza de mișcare și raza de atac la distanță; Forța oferă bonus la raza vrăjilor și rezistență la încetinire. Persistă în timpul metamorfozei.
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Sărind între inamicii apropiați într-un vârtej de lovituri invulnerabile: imun la orice daune și efecte negative în timp ce taie un inamic apropiat la fiecare tură.
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Pasivă (Dansul Lamei): Atacurile corp la corp, loviturile Omnislash și rotațiile Furia Lamei au 20% / 25% / 30% / 35% șansă (în funcție de nivelul 1-4 al Dansului Lamei) să aplice o lovitură critică de 1,8x daune."
+PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Învârtindu-te într-o furtună distructivă de lame: imun la efecte negative, reducere de 80% a daunelor magice și provocând daune magice în jurul tău la fiecare tură."
+PropertyName,blade dance,dansul lamei
+PropertyName,blade fury,furia lamei
+PropertyName,bladeform,forma lamei
+PropertyName,ebb and flow,flux și reflux
+PropertyName,omnislash,omnislash
+RaceName,waterkin//female,spirit al apei
+RaceName,waterkin//male,spirit al apei
+RaceName,waterkin//non-binary,spirit al apei
+SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Preia forma unei creaturi țintă, copiindu-i corpul, atributele, abilitățile și vrăjile, păstrând în același timp Flux și Reflux."
+SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Risipește efectele negative și rotește-te timp de 10 până la 12 ture: imunitate la efecte negative, reducere de 80% a daunelor magice și 1d4 până la 2d4+2 daune magice de bază pe tură (85-205 DPS convertit prin K_dmg=15, scalat cu DEX și viteza Formei Lamei) inamicilor adiacenți pe 3x3; poate da lovituri critice cu Dansul Lamei."
+SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Dizolvă-te într-un val năvalnic, teleportându-te înainte, stropind cu daune de apă în jur și obținând pentru scurt timp trecere prin ziduri și deplasare fantomă."
+SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Lansează un val de apă care provoacă daune de bază, împinge și amețește ținta. Daunele bonus cresc odată cu raportul Agilitate/Forță, iar durata amețirii crește cu raportul Forță/Agilitate."
+SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Sari la un inamic țintă și dezlănțuie 5 până la 12 tăieturi rapide invulnerabile (armă + atribut + 2 până la 3 daune bonus per lovitură) asupra inamicilor apropiați, declanșând criticele Dansului Lamei și bonusurile Formei Lamei."
+SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Renunță la forma metamorfozată și revino imediat la adevăratul tău corp de spirit al apei.
+SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Transformă Agilitatea în Forță și Constituție (1 până la 5 puncte după măiestrie), păstrând totalul atributelor și crescând atât PV-ul maxim, cât și pe cel curent."
+SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Transformă Forța și Constituția în Agilitate (1 până la 5 puncte după măiestrie), păstrând totalul atributelor și scăzând PV-ul maxim fără a drena PV-ul curent."
+SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Invocă un Totem Vindecător fragil și mobil (1 PV, max. 1 activ) pentru 36 până la 48 de ture, care vindecă toți aliații pe o rază de 2 pătrate cu 1% până la 3,25% din PV-ul lor maxim la fiecare tură."
+SpellName,adaptive strike,lovitură adaptivă
+SpellName,blade fury,furia lamei
+SpellName,healing ward,totem vindecător
+SpellName,morph,metamorfoză
+SpellName,morph agility,conversie agilitate
+SpellName,morph revert,anulare metamorfoză
+SpellName,morph strength,conversie forță
+SpellName,omnislash,omnislash
+SpellName,waveform,formă de val
+StrikeName,blade dance crit,lovitură critică dansul lamei
+StrikeName,healing ward pulse,puls totem vindecător
+StrikeName,omnislash slash,tăietură omnislash
