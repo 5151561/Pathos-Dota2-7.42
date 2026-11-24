@@ -137,11 +137,17 @@ namespace Pathos.DotaHeroes.Framework
     }
 
     /// <summary>
-    /// 对目标执行 DOTA2 风格「基础驱散」，移除全部标准负面异常状态。
+    /// 对目标执行 DOTA2 风格「基础驱散」：移除全部标准负面异常状态（原生 Transient），
+    /// 以及 <see cref="DotaModifierService"/> 中全部可驱散的减益 Modifier（如战斗饥渴）。
     /// </summary>
     public static void DispelNegativeDebuffs(DotaHeroContext Ctx, object Engine, Character Target)
     {
-      if (Ctx == null || Engine == null || Target == null)
+      if (Engine == null || Target == null)
+        return;
+
+      DotaModifierService.Dispel(Engine, Target, Debuffs: true);
+
+      if (Ctx == null)
         return;
 
       foreach (var Debuff in GetStandardNegativeDebuffs(Ctx))

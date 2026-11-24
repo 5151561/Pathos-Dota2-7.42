@@ -35,6 +35,7 @@
   "axe.log.helix_proc": "Counter Helix! Spinning axe hits {0} nearby foes ({1} Pure damage)!",
   "axe.log.hunger_cast": "Battle Hunger afflicts {0} for {1} turns (-{2}% move speed)!",
   "axe.log.hunger_dispelled": "{0} dispelled Battle Hunger by securing a kill!",
+  "axe.log.hunger_immune": "{0} is immune to Battle Hunger.",
   "axe.log.hunger_no_target": "Battle Hunger: no hostile target in range (mana refunded).",
   "axe.skill.desc_max_suffix": ", maxed",
   "axe.skill.e.desc_0": "Passive: Every 7/6/5/4 incoming attacks (including misses) triggers a 3x3 Pure Counter Helix spin (100-160 Pure)",

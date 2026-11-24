@@ -111,35 +111,16 @@ namespace Pathos.DotaHeroes.Heroes
       public int OneManArmyLingerTurns;
       public int CachedOneManArmyBonusStr;
 
-      // Q：狂战士之吼自身高甲状态
-      public int CallRemainingTurns;
-      public int CallBonusDefence;
-
       // E：反击螺旋受击计数
       public int HelixHitCounter;
-
-      // R：淘汰之刃战吼增益（斧王自身与友军共用另一表，但此处保留快捷读取）
-      public readonly HashSet<WeakReference<Character>> ActiveHungerTargets = new();
-    }
-
-    private sealed class BattleHungerState
-    {
-      public WeakReference<Character> Caster;
-      public int RemainingTurns;
-      public float DotaDps;
-      public float SlowRatio;
-      public float DamageAccumulator;
-    }
-
-    private sealed class CullingBuffState
-    {
-      public int RemainingTurns;
-      public int BonusDefence;
     }
 
     private static readonly ConditionalWeakTable<Character, AxeRuntimeState> AxeStates = new();
-    private static readonly ConditionalWeakTable<Character, BattleHungerState> HungerAfflicted = new();
-    private static readonly ConditionalWeakTable<Character, CullingBuffState> CullingBuffs = new();
+
+    // 带回合数的增益/减益统一走 DotaModifierService（回合递减、护甲/移速汇总、持续伤害、驱散与状态栏徽章由框架负责）
+    private DotaModifierSpec CallArmorModifier;     // Q：狂战士之吼自身高甲
+    private DotaModifierSpec BattleHungerModifier;  // W：战斗饥渴（纯粹 DoT + 减速，可驱散减益）
+    private DotaModifierSpec CullingBuffModifier;   // R：淘汰之刃战吼（+移速 +护甲，自身与友军）
 
     [ThreadStatic]
     private static bool IsInsideDefenceQuery;
@@ -198,6 +179,9 @@ namespace Pathos.DotaHeroes.Heroes
       BattleHungerSpellRef = RegisterBattleHungerSpell(Ctx, BattleHungerGlyph);
       CullingBladeSpellRef = RegisterCullingBladeSpell(Ctx, CullingBladeGlyph);
 
+      // 3.5 声明技能附带的增益/减益 Modifier
+      RegisterModifiers();
+
       // 4. 注册专属职业：斧王（axe）
       var AxeClass = RegisterAxeClass(Ctx, MogulKhanGlyph, OneManArmyTalentProperty);
 
@@ -209,6 +193,40 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 7. 注册 DOTA2 7.42 四层天赋树（Lv 10/15/20/25 + Lv 27~30 双修）
       RegisterTalentTree(Ctx);
+    }
+
+    private void RegisterModifiers()
+    {
+      CallArmorModifier = DotaModifierService.Define(new DotaModifierSpec
+      {
+        Key = "axe.berserkers_call",
+        IsDebuff = false,
+        IsDispellable = false,
+        Stacking = DotaModifierStacking.Replace,
+        BadgeGlyph = BerserkersCallGlyph,
+        BadgeTitle = () => DotaLocalization.T("axe.status.call"),
+        BadgeColour = Colour.DarkRed,
+        HelpSpell = BerserkersCallSpellRef
+      });
+
+      BattleHungerModifier = DotaModifierService.Define(new DotaModifierSpec
+      {
+        Key = "axe.battle_hunger",
+        IsDebuff = true,
+        IsDispellable = true,
+        Stacking = DotaModifierStacking.Replace,
+        DotElement = null, // 纯粹伤害
+        DotCause = BattleHungerSpellName
+      });
+
+      // 战吼徽章与永久护甲合并显示，由 RegisterStatusBadges 中的组合徽章负责
+      CullingBuffModifier = DotaModifierService.Define(new DotaModifierSpec
+      {
+        Key = "axe.culling_buff",
+        IsDebuff = false,
+        IsDispellable = true,
+        Stacking = DotaModifierStacking.KeepStrongest
+      });
     }
 
     private void RegisterSkillBuild(DotaHeroContext Ctx, Spell CallSpell, Spell HungerSpell, Spell CullingSpell, Property CounterHelixTalent)
@@ -415,7 +433,7 @@ namespace Pathos.DotaHeroes.Heroes
       // 2. 初始化通用嘲讽基建（禁魔拦截 + 强制转向/攻击 + 回合递减）
       DotaTauntService.EnsureInitialized();
 
-      // 4. 每回合推进：孤军奋战、狂战士之吼计时、淘汰战吼计时、战斗饥渴每回合纯伤
+      // 4. 每回合推进：孤军奋战（狂战士之吼 / 淘汰战吼 / 战斗饥渴的计时与持续伤害由 DotaModifierService 统一推进）
       DotaHookBus.RegisterAfterExecuteCommand("axe.turn_ticks", Args =>
       {
         var Actor = Args.Character;
@@ -423,17 +441,7 @@ namespace Pathos.DotaHeroes.Heroes
           return;
 
         if (IsAxe(Actor))
-          TickAxeTurn(Args.Engine, Actor);
-
-        if (CullingBuffs.TryGetValue(Actor, out var Buff) && Buff.RemainingTurns > 0)
-        {
-          Buff.RemainingTurns--;
-          if (Buff.RemainingTurns <= 0)
-            CullingBuffs.Remove(Actor);
-        }
-
-        if (HungerAfflicted.TryGetValue(Actor, out var Hunger) && Hunger.RemainingTurns > 0)
-          TickBattleHungerOnVictim(Args.Engine, Actor, Hunger);
+          RefreshOneManArmy(Args.Engine, Actor);
       });
 
       // 5. E 反击螺旋（近战受击计次：7.42 包含高防/闪避 Miss 的攻击）
@@ -480,74 +488,49 @@ namespace Pathos.DotaHeroes.Heroes
         Args.BonusCon += State.CachedOneManArmyBonusStr;
       });
 
-      // 8. 护甲（Defence）统一查询：狂战士之吼 + 淘汰之刃战吼 + 淘汰之刃永久护甲
+      // 8. 护甲（Defence）：淘汰之刃永久护甲（狂战士之吼 / 淘汰战吼的临时护甲由 Modifier 自动汇总）
       DotaHookBus.RegisterDefenceQuery("axe.defence_query", Args =>
       {
-        if (Args.Character == null || Args.Character.Deceased)
+        if (Args.Character == null || Args.Character.Deceased || !IsAxe(Args.Character))
           return;
 
-        int BonusDef = 0;
-
-        if (IsAxe(Args.Character))
-        {
-          var State = GetAxeState(Args.Character);
-          if (State.CallRemainingTurns > 0)
-            BonusDef += State.CallBonusDefence;
-
-          BonusDef += GetCullingPermanentDefenceBonus(Args.Character);
-        }
-
-        if (CullingBuffs.TryGetValue(Args.Character, out var Buff) && Buff.RemainingTurns > 0)
-          BonusDef += Buff.BonusDefence;
-
-        if (BonusDef != 0)
-          Args.Defence += BonusDef;
+        int PermDef = GetCullingPermanentDefenceBonus(Args.Character);
+        if (PermDef != 0)
+          Args.Defence += PermDef;
       });
 
-      // 9. 移动速度查询：战斗饥渴减速、T1 左饥渴移速加成、淘汰之刃 +25% 移速战吼
+      // 9. 移动速度：T1 左天赋按活跃饥渴目标数加速（饥渴减速与战吼 +25% 移速由 Modifier 自动汇总）
       DotaHookBus.RegisterSpeedQuery("axe.speed_query", Args =>
       {
         var Ch = Args.Character;
-        if (Ch == null || Ch.Deceased || Args.Attacking)
+        if (Ch == null || Ch.Deceased || Args.Attacking || !IsAxe(Ch))
           return;
 
-        float Mult = 1.0f;
+        if (!TalentService.HasTalent(Ch, TalentT1HungerMoveSpeed))
+          return;
 
-        if (HungerAfflicted.TryGetValue(Ch, out var Hunger) && Hunger.RemainingTurns > 0)
-          Mult *= Math.Max(0.35f, 1.0f - Hunger.SlowRatio);
-
-        if (CullingBuffs.TryGetValue(Ch, out var Buff) && Buff.RemainingTurns > 0)
-          Mult *= (1.0f + CullingBuffMoveSpeedRatio);
-
-        if (IsAxe(Ch) && TalentService.HasTalent(Ch, TalentT1HungerMoveSpeed))
-        {
-          int ActiveCount = CountActiveHungerTargets(Ch);
-          if (ActiveCount > 0)
-            Mult *= (1.0f + Math.Min(0.64f, ActiveCount * HungerTalentMsPerTarget));
-        }
-
-        if (MathF.Abs(Mult - 1.0f) > 0.001f)
-          Args.Speed = ScaleSpeed(Args.Speed, Mult);
+        int ActiveCount = DotaModifierService.CountAppliedBy(Ch, BattleHungerModifier);
+        if (ActiveCount > 0)
+          Args.Speed = ScaleSpeed(Args.Speed, 1.0f + Math.Min(0.64f, ActiveCount * HungerTalentMsPerTarget));
       });
 
       // 10. 战斗饥渴击杀驱散：中饥渴单位击杀任意目标时立即解除饥渴
       DotaHookBus.RegisterAfterKill("axe.battle_hunger_dispel", Args =>
       {
         var Killer = Args.Attacker;
-        if (Killer == null)
+        var Hunger = DotaModifierService.Get(Killer, BattleHungerModifier);
+        if (Hunger == null)
           return;
 
-        if (HungerAfflicted.TryGetValue(Killer, out var Hunger))
+        var Caster = Hunger.Source;
+        DotaModifierService.Remove(Args.Engine, Killer, BattleHungerModifier);
+        if (Caster != null)
         {
-          HungerAfflicted.Remove(Killer);
-          if (Hunger.Caster != null && Hunger.Caster.TryGetTarget(out var Caster))
-          {
-            PathosEngineBridge.WriteInternalLog(
-              Args.Engine,
-              Caster,
-              BattleHungerGlyph,
-              DotaLocalization.Format("axe.log.hunger_dispelled", GetCharacterDisplayName(Killer)));
-          }
+          PathosEngineBridge.WriteInternalLog(
+            Args.Engine,
+            Caster,
+            BattleHungerGlyph,
+            DotaLocalization.Format("axe.log.hunger_dispelled", GetCharacterDisplayName(Killer)));
         }
       });
     }
@@ -577,26 +560,7 @@ namespace Pathos.DotaHeroes.Heroes
         };
       });
 
-      // 2. Q 狂战士之吼高甲状态
-      DotaStatusBarBridge.RegisterProvider("axe.berserkers_call", Ch =>
-      {
-        if (!IsAxe(Ch) || Ch.Deceased)
-          return null;
-
-        var State = GetAxeState(Ch);
-        if (State.CallRemainingTurns <= 0)
-          return null;
-
-        return new DotaStatusBadge
-        {
-          Key = "axe.berserkers_call",
-          Glyph = BerserkersCallGlyph,
-          Text = DotaLocalization.T("axe.status.call").ToUpper(),
-          Count = $"{State.CallRemainingTurns}T",
-          Colour = Colour.DarkRed,
-          HelpSpell = BerserkersCallSpellRef
-        };
-      });
+      // 2. Q 狂战士之吼高甲状态：由 CallArmorModifier 自动生成徽章（剩余回合）
 
       // 3. E 反击螺旋受击计数
       DotaStatusBarBridge.RegisterProvider("axe.counter_helix", Ch =>
@@ -632,7 +596,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (!IsAxe(Ch) || Ch.Deceased)
           return null;
 
-        int Active = CountActiveHungerTargets(Ch);
+        int Active = DotaModifierService.CountAppliedBy(Ch, BattleHungerModifier);
         if (Active <= 0)
           return null;
 
@@ -653,7 +617,8 @@ namespace Pathos.DotaHeroes.Heroes
         if (Ch == null || Ch.Deceased)
           return null;
 
-        bool HasBuff = CullingBuffs.TryGetValue(Ch, out var Buff) && Buff.RemainingTurns > 0;
+        var Buff = DotaModifierService.Get(Ch, CullingBuffModifier);
+        bool HasBuff = Buff != null;
         int PermDef = IsAxe(Ch) ? GetCullingPermanentDefenceBonus(Ch) : 0;
         if (!HasBuff && PermDef <= 0)
           return null;
@@ -691,9 +656,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       int Radius = TalentService.HasTalent(Caster, TalentT4CallAoe) ? 3 : 2;
 
-      var State = GetAxeState(Caster);
-      State.CallRemainingTurns = DurationTurns;
-      State.CallBonusDefence = BonusDef;
+      DotaModifierService.Apply(CallArmorModifier, Caster, Caster, DurationTurns, M => M.Defence = BonusDef);
 
       // 播放 3×3 猩红怒吼冲击波特效
       PathosEngineBridge.StoryExploding(Args.Engine, Delay.HalfSecond, Caster.Square, BerserkersCallExplosion);
@@ -744,17 +707,21 @@ namespace Pathos.DotaHeroes.Heroes
       float EffectiveDps = BaseDps * StarAndTierMult;
       float Slow = GetHungerSlowRatio(SkillLv);
 
-      var HState = HungerAfflicted.GetOrCreateValue(Target);
-      HState.Caster = new WeakReference<Character>(Caster);
-      HState.RemainingTurns = BattleHungerDurationTurns;
-      HState.DotaDps = EffectiveDps;
-      HState.SlowRatio = Slow;
-      HState.DamageAccumulator = 0.0f;
-
-      TrackHungerTarget(Caster, Target);
-
       if (Target.Square != null)
         PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, Target.Square, BattleHungerStrike);
+
+      var Hunger = DotaModifierService.Apply(BattleHungerModifier, Caster, Target, BattleHungerDurationTurns, M =>
+      {
+        M.DotDotaDps = EffectiveDps;
+        M.MoveSpeedPct = -Slow;
+      });
+
+      if (Hunger == null)
+      {
+        // 目标减益免疫 / 无敌：饥渴未生效
+        PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, BattleHungerGlyph, DotaLocalization.Format("axe.log.hunger_immune", GetCharacterDisplayName(Target)));
+        return;
+      }
 
       // 施法当回合立即结算 1 次保底纯伤，确保即时反馈
       int FirstDmg = Math.Max(1, (int)MathF.Round((EffectiveDps / DotaMechanicsMapper.TurnsPerSecond) / DotaMechanicsMapper.DamageScale));
@@ -810,12 +777,19 @@ namespace Pathos.DotaHeroes.Heroes
         int BuffTurns = CullingBuffBaseTurns + (TalentService.HasTalent(Caster, TalentT1CullingBuffDuration) ? CullingBuffTalentExtraTurns : 0);
         int BuffDef = DotaMechanicsMapper.MapArmorToDefence(CullingBuffDotaArmor[SkillLv - 1]);
 
-        ApplyCullingBuff(Caster, BuffTurns, BuffDef);
+        void ApplyCullingBuff(Character Unit)
+          => DotaModifierService.Apply(CullingBuffModifier, Caster, Unit, BuffTurns, M =>
+          {
+            M.Defence = BuffDef;
+            M.MoveSpeedPct = CullingBuffMoveSpeedRatio;
+          });
+
+        ApplyCullingBuff(Caster);
         foreach (var Sq in Caster.Square.GetAroundSquares(4))
         {
           var Ally = Sq?.Character;
           if (Ally != null && Ally != Caster && DotaCombatHelper.IsFriendly(Caster, Ally))
-            ApplyCullingBuff(Ally, BuffTurns, BuffDef);
+            ApplyCullingBuff(Ally);
         }
 
         // 叠加永久护甲（精英/Boss/唯一怪 +1.0/1.5/2.0 甲，普通小怪 +0.2/0.3/0.4 甲，存档持久化，无上限多段递减）
@@ -851,20 +825,6 @@ namespace Pathos.DotaHeroes.Heroes
           CullingBladeGlyph,
           DotaLocalization.Format("axe.log.culling_damage", TargetName, Rolled, Threshold));
       }
-    }
-
-    private void TickAxeTurn(object Engine, Character Axe)
-    {
-      var State = GetAxeState(Axe);
-
-      if (State.CallRemainingTurns > 0)
-      {
-        State.CallRemainingTurns--;
-        if (State.CallRemainingTurns <= 0)
-          State.CallBonusDefence = 0;
-      }
-
-      RefreshOneManArmy(Engine, Axe);
     }
 
     private void RefreshOneManArmy(object Engine, Character Axe)
@@ -940,27 +900,6 @@ namespace Pathos.DotaHeroes.Heroes
 
       PathosEngineBridge.SetMeter(Axe.Life, NewPoints, NewTotal);
       DotaCharacterStorage.SetCustomInt(Axe, StorageOneManArmyAppliedHpKey, TargetBonusHp);
-    }
-
-    private void TickBattleHungerOnVictim(object Engine, Character Victim, BattleHungerState Hunger)
-    {
-      Hunger.RemainingTurns--;
-      if (Hunger.RemainingTurns <= 0)
-        HungerAfflicted.Remove(Victim);
-
-      Character Caster = null;
-      Hunger.Caster?.TryGetTarget(out Caster);
-
-      // 按 K_dmg = 15 与每回合 0.5 秒精确累加纯粹持续伤害
-      float PerTurnFloat = (Hunger.DotaDps / DotaMechanicsMapper.TurnsPerSecond) / DotaMechanicsMapper.DamageScale;
-      Hunger.DamageAccumulator += PerTurnFloat;
-
-      int DmgToDeal = (int)MathF.Floor(Hunger.DamageAccumulator);
-      if (DmgToDeal > 0)
-      {
-        Hunger.DamageAccumulator -= DmgToDeal;
-        PathosEngineBridge.StrikeCharacter(Engine, Caster, Victim, Direction.Self, DmgToDeal, Delay.Zero, "battle hunger");
-      }
     }
 
     private void AdvanceCounterHelix(object Engine, Character Axe)
@@ -1354,16 +1293,6 @@ namespace Pathos.DotaHeroes.Heroes
       return DotaMechanicsMapper.MapUncappedArmorToDefence(Tenths / 10.0f);
     }
 
-    private static void ApplyCullingBuff(Character Target, int Turns, int BonusDef)
-    {
-      if (Target == null || Target.Deceased)
-        return;
-
-      var Buff = CullingBuffs.GetOrCreateValue(Target);
-      Buff.RemainingTurns = Math.Max(Buff.RemainingTurns, Turns);
-      Buff.BonusDefence = Math.Max(Buff.BonusDefence, BonusDef);
-    }
-
     private static int QueryDefenceSafe(object Engine, Character Character)
     {
       if (IsInsideDefenceQuery)
@@ -1378,40 +1307,6 @@ namespace Pathos.DotaHeroes.Heroes
       {
         IsInsideDefenceQuery = false;
       }
-    }
-
-    private static void TrackHungerTarget(Character Caster, Character Victim)
-    {
-      if (Caster == null || Victim == null)
-        return;
-
-      var State = GetAxeState(Caster);
-      State.ActiveHungerTargets.RemoveWhere(Wr => !Wr.TryGetTarget(out var Existing) || Existing == null || Existing.Deceased || Existing == Victim);
-      State.ActiveHungerTargets.Add(new WeakReference<Character>(Victim));
-    }
-
-    private static int CountActiveHungerTargets(Character Caster)
-    {
-      if (Caster == null)
-        return 0;
-
-      var State = GetAxeState(Caster);
-      int Count = 0;
-      State.ActiveHungerTargets.RemoveWhere(Wr =>
-      {
-        if (!Wr.TryGetTarget(out var Victim) || Victim == null || Victim.Deceased)
-          return true;
-
-        if (!HungerAfflicted.TryGetValue(Victim, out var Hunger) || Hunger.RemainingTurns <= 0)
-          return true;
-
-        if (Hunger.Caster == null || !Hunger.Caster.TryGetTarget(out var Owner) || Owner != Caster)
-          return true;
-
-        Count++;
-        return false;
-      });
-      return Count;
     }
 
     private static string GetCharacterDisplayName(Character Character)

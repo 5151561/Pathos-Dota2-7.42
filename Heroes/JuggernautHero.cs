@@ -386,6 +386,11 @@ namespace Pathos.DotaHeroes.Heroes
       // 0.4 注册无敌斩「无敌/不可选中」引擎级保护（免疫敌方攻击命中、狂犬病/病痛、地面陷阱、敌方/环境法术与负面状态）
       DotaHookBus.RegisterInvulnerableQuery("juggernaut.omnislash_invulnerable", IsInOmnislash);
 
+      // 0.5 剑刃风暴期间免疫一切减益 Modifier（如战斗饥渴等 Hook 实现的减益；原生 Transient 减益由下方 BeforeApplyTransient 拦截）
+      DotaModifierService.RegisterDebuffImmunity(
+        "juggernaut.blade_fury_debuff_immunity",
+        Ch => BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Ch, BladeFuryStatusProperty));
+
       // 1. 施法后置钩子：Q 剑刃风暴（驱散+立刻触发一次转伤）、W 治疗守卫（追踪/替换）、R 无敌斩（连续瞬移斩击）
       DotaHookBus.RegisterAfterCastSpell("juggernaut.spell_casts", Args =>
       {

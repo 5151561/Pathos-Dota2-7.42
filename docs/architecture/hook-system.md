@@ -12,6 +12,8 @@
 | [PathosEngineBridge.cs](../../Framework/Hooks/PathosEngineBridge.cs) | 统一封装 `PathosEngine` / `Director` / `Story` / `Decision` / `Character` / `Meter` 等内部成员的反射访问与缓存，避免英雄代码散落反射。 |
 | [DotaCombatHelper.cs](../../Framework/DotaCombatHelper.cs) | 收敛跨英雄复用的战斗、敌友判定、熟练度分档、标准基础驱散、目标解析、寻路靠近、空大返蓝与残影绘制辅助方法。 |
 | [DotaTauntService.cs](../../Framework/DotaTauntService.cs) | 通用「嘲讽（Taunt）」状态与行为重定向服务：支持任意嘲讽者/受害者、自动唤醒与驱散恐惧、全链路禁魔、强制靠近与近战攻击嘲讽者、按嘲讽者回合统一递减。 |
+| [DotaModifierService.cs](../../Framework/DotaModifierService.cs) | 通用 DOTA2 Modifier（带回合数的增益/减益）服务：回合递减、护甲/移速/攻速汇总、纯粹/元素持续伤害、减益免疫、基础驱散与状态栏徽章，零 `Codex.Properties` 占用。 |
+| [DotaCharacterFlagSet.cs](../../Framework/DotaCharacterFlagSet.cs) | 弱引用角色标记集合，替代 `static HashSet<Character>`（铁律 6）。 |
 
 ---
 
@@ -38,6 +40,13 @@
 | `RegisterDefenceQuery` | `Engine.GetDefenceClass` (Postfix) | `Defence` | 被动加甲、光环护甲与减甲 Debuff（实时反映在面板 Defence） |
 | `RegisterSpellCostQuery` | `Character.SpellCost` (Postfix) | `ManaCost` | 减冷却转减蓝耗等法术蓝耗修正（施法扣蓝与 UI 显示自动同步） |
 | `RegisterAfterLevelUp` | `Generator.AdvanceLevel` (Postfix) | 只读上下文 | 角色升级解锁天赋点提示与成长联动 |
+
+### 执行顺序与取消
+
+- 每个 `Register*` 都接受可选 `Priority`（见 `DotaHookPriority`）：处理器按 **(Priority 升序, 首次注册顺序)** 确定性执行，重复 Key 原位覆盖。
+- 约定阶段：`Early`（免疫/取消）→ `Normal`（固定值加减）→ `Amplify`（乘算增伤/暴击）→ `Reduction`（减伤/魔抗）→ `Late`（只读观察）。
+- 可取消事件（`BeforeCastSpell` / `BeforeDamage` / `BeforeApplyTransient` / `BeforeExecuteCommand` / `BeforeAttack`）：某处理器设置 `Cancel = true` 后**立即停止**分发后续处理器。
+- `SpellCastEventArgs.ManaSpent`（仅 `AfterCastSpell` 有效）为本次施法实际扣除的法力值；空放返蓝统一调用 `DotaCombatHelper.RefundSpellCost(Args)`，禁止按 `Spell.Mana` 或常量返还。
 
 ### 线程级上下文追踪
 
@@ -89,3 +98,56 @@
 - **一键施加**：`DotaTauntService.ApplyTaunt(ctx, engine, taunter, victim, durationTurns, sourceKey: ..., onFallbackAttack: ...)` 自动完成首次 Hook 幂等注册、唤醒沉睡/移除恐惧、头顶飘字与嘲讽者回合追踪。
 - **全链路禁魔 + 强制普攻**：自动挂载 `dota.taunt_silence` 与 `dota.taunt_redirect`，禁止被嘲讽单位施放任何法术/吐息/凝视/魔杖/卷轴，并强制其向 `taunter` 移动或近战普攻（嘲讽者死亡即刻解除）。
 - **状态查询与清理**：提供 `IsTaunted`、`TryGetTaunter`、`GetRemainingTurns`、`ClearTaunt`、`ClearTauntsByTaunter` 与 `CountActiveTauntedTargets`。
+
+---
+
+## 6. `DotaModifierService` 通用增益/减益（Modifier）基建
+
+[DotaModifierService.cs](../../Framework/DotaModifierService.cs) 是 DOTA2 「Modifier」概念的统一实现。**凡是带剩余回合数的增益/减益（护甲增减、加速/减速、持续伤害、战吼光环等），一律走本服务**，不要再在英雄里手写 `State` 类 + `ConditionalWeakTable` + 手动 `--RemainingTurns` + 单独的 Defence/Speed 查询。
+
+### 6.1 定义（每种 Modifier 一次）
+
+在英雄 `Register` 中、贴图注册之后：
+
+```csharp
+BattleHungerModifier = DotaModifierService.Define(new DotaModifierSpec
+{
+  Key = "axe.battle_hunger",          // <hero_id>.<feature>
+  IsDebuff = true,                    // 受无敌/减益免疫阻挡，可被基础驱散
+  IsDispellable = true,
+  Stacking = DotaModifierStacking.Replace,  // 或 KeepStrongest
+  DotElement = null,                  // null = 纯粹伤害（StrikeCharacter）；否则按元素 HarmCharacter
+  DotCause = "battle hunger",
+  // 可选：BadgeGlyph / BadgeTitle / BadgeColour / BadgeCount / HelpSpell / HelpProperty → 自动生成状态栏徽章
+  // 可选：OnTick(engine, holder, mod) / OnRemoved(engine, holder, mod, reason)
+});
+```
+
+### 6.2 施加（每次施法按等级填入数值）
+
+```csharp
+var Mod = DotaModifierService.Apply(BattleHungerModifier, Caster, Target, DurationTurns, M =>
+{
+  M.DotDotaDps = EffectiveDps;   // DOTA2 原始 DPS，框架按 K_dmg = 15、每回合 0.5 秒累加小数结算
+  M.MoveSpeedPct = -Slow;        // 负数为减速
+  // M.Defence（已 MapArmorToDefence 折算）/ M.AttackSpeedPct / M.Stacks / M.Tag
+});
+if (Mod == null) { /* 目标无效、减益被免疫 */ }
+```
+
+| 字段 | 汇总方式 |
+| :--- | :--- |
+| `Defence` | 全部 Modifier 相加，经 `dota.modifiers.defence` 叠加到面板防御 |
+| `MoveSpeedPct` / `AttackSpeedPct` | 全部 Modifier **加算**后乘到速度上（对齐 DOTA2 百分比移速加算），倍率下限 `MinMoveSpeedMultiplier = 0.35` |
+| `DotDotaDps` | 持有者每回合行动后结算，小数自动累加 |
+
+### 6.3 生命周期
+
+- **回合递减**：随**持有者自身**行动回合（`dota.modifiers.tick`），顺序为 `OnTick` → 持续伤害 → `RemainingTurns--` → 到期移除（`Expired`）。
+- **叠加**：`Replace` 完全覆盖；`KeepStrongest` 剩余回合取最大、各数值按绝对值取最大。
+- **驱散**：`DotaCombatHelper.DispelNegativeDebuffs` 同时清除原生负面 `Transient` 与全部 `IsDebuff && IsDispellable` 的 Modifier；也可直接调用 `DotaModifierService.Dispel(engine, unit, Debuffs: true/false)`。
+- **减益免疫**：`IsDebuff` 的 Modifier 会被 `DotaHookBus.QueryInvulnerable` 与 `DotaModifierService.RegisterDebuffImmunity(key, predicate)` 阻挡（主宰剑刃风暴已注册）。
+- **施加者死亡**：`RemoveOnSourceDeath = true` 时立即失效（链接/嘲讽类效果）。
+- **查询**：`Get` / `Has` / `GetAll` / `Remove` / `CountAppliedBy(source, spec)`（如斧王 T1 天赋统计活跃饥渴目标数）/ `GetTotalDefence` / `GetMoveSpeedMultiplier`。
+
+> 运行时状态保存在 `ConditionalWeakTable` 中，与原先英雄私有状态一致：**不随存档持久化**（读档后短期 Modifier 清空）。需要跨存档的永久数值仍走 `DotaCharacterStorage`。

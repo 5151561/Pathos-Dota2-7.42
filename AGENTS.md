@@ -53,7 +53,8 @@ docs/                          # 完整架构、基建、指南与英雄 7.42 �
 - **长短期技能与状态分类（严禁裸调 `Ctx.Properties.Add`）**：
   - 长效先天 / 被动天赋（需出现在角色原生天赋栏与百科）：使用 `Ctx.RegisterPassiveProperty(...)` + `Class.AddFeat(1, prop)`。
   - 短期主动技能状态（仅施法期间作为 `Transient` 生效）：**必须**使用 `Ctx.RegisterSkillStatusProperty(...)`，自动登记到 `DotaPropertyVisibility`，防止污染原生 `TalentPanel`（含大师模式）与百科「天赋/特性」栏目。
-- **战斗与目标工具**：直接复用 `DotaCombatHelper`（`IsClass`、`IsEntity`、`GetSkillTier`、`IsHostile`、`IsFriendly`、`DispelNegativeDebuffs`、`IsNegativeDebuff`、`ResolveHostileTarget`、`ResolveOpenPointTarget`、`RefundMana`、`PlayBeamTrail`）。
+- **带回合数的增益/减益（Modifier）**：护甲增减、加速/减速、持续伤害、战吼类增益等，**必须**用 `DotaModifierService.Define` + `Apply`（回合递减、Defence/Speed 汇总、DoT、驱散、减益免疫与状态栏徽章由框架负责），禁止在英雄内手写 State 类 + 手动递减 + 单独 Defence/Speed 查询。详见 [hook-system.md §6](docs/architecture/hook-system.md)。
+- **战斗与目标工具**：直接复用 `DotaCombatHelper`（`IsClass`、`IsEntity`、`GetSkillTier`、`IsHostile`、`IsFriendly`、`DispelNegativeDebuffs`、`IsNegativeDebuff`、`ResolveHostileTarget`、`ResolveOpenPointTarget`、`RefundSpellCost`、`PlayBeamTrail`）；空放返蓝一律 `RefundSpellCost(Args)`。
 - **自定义像素 VFX**：使用 `Ctx.RegisterStrikeVfx`、`Ctx.RegisterBeamVfx`、`Ctx.RegisterExplosion3x3Vfx`，配合 `PathosEngineBridge.Story*` 播放。
 - **客户端补丁**：若需新增 `Pathos.dll` 反射或补丁，复用 `PathosClientReflection`。
 

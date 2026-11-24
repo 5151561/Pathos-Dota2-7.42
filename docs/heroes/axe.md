@@ -64,19 +64,23 @@
 - **固定初始六维与职业上限**：`DotaMechanicsMapper.RegisterFixedStartingStats`、`RegisterHeroStatLimits`、`RegisterHeroStatLimitBonus`
 - **零 `Property` 持久化**：淘汰之刃永久护甲层数通过 `DotaCharacterStorage.AddCustomInt(..., "axe.cull_armor_x10", ...)` 随存档持久化
 - **全射程选格（`DotaRangeTargetingBridge`）**：`battle hunger`（`UnitHostile`, `4~7` 格）、`culling blade`（`UnitHostile`, `2` 格）
-- **左上角状态栏徽章（`DotaStatusBarBridge`）**：`axe.one_man_army`、`axe.berserkers_call`、`axe.counter_helix`、`axe.battle_hunger`、`axe.culling_blade`
+- **左上角状态栏徽章（`DotaStatusBarBridge`）**：`axe.one_man_army`、`axe.counter_helix`、`axe.battle_hunger`（活跃目标数）、`axe.culling_blade`（永久护甲 + 战吼合并），以及 Modifier 自动生成的 `modifier.axe.berserkers_call`
 - **技能帮助面板（`DotaSpellHelpBridge`）**：为 Q/W/R 渲染实时数值与 5 阶熟练度详情
+- **增益/减益 Modifier（`DotaModifierService`）**：
+  - `axe.berserkers_call`（增益，不可驱散，`Replace`）：狂战士之吼自身 `Defence`
+  - `axe.battle_hunger`（减益，可驱散，`Replace`）：纯粹持续伤害 `DotDotaDps` + `MoveSpeedPct` 减速；被剑刃风暴等减益免疫阻挡
+  - `axe.culling_buff`（增益，可驱散，`KeepStrongest`）：淘汰之刃战吼 `Defence` + `+25%` 移速，施加给斧王与周围 4 格友军
 
 ### 注册的 `DotaHookBus` Key
+- `axe.init_one_man_army`（`AfterCreateActor`）：开局初始化孤军奋战
 - `axe.spell_casts`（`AfterCastSpell`）：Q 狂战士之吼、W 战斗饥渴、R 淘汰之刃结算与空放返蓝
-- `axe.taunt_silence`（`SilenceQuery`）：被嘲讽目标全链路禁魔（拦截 `CanCast` / `CastSpell` / `CastEffects`，封死法术、吐息、凝视、射线与魔杖/卷轴）
-- `axe.taunt_redirect`（`BeforeExecuteCommand`）：被嘲讽目标强制靠近或近战攻击斧王
-- `axe.turn_ticks`（`AfterExecuteCommand`）：孤军奋战检测/粘滞、吼叫/战吼计时、战斗饥渴每回合纯伤
+- 嘲讽由 `DotaTauntService` 提供（`dota.taunt_silence` / `dota.taunt_redirect` / `dota.taunt_tick`）：被嘲讽目标全链路禁魔并强制靠近或近战攻击斧王
+- `axe.turn_ticks`（`AfterExecuteCommand`）：孤军奋战检测/粘滞（吼叫/战吼/饥渴的计时与每回合纯伤由 `dota.modifiers.tick` 统一推进）
 - `axe.counter_helix.melee`（`AfterAttack`）& `axe.counter_helix.ranged`（`AfterDamage`）：受击计次（含 Miss）触发 3×3 纯伤旋斩
 - `axe.one_man_army_str`（`ActiveFormQuery`）：孤军奋战真实力量加成（同步至面板力量、攻击命中、近战伤害与负重）
-- `axe.defence_query`（`DefenceQuery`）：狂战士之吼 + 淘汰之刃战吼 + 淘汰之刃永久护甲
-- `axe.speed_query`（`SpeedQuery`）：战斗饥渴减速、T1 左移速加成、淘汰之刃战吼 `+25%` 移速
-- `axe.battle_hunger_dispel`（`AfterKill`）：中饥渴单位击杀任意目标时立即驱散
+- `axe.defence_query`（`DefenceQuery`）：淘汰之刃永久护甲（临时护甲由 `dota.modifiers.defence` 汇总）
+- `axe.speed_query`（`SpeedQuery`）：T1 左每饥渴目标 `+8%` 移速（饥渴减速与战吼 `+25%` 移速由 `dota.modifiers.speed` 加算汇总，减速下限 35%）
+- `axe.battle_hunger_dispel`（`AfterKill`）：中饥渴单位击杀任意目标时立即移除饥渴 Modifier
 
 ---
 

@@ -35,6 +35,7 @@
   "axe.log.helix_proc": "反击螺旋！血刃旋斩命中周围 {0} 名敌人（{1} 点纯粹伤害）！",
   "axe.log.hunger_cast": "对 {0} 施加战斗饥渴（持续 {1} 回合，减速 {2}%）！",
   "axe.log.hunger_dispelled": "{0} 通过击杀摆脱了战斗饥渴！",
+  "axe.log.hunger_immune": "{0} 免疫了战斗饥渴。",
   "axe.log.hunger_no_target": "战斗饥渴：射程内无敌方目标（已返还法力）。",
   "axe.skill.desc_max_suffix": "，已满级",
   "axe.skill.e.desc_0": "被动：每受 7/6/5/4 次攻击（含 Miss）触发 3×3 纯伤反击螺旋（100~160 纯伤）",
