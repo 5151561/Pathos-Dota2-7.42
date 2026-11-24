@@ -315,6 +315,41 @@ namespace Pathos.DotaHeroes.Framework
     }
 
     /// <summary>
+    /// 将无上限成长型 DOTA2 护甲（如斧王淘汰之刃永久叠甲）映射为 Pathos Defence 修正值（无硬上限，多段平滑递减）：
+    /// - 0 ~ 12 甲：每 2.5 点 DOTA2 护甲 = +1 防御（累计 4.8）
+    /// - 12 ~ 32 甲：每 4.0 点 DOTA2 护甲 = +1 防御（累计 9.8）
+    /// - 32 ~ 80 甲：每 6.0 点 DOTA2 护甲 = +1 防御（累计 17.8）
+    /// - 80 甲以上：每 10.0 点 DOTA2 护甲 = +1 防御（无上限）
+    /// </summary>
+    public static int MapUncappedArmorToDefence(float DotaArmorBonus)
+    {
+      if (MathF.Abs(DotaArmorBonus) < 0.01f)
+        return 0;
+
+      float Abs = MathF.Abs(DotaArmorBonus);
+      float Scaled;
+      if (Abs <= 12.0f)
+      {
+        Scaled = Abs / 2.5f;
+      }
+      else if (Abs <= 32.0f)
+      {
+        Scaled = (12.0f / 2.5f) + (Abs - 12.0f) / 4.0f;
+      }
+      else if (Abs <= 80.0f)
+      {
+        Scaled = (12.0f / 2.5f) + (20.0f / 4.0f) + (Abs - 32.0f) / 6.0f;
+      }
+      else
+      {
+        Scaled = (12.0f / 2.5f) + (20.0f / 4.0f) + (48.0f / 6.0f) + (Abs - 80.0f) / 10.0f;
+      }
+
+      int Delta = (int)MathF.Round(Scaled);
+      return DotaArmorBonus < 0.0f ? -Delta : Delta;
+    }
+
+    /// <summary>
     /// 为指定 DOTA2 职业注册固定初始六维属性。
     /// 在 Engine.CreateActor 与 Engine.RerollActor 后自动写入 CurrentForm/MaximumForm 并同步重算 1 级初始 HP 与 Mana。
     /// </summary>

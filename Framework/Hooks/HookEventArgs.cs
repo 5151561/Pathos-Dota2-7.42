@@ -335,4 +335,28 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public Character Character { get; }
     public Form LimitForm { get; set; }
   }
+
+  /// <summary>
+  /// 角色实时生效属性（ActiveForm）查询事件上下文（对应 Pathos.Character.GetActiveForm(false)）。
+  /// 用于实现临时/光环型六维属性加成（如斧王先天「一人之军」），直接同步到面板六维、攻击命中、近战伤害与负重，绝不修改 CurrentForm / MaximumForm。
+  /// </summary>
+  public sealed class ActiveFormQueryEventArgs
+  {
+    public ActiveFormQueryEventArgs(Character Character)
+    {
+      this.Character = Character;
+    }
+
+    public Character Character { get; }
+    public int BonusStr { get; set; }
+    public int BonusDex { get; set; }
+    public int BonusCon { get; set; }
+    public int BonusInt { get; set; }
+    public int BonusWis { get; set; }
+    public int BonusCha { get; set; }
+
+    public bool HasAnyBonus =>
+      BonusStr != 0 || BonusDex != 0 || BonusCon != 0 ||
+      BonusInt != 0 || BonusWis != 0 || BonusCha != 0;
+  }
 }

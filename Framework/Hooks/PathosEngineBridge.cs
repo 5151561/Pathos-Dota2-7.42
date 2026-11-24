@@ -911,6 +911,44 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     }
 
     /// <summary>
+    /// 基于现有 Form 克隆出一份独立 Form 并叠加六维属性增量（绝不修改原 Form）。
+    /// </summary>
+    public static Form CloneFormWithDeltas(Form TemplateForm, int BonusStr, int BonusDex, int BonusCon, int BonusInt, int BonusWis, int BonusCha)
+    {
+      if (TemplateForm == null || FormDefaultCtor == null || FormAssignMethod == null)
+        return TemplateForm;
+
+      try
+      {
+        var Cloned = (Form)FormDefaultCtor.Invoke(null);
+        FormAssignMethod.Invoke(Cloned, new object[] { TemplateForm });
+
+        ApplyAbilityDelta(Cloned, "strength", BonusStr);
+        ApplyAbilityDelta(Cloned, "dexterity", BonusDex);
+        ApplyAbilityDelta(Cloned, "constitution", BonusCon);
+        ApplyAbilityDelta(Cloned, "intelligence", BonusInt);
+        ApplyAbilityDelta(Cloned, "wisdom", BonusWis);
+        ApplyAbilityDelta(Cloned, "charisma", BonusCha);
+        return Cloned;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"CloneFormWithDeltas failed: {Ex}");
+        return TemplateForm;
+      }
+    }
+
+    private static void ApplyAbilityDelta(Form Form, string AttributeName, int Delta)
+    {
+      if (Delta == 0)
+        return;
+
+      var Ability = FindAbility(Form, AttributeName);
+      if (Ability != null)
+        SetAbilityScore(Ability, Math.Max(1, Ability.Score + Delta));
+    }
+
+    /// <summary>
     /// 获取角色在指定技能上的熟练度等级（Qualification）。
     /// </summary>
     public static Qualification GetQualification(Character Character, Skill Skill)

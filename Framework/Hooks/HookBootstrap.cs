@@ -262,7 +262,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           new[] { CharacterType, typeof(Asset) },
           postfix: nameof(GetThrowRangePostfix));
 
-        // 7. 施法距离修正钩子：Engine.CastEffects(...)
+        // 7. 施法距离修正与沉默拦截钩子：Engine.CastEffects(...) / Engine.CanCast(Character)
         PatchMethod(
           Harmony,
           EngineType,
@@ -270,6 +270,13 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           new[] { CharacterType, typeof(Asset), typeof(Fixture), typeof(Asset), typeof(Cast), typeof(Delay), typeof(Direction), typeof(IEnumerable<Effect>) },
           prefix: nameof(CastEffectsPrefix),
           postfix: nameof(CastEffectsPostfix));
+
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "CanCast",
+          new[] { CharacterType },
+          postfix: nameof(CanCastPostfix));
 
         // 8. 临时状态施加钩子：Engine.ApplyTransient(Character, Character, Property, Dice)
         PatchMethod(
@@ -335,6 +342,14 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           "GetLimitForm",
           Type.EmptyTypes,
           postfix: nameof(GetLimitFormPostfix));
+
+        // 13.6 角色实时生效属性查询钩子：Character.GetActiveForm(bool)（用于光环/动态六维属性加成，面板与命中/伤害全链路同步）
+        PatchMethod(
+          Harmony,
+          CharacterType,
+          "GetActiveForm",
+          new[] { typeof(bool) },
+          postfix: nameof(GetActiveFormPostfix));
 
         // 14. 角色升级钩子：Generator.AdvanceLevel(Character, bool)（用于天赋解锁提示与升级联动）
         PatchMethod(
@@ -427,6 +442,9 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var Spell = PathosEngineBridge.GetCastCommandSpell(Command);
         if (Character == null || Spell == null)
           return true;
+
+        if (DotaHookBus.QuerySilenced(Character))
+          return false;
 
         var Args = new SpellCastEventArgs(
           Engine: PathosEngineBridge.GetDirectorEngine(__instance),
@@ -542,15 +560,18 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         __result = Args.Range;
       }
 
-      private static void CastEffectsPrefix(object __instance, Character Character, Cast Cast, out CastRangeState __state)
+      private static bool CastEffectsPrefix(object __instance, Character Character, Fixture SourceFixture, Cast Cast, out CastRangeState __state)
       {
         __state = null;
+        if (Character != null && SourceFixture == null && DotaHookBus.QuerySilenced(Character))
+          return false;
+
         if (Character == null || Cast == null || Cast.TargetSelf)
-          return;
+          return true;
 
         var RangeDice = Cast.RangeDice;
         if (RangeDice.IsZero())
-          return;
+          return true;
 
         var Args = new CastRangeEventArgs(__instance, Character, Cast);
         DotaHookBus.DispatchCastRange(Args);
@@ -561,6 +582,14 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           if (PathosEngineBridge.SetCastRangeDice(Cast, Boosted))
             __state = new CastRangeState { Cast = Cast, OriginalRangeDice = RangeDice };
         }
+
+        return true;
+      }
+
+      private static void CanCastPostfix(Character Character, ref bool __result)
+      {
+        if (__result && Character != null && DotaHookBus.QuerySilenced(Character))
+          __result = false;
       }
 
       private static void CastEffectsPostfix(CastRangeState __state)
@@ -725,6 +754,26 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         DotaHookBus.DispatchLimitFormQuery(Args);
         if (Args.LimitForm != null)
           __result = Args.LimitForm;
+      }
+
+      private static void GetActiveFormPostfix(Character __instance, bool ForceNatural, ref Form __result)
+      {
+        if (__instance == null || __result == null || ForceNatural || !DotaHookBus.HasActiveFormQueryHandlers)
+          return;
+
+        var Args = new ActiveFormQueryEventArgs(__instance);
+        DotaHookBus.DispatchActiveFormQuery(Args);
+        if (Args.HasAnyBonus)
+        {
+          __result = PathosEngineBridge.CloneFormWithDeltas(
+            __result,
+            Args.BonusStr,
+            Args.BonusDex,
+            Args.BonusCon,
+            Args.BonusInt,
+            Args.BonusWis,
+            Args.BonusCha);
+        }
       }
 
       private static void AdvanceLevelPrefix(Character Character, out int __state)

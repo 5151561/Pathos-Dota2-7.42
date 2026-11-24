@@ -38,14 +38,36 @@ namespace Pathos.DotaHeroes.Framework.Skills
         return 0;
 
       int Stored = DotaCharacterStorage.GetSkillLevel(Character, Slot.Id);
-      if (Slot.Kind == DotaSkillSlotKind.Active && Slot.Spells != null && Slot.Spells.Count > 0)
+      if (Stored > 0)
+        return Math.Clamp(Stored, 0, Slot.MaxLevel);
+
+      // 仅当角色尚无任何新版技能加点记录时（兼容极老存档），才回退读取原生法术 Mastery.Level；
+      // 防止在地牢阅读魔法书升星后被误计入已消耗技能点，导致升级时吞点。
+      if (Slot.Kind == DotaSkillSlotKind.Active &&
+          Slot.Spells != null &&
+          Slot.Spells.Count > 0 &&
+          !HasAnyStoredSkillProgress(Character))
       {
         int NativeLevel = PathosEngineBridge.GetSpellMasteryLevel(Character, Slot.Spells[0]);
-        if (NativeLevel > Stored)
-          Stored = NativeLevel;
+        if (NativeLevel > 0)
+          return Math.Clamp(NativeLevel, 0, Slot.MaxLevel);
       }
 
-      return Math.Clamp(Stored, 0, Slot.MaxLevel);
+      return 0;
+    }
+
+    private static bool HasAnyStoredSkillProgress(Character Character)
+    {
+      if (Character == null || !HeroSkillRegistry.TryGetBuild(Character, out var Build))
+        return false;
+
+      foreach (var Slot in Build.Slots)
+      {
+        if (DotaCharacterStorage.GetSkillLevel(Character, Slot.Id) > 0)
+          return true;
+      }
+
+      return false;
     }
 
     /// <summary>

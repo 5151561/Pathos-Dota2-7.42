@@ -48,6 +48,8 @@ namespace Pathos.DotaHeroes.Heroes
 
     // 存档持久化键（存入 DotaCharacterStorage，单位：0.1 点 DOTA2 护甲，便于精确存储 +1.5 / +0.2 等小数）
     private const string StorageCullingArmorTenthsKey = "axe.cull_armor_x10";
+    // 一人之军动态同步到 Life.Total 的生命上限增量（存档持久化，防止读档重复叠血或切状态丢血）
+    private const string StorageOneManArmyAppliedHpKey = "axe.oma_applied_hp";
 
     // DOTA2 7.42 斧王初始三维与成长：STR 25 (+2.7) / AGI 18 (+1.5, 7.42) / INT 18 (+1.6)
     private const int DotaBaseStr = 25;
@@ -118,6 +120,9 @@ namespace Pathos.DotaHeroes.Heroes
 
       // R：淘汰之刃战吼增益（斧王自身与友军共用另一表，但此处保留快捷读取）
       public readonly HashSet<WeakReference<Character>> ActiveHungerTargets = new();
+
+      // Q：狂战士之吼当前嘲讽中的敌方列表（随斧王自身回合统一递减，防止高速/多动怪提前解控）
+      public readonly HashSet<WeakReference<Character>> ActiveTauntedTargets = new();
     }
 
     private sealed class TauntState
@@ -368,7 +373,12 @@ namespace Pathos.DotaHeroes.Heroes
       DotaHookBus.RegisterAfterCreateActor("axe.init_one_man_army", Args =>
       {
         if (Args?.Character != null && IsAxe(Args.Character))
+        {
+          if (Args.IsReroll)
+            DotaCharacterStorage.SetCustomInt(Args.Character, StorageOneManArmyAppliedHpKey, 0);
+
           RefreshOneManArmy(Args.Engine, Args.Character);
+        }
       });
 
       // 0.1 全射程选格（W 战斗饥渴 4~7 格选敌；R 淘汰之刃 2 格选敌）
@@ -415,14 +425,8 @@ namespace Pathos.DotaHeroes.Heroes
         }
       });
 
-      // 2. 嘲讽拦截：被狂战士之吼嘲讽的敌人禁止施法
-      DotaHookBus.RegisterBeforeCastSpell("axe.taunt_silence", Args =>
-      {
-        if (Args.Character == null || !IsTauntedByLivingAxe(Args.Character, out _))
-          return;
-
-        Args.Cancel = true;
-      });
+      // 2. 嘲讽全链路禁魔拦截：引擎层封死 CanCast / CastSpell / CastEffects（含怪物吐息、凝视、射线、魔杖与卷轴）
+      DotaHookBus.RegisterSilenceQuery("axe.taunt_silence", Ch => IsTauntedByLivingAxe(Ch, out _));
 
       // 3. 嘲讽重定向：被嘲讽的敌人行动时强制靠近斧王或近战普攻斧王
       DotaHookBus.RegisterBeforeExecuteCommand("axe.taunt_redirect", Args =>
@@ -484,27 +488,24 @@ namespace Pathos.DotaHeroes.Heroes
           AdvanceCounterHelix(Args.Engine, Args.Defender);
       });
 
-      // 7. 先天「孤军奋战」近战增伤
-      DotaHookBus.RegisterBeforeDamage("axe.one_man_army_damage", Args =>
+      // 7. 先天「孤军奋战」真实力量加成（DOTA2 力量 = Pathos 力量 STR + 体质 CON，直接同步至面板、攻击命中、近战伤害与负重）
+      DotaHookBus.RegisterActiveFormQuery("axe.one_man_army_str", Args =>
       {
-        if (Args.Attacker == null || !IsAxe(Args.Attacker))
+        if (Args.Character == null || !IsAxe(Args.Character))
           return;
 
-        if (DotaHookBus.ActiveAttack == null || DotaHookBus.ActiveSpellCast != null)
-          return;
-
-        var State = GetAxeState(Args.Attacker);
+        var State = GetAxeState(Args.Character);
         if (!State.OneManArmyActive || State.CachedOneManArmyBonusStr <= 0)
           return;
 
-        int BonusDmg = Math.Max(1, State.CachedOneManArmyBonusStr / 2);
-        Args.DamagePoints += BonusDmg;
+        Args.BonusStr += State.CachedOneManArmyBonusStr;
+        Args.BonusCon += State.CachedOneManArmyBonusStr;
       });
 
       // 8. 护甲（Defence）统一查询：狂战士之吼 + 淘汰之刃战吼 + 淘汰之刃永久护甲
       DotaHookBus.RegisterDefenceQuery("axe.defence_query", Args =>
       {
-        if (IsInsideDefenceQuery || Args.Character == null || Args.Character.Deceased)
+        if (Args.Character == null || Args.Character.Deceased)
           return;
 
         int BonusDef = 0;
@@ -731,6 +732,7 @@ namespace Pathos.DotaHeroes.Heroes
         var TState = TauntedUnits.GetOrCreateValue(Enemy);
         TState.Taunter = new WeakReference<Character>(Caster);
         TState.RemainingTurns = DurationTurns;
+        TrackTauntedTarget(Caster, Enemy);
 
         if (Enemy.Square != null)
           PathosEngineBridge.StoryCaption(Args.Engine, Enemy.Square, Colour.Crimson, DotaLocalization.T("axe.caption.taunted"), Delayed: false);
@@ -843,11 +845,11 @@ namespace Pathos.DotaHeroes.Heroes
             ApplyCullingBuff(Ally, BuffTurns, BuffDef);
         }
 
-        // 叠加永久护甲（精英/Boss/唯一怪 +1.0/1.5/2.0 甲，普通小怪 +0.2/0.3/0.4 甲，存档持久化）
+        // 叠加永久护甲（精英/Boss/唯一怪 +1.0/1.5/2.0 甲，普通小怪 +0.2/0.3/0.4 甲，存档持久化，无上限多段递减）
         bool IsElite = Target.Entity != null && (Target.Entity.Level >= 5 || Target.Entity.IsUnique);
         int DeltaTenths = IsElite ? CullingEliteArmorTenths[SkillLv - 1] : CullingCreepArmorTenths[SkillLv - 1];
         int NewTotalTenths = DotaCharacterStorage.AddCustomInt(Caster, StorageCullingArmorTenthsKey, DeltaTenths);
-        int PermDef = DotaMechanicsMapper.MapArmorToDefence(NewTotalTenths / 10.0f);
+        int PermDef = DotaMechanicsMapper.MapUncappedArmorToDefence(NewTotalTenths / 10.0f);
 
         if (TargetSq != null)
           PathosEngineBridge.StoryCaption(Args.Engine, TargetSq, Colour.Crimson, DotaLocalization.T("axe.caption.culled"), Delayed: false);
@@ -884,12 +886,8 @@ namespace Pathos.DotaHeroes.Heroes
       if (!IsTauntedByLivingAxe(Unit, out var Axe))
         return;
 
-      if (!TauntedUnits.TryGetValue(Unit, out var TState))
+      if (!TauntedUnits.TryGetValue(Unit, out var TState) || TState.RemainingTurns <= 0)
         return;
-
-      TState.RemainingTurns--;
-      if (TState.RemainingTurns <= 0)
-        TauntedUnits.Remove(Unit);
 
       if (Unit.Square == null || Axe.Square == null || Unit.Square.Map != Axe.Square.Map)
         return;
@@ -948,7 +946,45 @@ namespace Pathos.DotaHeroes.Heroes
           State.CallBonusDefence = 0;
       }
 
+      TickTauntedTargets(Axe, State);
       RefreshOneManArmy(Engine, Axe);
+    }
+
+    private static void TrackTauntedTarget(Character Caster, Character Victim)
+    {
+      if (Caster == null || Victim == null)
+        return;
+
+      var State = GetAxeState(Caster);
+      State.ActiveTauntedTargets.RemoveWhere(Wr => !Wr.TryGetTarget(out var Existing) || Existing == null || Existing.Deceased || Existing == Victim);
+      State.ActiveTauntedTargets.Add(new WeakReference<Character>(Victim));
+    }
+
+    private static void TickTauntedTargets(Character Axe, AxeRuntimeState State)
+    {
+      if (Axe == null || State == null || State.ActiveTauntedTargets.Count == 0)
+        return;
+
+      State.ActiveTauntedTargets.RemoveWhere(Wr =>
+      {
+        if (!Wr.TryGetTarget(out var Victim) || Victim == null || Victim.Deceased)
+          return true;
+
+        if (!TauntedUnits.TryGetValue(Victim, out var TState) ||
+            TState.Taunter == null ||
+            !TState.Taunter.TryGetTarget(out var Owner) ||
+            Owner != Axe)
+          return true;
+
+        TState.RemainingTurns--;
+        if (TState.RemainingTurns <= 0)
+        {
+          TauntedUnits.Remove(Victim);
+          return true;
+        }
+
+        return false;
+      });
     }
 
     private void RefreshOneManArmy(object Engine, Character Axe)
@@ -1001,6 +1037,29 @@ namespace Pathos.DotaHeroes.Heroes
       {
         State.CachedOneManArmyBonusStr = 0;
       }
+
+      int TargetBonusHp = State.OneManArmyActive ? State.CachedOneManArmyBonusStr * HpPerStrengthPoint : 0;
+      SyncOneManArmyBonusLife(Axe, TargetBonusHp);
+    }
+
+    private static void SyncOneManArmyBonusLife(Character Axe, int TargetBonusHp)
+    {
+      if (Axe?.Life == null)
+        return;
+
+      int AppliedHp = DotaCharacterStorage.GetCustomInt(Axe, StorageOneManArmyAppliedHpKey);
+      int DeltaHp = TargetBonusHp - AppliedHp;
+      if (DeltaHp == 0)
+        return;
+
+      int OldTotal = Axe.Life.Total;
+      int OldPoints = Axe.Life.Points;
+      int NewTotal = Math.Max(10, OldTotal + DeltaHp);
+      float Ratio = OldTotal > 0 ? Math.Clamp((float)OldPoints / OldTotal, 0.0f, 1.0f) : 1.0f;
+      int NewPoints = OldPoints <= 0 ? 0 : Math.Clamp((int)MathF.Round(NewTotal * Ratio), 1, NewTotal);
+
+      PathosEngineBridge.SetMeter(Axe.Life, NewPoints, NewTotal);
+      DotaCharacterStorage.SetCustomInt(Axe, StorageOneManArmyAppliedHpKey, TargetBonusHp);
     }
 
     private void TickBattleHungerOnVictim(object Engine, Character Victim, BattleHungerState Hunger)
@@ -1194,7 +1253,7 @@ namespace Pathos.DotaHeroes.Heroes
           int BuffTurns = CullingBuffBaseTurns + (TalentService.HasTalent(Ch, TalentT1CullingBuffDuration) ? CullingBuffTalentExtraTurns : 0);
           int BuffDef = DotaMechanicsMapper.MapArmorToDefence(CullingBuffDotaArmor[SkillLv - 1]);
           float PermArmor = DotaCharacterStorage.GetCustomInt(Ch, StorageCullingArmorTenthsKey) / 10.0f;
-          int PermDef = DotaMechanicsMapper.MapArmorToDefence(PermArmor);
+          int PermDef = DotaMechanicsMapper.MapUncappedArmorToDefence(PermArmor);
 
           return new (string Key, string Value)[]
           {
@@ -1412,7 +1471,7 @@ namespace Pathos.DotaHeroes.Heroes
       if (Tenths <= 0)
         return 0;
 
-      return DotaMechanicsMapper.MapArmorToDefence(Tenths / 10.0f);
+      return DotaMechanicsMapper.MapUncappedArmorToDefence(Tenths / 10.0f);
     }
 
     private static void ApplyCullingBuff(Character Target, int Turns, int BonusDef)
