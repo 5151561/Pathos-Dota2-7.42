@@ -43,6 +43,7 @@ namespace Pathos.DotaHeroes.Framework
     public CodexSpecials Specials => Codex.Specials;
     public CodexSpells Spells => Codex.Spells;
     public CodexStocks Stocks => Codex.Stocks;
+    public CodexStrikes Strikes => Codex.Strikes;
 
     private readonly Dictionary<string, Glyph> GlyphCache = new(StringComparer.OrdinalIgnoreCase);
 

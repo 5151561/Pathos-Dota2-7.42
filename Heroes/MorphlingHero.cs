@@ -1,6 +1,7 @@
 using System;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
+using Pathos.DotaHeroes.Framework.Targeting;
 
 namespace Pathos.DotaHeroes.Heroes
 {
@@ -97,6 +98,57 @@ namespace Pathos.DotaHeroes.Heroes
     {
       // 0. 锁定变体精灵固定初始六维（STR 10 / DEX 18 / CON 10 / INT 12 / WIS 12 / CHA 10）与 1 级初始蓝量（15）
       DotaMechanicsMapper.RegisterFixedStartingStats(MorphlingClassName, StartingStats);
+
+      // 0.1 注册 Pathos 原生选框扩距（波浪形态 / 变体打击 / 变形）
+      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
+        SpellName: "waveform",
+        DisplayTitle: "波浪形态",
+        Mode: DotaTargetMode.PointOpen,
+        ResolveRange: Caster => GetWaveformRange(Ctx, Caster),
+        AllowSelf: false));
+
+      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
+        SpellName: "adaptive strike",
+        DisplayTitle: "变体打击",
+        Mode: DotaTargetMode.UnitHostile,
+        ResolveRange: Caster => GetAdaptiveStrikeRange(Ctx, Caster),
+        AllowSelf: false));
+
+      DotaRangeTargetingBridge.RegisterSpell(new DotaRangeSpellSpec(
+        SpellName: "morph",
+        DisplayTitle: "变形",
+        Mode: DotaTargetMode.UnitHostile,
+        ResolveRange: Caster => GetMorphRange(Ctx, Caster),
+        AllowSelf: false));
+
+      // Q/W 水系技能落点校准与 Pathos 原生水爆特效
+      DotaHookBus.RegisterAfterCastSpell("morphling.range_and_vfx", Args =>
+      {
+        var Caster = Args.Character;
+        var SpellName = Args.Spell?.Name;
+        if (Caster?.Square == null || string.IsNullOrEmpty(SpellName))
+          return;
+
+        if (string.Equals(SpellName, "waveform", StringComparison.OrdinalIgnoreCase))
+        {
+          var Pending = DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
+          if (Pending?.TargetSquare != null &&
+              Pending.TargetSquare.Map == Caster.Square.Map &&
+              Pending.TargetSquare.Character == null &&
+              !Pending.TargetSquare.IsBlocked(Vision: false) &&
+              !Pending.TargetSquare.IsVoid())
+          {
+            PathosEngineBridge.TeleportCharacter(Args.Engine, Caster, Pending.TargetSquare, MasterMode: false);
+          }
+
+          PathosEngineBridge.StoryExploding(Args.Engine, Delay.Zero, Caster.Square, Ctx.Explosions.watery);
+        }
+        else if (string.Equals(SpellName, "adaptive strike", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(SpellName, "morph", StringComparison.OrdinalIgnoreCase))
+        {
+          DotaRangeTargetingBridge.ConsumePendingTarget(Caster);
+        }
+      });
 
       // E1/E2：属性转换（总量守恒 + CurrentForm/MaximumForm 同步 + DOTA2 血量联动）
       DotaHookBus.RegisterAfterCastSpell("morphling.attribute_shift", Args =>
@@ -304,6 +356,47 @@ namespace Pathos.DotaHeroes.Heroes
           Args.Spell.Glyph,
           $"Attribute Shift (Strength): STR/CON +{Shift}, DEX -{Shift} (HP +{HpDelta}).");
       }
+    }
+
+    private static int GetStrRangeBonus(Character Character)
+    {
+      if (!IsMorphling(Character))
+        return 0;
+      int Str = PathosEngineBridge.GetCurrentAbilityScore(Character, "strength");
+      return Math.Max(0, (Str - 10) / 5);
+    }
+
+    private static int GetWaveformRange(DotaHeroContext Ctx, Character Caster)
+    {
+      var Qual = PathosEngineBridge.GetQualification(Caster, Ctx.Skills.transmutation);
+      int BaseRange = Qual == Ctx.Qualifications.champion ? 11
+        : Qual == Ctx.Qualifications.master ? 9
+        : Qual == Ctx.Qualifications.expert ? 7
+        : Qual == Ctx.Qualifications.specialist ? 6
+        : 5;
+      return BaseRange + GetStrRangeBonus(Caster);
+    }
+
+    private static int GetAdaptiveStrikeRange(DotaHeroContext Ctx, Character Caster)
+    {
+      var Qual = PathosEngineBridge.GetQualification(Caster, Ctx.Skills.evocation);
+      int BaseRange = Qual == Ctx.Qualifications.champion ? 9
+        : Qual == Ctx.Qualifications.master ? 8
+        : Qual == Ctx.Qualifications.expert ? 7
+        : Qual == Ctx.Qualifications.specialist ? 6
+        : 5;
+      return BaseRange + GetStrRangeBonus(Caster);
+    }
+
+    private static int GetMorphRange(DotaHeroContext Ctx, Character Caster)
+    {
+      var Qual = PathosEngineBridge.GetQualification(Caster, Ctx.Skills.transmutation);
+      int BaseRange = Qual == Ctx.Qualifications.champion ? 10
+        : Qual == Ctx.Qualifications.master ? 8
+        : Qual == Ctx.Qualifications.expert ? 7
+        : Qual == Ctx.Qualifications.specialist ? 6
+        : 5;
+      return BaseRange + GetStrRangeBonus(Caster);
     }
 
     private static bool IsMorphling(Character Character)

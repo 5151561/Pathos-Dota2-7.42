@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using Inv;
 
 namespace Pathos.DotaHeroes.Framework.Hooks
 {
@@ -18,6 +19,49 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly Type AttackCommandType = EngineAsm.GetType("Pathos.AttackCommand");
     private static readonly Type GeneratorType = EngineAsm.GetType("Pathos.Generator");
     private static readonly Type MasteryType = EngineAsm.GetType("Pathos.Mastery");
+    private static readonly Type StoryType = EngineAsm.GetType("Pathos.Story");
+    private static readonly Type DecisionType = EngineAsm.GetType("Pathos.Decision");
+
+    private static readonly PropertyInfo CharacterDecisionProp =
+      typeof(Character).GetProperty("Decision", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo DecisionWaitMethod =
+      DecisionType?.GetMethod("Wait", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+
+    private static readonly PropertyInfo EngineStoryProp =
+      EngineType?.GetProperty("Story", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo StoryExplodingMethod =
+      StoryType?.GetMethod("Exploding", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Delay), typeof(Square), typeof(Explosion) }, null);
+
+    private static readonly MethodInfo StoryBeamingMethod =
+      StoryType?.GetMethod("Beaming", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Delay), typeof(Square), typeof(Direction), typeof(Beam) }, null);
+
+    private static readonly MethodInfo StoryStrikingMethod =
+      StoryType?.GetMethod("Striking", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Delay), typeof(Square), typeof(Strike) }, null);
+
+    private static readonly MethodInfo StoryDetectingMethod =
+      StoryType?.GetMethod("Detecting", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Square), typeof(int), typeof(Colour) }, null);
+
+    private static readonly MethodInfo StorySigningMethod =
+      StoryType?.GetMethod("Signing", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Delay), typeof(Square), typeof(Glyph), typeof(Colour), typeof(bool) }, null);
+
+    private static readonly MethodInfo StoryTeleportingMethod =
+      StoryType?.GetMethod("Teleporting", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Delay), typeof(Character) }, null);
+
+    private static readonly MethodInfo StoryAttackingMethod =
+      StoryType?.GetMethod("Attacking", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Delay), typeof(Character), typeof(Direction) }, null);
+
+    private static readonly MethodInfo StoryCaptionMethod =
+      StoryType?.GetMethod("Caption", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Square), typeof(Colour), typeof(string), typeof(bool) }, null);
 
     private static readonly FieldInfo DirectorEngineField =
       DirectorType?.GetField("Engine", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -482,6 +526,123 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       };
 
       JournalWriteInternalEventMethod.Invoke(Journal, new object[] { Character, WriteAction });
+    }
+
+    /// <summary>
+    /// 调用 Pathos 原生 Story.Exploding 播放 3×3 贴图爆炸特效。
+    /// </summary>
+    public static void StoryExploding(object Engine, Delay Delay, Square Square, Explosion Explosion)
+    {
+      if (Engine == null || Square == null || Explosion == null || EngineStoryProp == null || StoryExplodingMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StoryExplodingMethod.Invoke(Story, new object[] { Delay, Square, Explosion });
+    }
+
+    /// <summary>
+    /// 调用 Pathos 原生 Story.Beaming 播放方向光束/残影连线贴图特效。
+    /// </summary>
+    public static void StoryBeaming(object Engine, Delay Delay, Square Square, Direction Direction, Beam Beam)
+    {
+      if (Engine == null || Square == null || Beam == null || EngineStoryProp == null || StoryBeamingMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StoryBeamingMethod.Invoke(Story, new object[] { Delay, Square, Direction, Beam });
+    }
+
+    /// <summary>
+    /// 调用 Pathos 原生 Story.Striking 播放单格贴图打击/斩击特效。
+    /// </summary>
+    public static void StoryStriking(object Engine, Delay Delay, Square Square, Strike Strike)
+    {
+      if (Engine == null || Square == null || Strike == null || EngineStoryProp == null || StoryStrikingMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StoryStrikingMethod.Invoke(Story, new object[] { Delay, Square, Strike });
+    }
+
+    /// <summary>
+    /// 调用 Pathos 原生 Story.Detecting 播放范围脉冲扩散特效。
+    /// </summary>
+    public static void StoryDetecting(object Engine, Square Square, int Distance, Colour Colour)
+    {
+      if (Engine == null || Square == null || Distance <= 0 || EngineStoryProp == null || StoryDetectingMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StoryDetectingMethod.Invoke(Story, new object[] { Square, Distance, Colour });
+    }
+
+    /// <summary>
+    /// 调用 Pathos 原生 Story.Signing 播放法术符文/贴图动画。
+    /// </summary>
+    public static void StorySigning(object Engine, Delay Delay, Square Square, Glyph Glyph, Colour Colour, bool Forward = true)
+    {
+      if (Engine == null || Square == null || Glyph == null || EngineStoryProp == null || StorySigningMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StorySigningMethod.Invoke(Story, new object[] { Delay, Square, Glyph, Colour, Forward });
+    }
+
+    /// <summary>
+    /// 调用 Pathos 原生 Story.Teleporting 播放瞬移闪烁动画。
+    /// </summary>
+    public static void StoryTeleporting(object Engine, Delay Delay, Character Character)
+    {
+      if (Engine == null || Character == null || EngineStoryProp == null || StoryTeleportingMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StoryTeleportingMethod.Invoke(Story, new object[] { Delay, Character });
+    }
+
+    /// <summary>
+    /// 调用 Pathos 原生 Story.Attacking 播放角色挥砍/突刺动作动画。
+    /// </summary>
+    public static void StoryAttacking(object Engine, Delay Delay, Character Character, Direction Direction)
+    {
+      if (Engine == null || Character == null || EngineStoryProp == null || StoryAttackingMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StoryAttackingMethod.Invoke(Story, new object[] { Delay, Character, Direction });
+    }
+
+    /// <summary>
+    /// 调用 Pathos 原生 Story.Caption 在格子上方弹出原生飘字（如 CRIT!）。
+    /// </summary>
+    public static void StoryCaption(object Engine, Square Square, Colour Colour, string Text, bool Delayed = false)
+    {
+      if (Engine == null || Square == null || string.IsNullOrEmpty(Text) || EngineStoryProp == null || StoryCaptionMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StoryCaptionMethod.Invoke(Story, new object[] { Square, Colour, Text, Delayed });
+    }
+
+    /// <summary>
+    /// 为角色排入下一回合的自动 Wait 指令（用于无敌斩等多回合自动连斩技能，期间自动推进回合无需玩家手动操作）。
+    /// </summary>
+    public static void QueueWaitDecision(Character Character)
+    {
+      if (Character == null || CharacterDecisionProp == null || DecisionWaitMethod == null)
+        return;
+
+      var Decision = CharacterDecisionProp.GetValue(Character);
+      if (Decision != null)
+        DecisionWaitMethod.Invoke(Decision, null);
     }
 
     private static Ability FindAbility(Form Form, string AttributeName)

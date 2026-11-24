@@ -1,3 +1,4 @@
+BeamName,omnislash dash,
 CharacterName,Juggernaut,主宰
 CharacterName,Morphling,變體精靈
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",來自 DOTA2 的水元素英雄：能化作波浪突進、自由轉換力量與敏捷、憑先天技能「潮漲潮落」隨屬性動態強化移速/射程/施法距離/減速抗性，並可變形為敵人形態。
@@ -12,6 +13,7 @@ EntityDescription,A floating restorative totem summoned by Juggernaut that heals
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",由活水潮汐凝聚而成的智慧元素，能隨心重塑自身的力量與敏捷形態。
 EntityName,healing ward,治療守衛
 EntityName,waterkin,變體水靈
+ExplosionName,blade fury spin,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的遠程水彈，可作為彈弓無限彈藥發射。
 ItemName,tidal orb,潮汐水彈
 PropertyDescription,[DOTA2 Talent] -12.5% 無敵斬藍耗: 藍耗 12 → 10,
@@ -24,6 +26,7 @@ PropertyDescription,[DOTA2 Talent] +40% 劍舞暴擊吸血:,
 PropertyDescription,[DOTA2 Talent] 劍心猶在疊層間隔減半: 4 回合 → 2 回合,
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,先天技能「劍心猶在」：每連續 4 回合未受傷害疊加 1 層（上限 10 層），每層提供 +1% 移速與 +2.5% 等效敏捷攻速及近戰/無敵斬額外傷害；受傷後保留 4 回合粘滯期。
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,先天技能「潮漲潮落」：敏捷提供額外移速與遠程攻擊距離；力量提供額外施法距離與減速抗性（變形期間持續保留）。
+PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% to 35% chance (by Medium Blade mastery) to critically strike for 1.8x damage.",被動技能「劍舞」：近戰普攻、無敵斬與劍刃風暴有 20% ~ 35% 概率（隨中刃熟練度提升）觸發 1.8 倍致命一擊。
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",劍刃風暴旋轉中：免疫負面狀態、獲得 80% 魔法/元素傷害減免，並每回合對周圍敵人造成魔法傷害。
 PropertyName,blade dance,劍舞
@@ -38,6 +41,7 @@ PropertyName,dota_talent_jugg_t3_blade_fury_damage,
 PropertyName,dota_talent_jugg_t4_blade_dance_lifesteal,
 PropertyName,dota_talent_jugg_t4_omnislash_slashes,
 PropertyName,ebb and flow,潮漲潮落
+PropertyName,omnislash,
 RaceName,waterkin//female,變體水靈
 RaceName,waterkin//male,變體水靈
 RaceName,waterkin//non-binary,變體水靈
@@ -59,3 +63,6 @@ SpellName,morph revert,解除變形
 SpellName,morph strength,屬性轉換·力量
 SpellName,omnislash,無敵斬
 SpellName,waveform,波浪形態
+StrikeName,blade dance crit,
+StrikeName,healing ward pulse,
+StrikeName,omnislash slash,
