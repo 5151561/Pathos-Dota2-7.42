@@ -23,6 +23,7 @@ namespace Pathos.DotaHeroes.Framework.UI
     public string Count { get; init; }
     public Colour Colour { get; init; } = Colour.Black;
     public Property HelpProperty { get; init; }
+    public Spell HelpSpell { get; init; }
   }
 
   /// <summary>
@@ -36,6 +37,7 @@ namespace Pathos.DotaHeroes.Framework.UI
 
     private static readonly ConditionalWeakTable<object, Dictionary<string, object>> StageIconCaches = new();
     private static readonly ConditionalWeakTable<object, Property> IconHelpProperties = new();
+    private static readonly ConditionalWeakTable<object, Spell> IconHelpSpells = new();
 
     private static PropertyInfo StagePlayerProp;
     private static PropertyInfo StageShellProp;
@@ -50,9 +52,12 @@ namespace Pathos.DotaHeroes.Framework.UI
     private static PropertyInfo StatusIconTextProp;
     private static PropertyInfo StatusIconCountProp;
     private static PropertyInfo StatusIconColourProp;
+    private static PropertyInfo StatusIconIsEnabledProp;
     private static EventInfo StatusIconSingleTapEvent;
+    private static EventInfo StatusIconContextTapEvent;
 
     private static MethodInfo HelpQueryShowPropertyMethod;
+    private static MethodInfo HelpQueryShowSpellMethod;
 
     /// <summary>
     /// 按唯一 Key 幂等注册一个左上角状态栏图标提供器（返回 null 表示当前不显示）。
@@ -103,9 +108,12 @@ namespace Pathos.DotaHeroes.Framework.UI
         StatusIconTextProp = StatusIconType.GetProperty("Text", AnyInstance);
         StatusIconCountProp = StatusIconType.GetProperty("Count", AnyInstance);
         StatusIconColourProp = StatusIconType.GetProperty("Colour", AnyInstance);
+        StatusIconIsEnabledProp = StatusIconType.GetProperty("IsEnabled", AnyInstance);
         StatusIconSingleTapEvent = StatusIconType.GetEvent("SingleTapEvent", AnyInstance);
+        StatusIconContextTapEvent = StatusIconType.GetEvent("ContextTapEvent", AnyInstance);
 
         HelpQueryShowPropertyMethod = HelpQueryType?.GetMethod("ShowProperty", AnyInstance, null, new[] { typeof(Property) }, null);
+        HelpQueryShowSpellMethod = HelpQueryType?.GetMethod("ShowSpell", AnyInstance, null, new[] { typeof(Character), typeof(Spell) }, null);
 
         PathosClientReflection.PatchSafe(
           Harmony,
@@ -173,29 +181,51 @@ namespace Pathos.DotaHeroes.Framework.UI
 
             var StageRef = __instance;
             var CapturedIcon = IconObj;
-            if (StatusIconSingleTapEvent != null)
+            Action OnTap = () =>
             {
-              Action OnTap = () =>
+              try
               {
-                try
-                {
-                  if (IconHelpProperties.TryGetValue(CapturedIcon, out var Prop) && Prop != null)
-                  {
-                    var HelpQuery = StageHelpQueryProp?.GetValue(StageRef);
-                    if (HelpQuery != null)
-                      HelpQueryShowPropertyMethod?.Invoke(HelpQuery, new object[] { Prop });
-                  }
-                }
-                catch { }
-              };
-              StatusIconSingleTapEvent.AddEventHandler(IconObj, OnTap);
-            }
+                var HelpQuery = StageHelpQueryProp?.GetValue(StageRef);
+                if (HelpQuery == null)
+                  return;
 
+                if (IconHelpProperties.TryGetValue(CapturedIcon, out var Prop) && Prop != null && HelpQueryShowPropertyMethod != null)
+                {
+                  HelpQueryShowPropertyMethod.Invoke(HelpQuery, new object[] { Prop });
+                }
+                else if (IconHelpSpells.TryGetValue(CapturedIcon, out var Spell) && Spell != null && HelpQueryShowSpellMethod != null)
+                {
+                  var CurPlayer = StagePlayerProp?.GetValue(StageRef) as Player;
+                  var CurCh = CurPlayer?.Prime?.Character;
+                  if (CurCh != null)
+                    HelpQueryShowSpellMethod.Invoke(HelpQuery, new object[] { CurCh, Spell });
+                }
+              }
+              catch (Exception Ex)
+              {
+                HookBootstrap.WriteError($"DotaStatusBarBridge.OnTap failed: {Ex}");
+              }
+            };
+
+            if (StatusIconSingleTapEvent != null)
+              StatusIconSingleTapEvent.AddEventHandler(IconObj, OnTap);
+            if (StatusIconContextTapEvent != null)
+              StatusIconContextTapEvent.AddEventHandler(IconObj, OnTap);
+
+            StatusIconIsEnabledProp?.SetValue(IconObj, true);
             Cache[BadgeKey] = IconObj;
           }
 
           if (Badge.HelpProperty != null)
+          {
             IconHelpProperties.AddOrUpdate(IconObj, Badge.HelpProperty);
+            IconHelpSpells.Remove(IconObj);
+          }
+          else if (Badge.HelpSpell != null)
+          {
+            IconHelpSpells.AddOrUpdate(IconObj, Badge.HelpSpell);
+            IconHelpProperties.Remove(IconObj);
+          }
 
           if (Badge.Glyph != null)
           {

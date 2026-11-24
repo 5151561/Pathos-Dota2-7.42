@@ -1,9 +1,14 @@
 BeamName,omnislash dash,無敵斬突襲
 BeamName,waveform dash,波浪形態激流
+CharacterName,Axe,斧王
 CharacterName,Juggernaut,主宰
 CharacterName,Morphling,變體精靈
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",來自 DOTA2 的水元素英雄：能化作波浪突進、自由轉換力量與敏捷、憑先天技能「潮漲潮落」隨屬性動態強化移速/射程/施法距離/減速抗性，並可變形為敵人形態。
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",來自 DOTA2 的面具劍客：憑先天技能「劍心猶在」積攢無傷勢能強化移速與敏捷、以「劍刃風暴」破法清場、以「治療守衛」續航，並以「劍舞」暴擊與「無敵斬」收割敵陣。
+ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",來自 DOTA2 的猩紅狂戰士：獨行時憑先天「一人之軍」將護甲化為力量、以「狂戰士之吼」嘲諷敵群並獲高額防禦、受擊觸發純傷「反擊螺旋」，並以「淘汰之刃」斬殺收割並永久疊甲。
+ClassName,axe//female,斧王
+ClassName,axe//male,斧王
+ClassName,axe//non-binary,斧王
 ClassName,juggernaut//female,主宰
 ClassName,juggernaut//male,主宰
 ClassName,juggernaut//non-binary,主宰
@@ -14,34 +19,46 @@ EntityDescription,A floating restorative totem summoned by Juggernaut that heals
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",由活水潮汐凝聚而成的智慧元素，能隨心重塑自身的力量與敏捷形態。
 EntityName,healing ward,治療守衛
 EntityName,waterkin,變體水靈
+ExplosionName,berserkers call wave,狂戰士之吼衝擊波
 ExplosionName,blade fury spin,劍刃風暴旋斬
+ExplosionName,counter helix spin,反擊螺旋血刃旋斬
 ExplosionName,waveform splash,波浪形態水爆
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的遠程水彈，可作為彈弓無限彈藥發射。
 ItemName,tidal orb,潮汐水彈
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,先天技能「劍心猶在」：每連續 4 回合未受傷害疊加 1 層（上限 10 層），每層提供 +1% 移速與 +2.5% 等效敏捷攻速及近戰/無敵斬額外傷害；受傷後保留 4 回合粘滯期。
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,先天技能「潮漲潮落」：敏捷提供額外移速與遠程攻擊距離；力量提供額外施法距離與減速抗性（變形期間持續保留）。
+PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",先天技能「一人之軍」：只要斧王周圍 4 格內沒有存活友軍（友軍靠近後保留 6 回合粘滯期），就會獲得相當於自身超額防禦（Defence - 10）50% 的等效力量加成，提升近戰攻擊傷害。
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,無敵斬連斬中：全程免疫一切傷害與負面狀態，每回合自動瞬移斬擊附近一名敵方單位。
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",被動技能「劍舞」：近戰普攻、無敵斬與劍刃風暴有 20% / 25% / 30% / 35% 概率（隨劍舞技能等級 1~4 級獨立提升）觸發 1.8 倍致命一擊。
+PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",被動技能「反擊螺旋」：每受到 7 / 6 / 5 / 4 次敵方攻擊（隨反擊螺旋技能等級 1~4 級提升，7.42 包含被閃避或高防 Miss 的攻擊），觸發 3×3 血刃旋斬，造成 100 / 120 / 140 / 160 純粹傷害（1d6+3~3d6）。
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",劍刃風暴旋轉中：免疫負面狀態、獲得 80% 魔法/元素傷害減免，並每回合對周圍敵人造成魔法傷害。
 PropertyName,blade dance,劍舞
 PropertyName,blade fury,劍刃風暴
 PropertyName,bladeform,劍心猶在
+PropertyName,counter helix,反擊螺旋
 PropertyName,ebb and flow,潮漲潮落
 PropertyName,omnislash,無敵斬
+PropertyName,one man army,一人之軍
 RaceName,waterkin//female,變體水靈
 RaceName,waterkin//male,變體水靈
 RaceName,waterkin//non-binary,變體水靈
+SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,對 4~7 格內一名敵方施加持續 24 回合的戰鬥飢渴：持續造成純粹傷害（12/16/20/24 DPS 按 K_dmg=15 折算）並降低 16%/19%/22%/25% 移速；目標擊殺任意單位時立即驅散。
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",指向一名生物並化身為對方形態，複製其外形、屬性、技能與法術，且先天技能「潮漲潮落」持續保留。
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",基礎驅散自身負面狀態並舞起持續 10~12 回合的劍刃風暴：獲得減益免疫與 80% 魔法減傷，每回合對周圍 3×3 敵人造成 1d4~2d4+2 基礎魔法傷害（85~205 DPS 按 K_dmg=15 折算，並受敏捷與劍心猶在攻速頻率縮放，可觸發劍舞）。
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",化作洶湧波浪向前閃爍突進，對周圍敵人造成水波範圍傷害，並短暫獲得穿牆與幻影閃避。
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",發射高壓水波造成基礎水傷並擊退眩暈目標：額外爆發傷害隨敏捷/力量比值動態提升，眩暈時長隨力量/敏捷比值動態延長。
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",躍向目標敵人並在周圍敵方單位間連續發動 5~12 次無敵武器斬擊（單斬傷害 = 武器骰 + 屬性修正 + 2~3 額外攻擊力），全程免疫一切傷害，每次斬擊均可觸發劍舞與劍心猶在加成。
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,解除當前變形狀態，立即切回變體水靈本體。
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",發出震天怒吼，嘲諷周圍 2 格（Lv 25 天賦 3 格）內所有敵方持續 4~6 回合，禁止其施法並強制其靠近並近戰攻擊斧王，同時自身獲得 +6~+8 防禦（Lv 15 天賦封頂 +10）。
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",將敏捷轉化為力量與體質（隨變化系熟練度每次 1~5 點），總量守恆並同步提升最大生命與當前生命。
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",將力量與體質轉化為敏捷（隨變化系熟練度每次 1~5 點），總量守恆並降低最大生命值，當前生命值僅在超過新上限時截斷。
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",以純粹之力劈向 2 格內敵方：目標生命 ≤ 18/25/32 HP（隨熟練度與天賦提高）時無視減傷瞬間處決、100% 返還法力、給予周圍友軍 12 回合 +25% 移速與 +7/+8/+8 防禦戰吼併疊加永久護甲；否則造成 5d6+1~9d6 純粹傷害。
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",召喚一個 1 點生命值的可移動治療守衛（同時上限 1 個，持續 36~48 回合），每回合為周圍 2 格友方回復 1%~3.25% 最大生命值。
 SpellName,adaptive strike,變體打擊
+SpellName,battle hunger,戰鬥飢渴
+SpellName,berserkers call,狂戰士之吼
 SpellName,blade fury,劍刃風暴
+SpellName,culling blade,淘汰之刃
 SpellName,healing ward,治療守衛
 SpellName,morph,變形
 SpellName,morph agility,屬性轉換·敏捷
@@ -50,6 +67,8 @@ SpellName,morph strength,屬性轉換·力量
 SpellName,omnislash,無敵斬
 SpellName,waveform,波浪形態
 StrikeName,adaptive strike impact,變體打擊水爆
+StrikeName,battle hunger mark,戰鬥飢渴印記
 StrikeName,blade dance crit,劍舞
+StrikeName,culling blade strike,淘汰之刃處決斬
 StrikeName,healing ward pulse,治療守衛脈衝
 StrikeName,omnislash slash,無敵斬斬擊

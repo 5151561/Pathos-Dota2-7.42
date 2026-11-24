@@ -200,6 +200,11 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public object Director { get; }
     public Character Character { get; }
     public object Command { get; }
+
+    /// <summary>
+    /// 仅在 BeforeExecuteCommand 有效：设为 true 将跳过原始指令执行（用于嘲讽重定向等控制效果）。
+    /// </summary>
+    public bool Cancel { get; set; }
   }
 
   /// <summary>

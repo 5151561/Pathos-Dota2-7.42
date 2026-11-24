@@ -1,9 +1,14 @@
 ﻿BeamName,omnislash dash,набег на омнислеш
 BeamName,waveform dash,
+CharacterName,Axe,
 CharacterName,Juggernaut,Джагърнаут
 CharacterName,Morphling,Морфлинг
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Течен герой от DOTA2, който владее бурните вълни, прехвърля свободно точки между Сила и Ловкост, подсилва се чрез Прилив и Отлив и приема образа на враговете си."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Маскиран майстор на меча от DOTA2, който трупа неудържима инерция с Форма на острието, разсича магията с Ярост на острието, поддържа съюзниците с Лечебен тотем и поваля враговете с Танц на острието и Омнислеш."
+ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",
+ClassName,axe//female,
+ClassName,axe//male,
+ClassName,axe//non-binary,
 ClassName,juggernaut//female,джагърнаут
 ClassName,juggernaut//male,джагърнаут
 ClassName,juggernaut//non-binary,джагърнаут
@@ -14,34 +19,46 @@ EntityDescription,A floating restorative totem summoned by Juggernaut that heals
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Разумен елементал, изкован от жива приливна вода, способен да преобразява физическите си качества по своя воля."
 EntityName,healing ward,лечебен тотем
 EntityName,waterkin,воден дух
+ExplosionName,berserkers call wave,
 ExplosionName,blade fury spin,вихър ярост на острието
+ExplosionName,counter helix spin,
 ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Сгъстена сфера от жива приливна вода, изстрелвана като безкраен далекобоен боеприпас от прашка."
 ItemName,tidal orb,сфера на прилива
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Вродено (Форма на острието): Печелете 1 натрупване на всеки 4 хода без получени щети (до 10 натрупвания). Всяко натрупване дава +1% скорост на движение и +2,5% сила на удара от ловкост и скорост на атака; запазва се 4 хода след получаване на щети."
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Вродено (Прилив и Отлив): Ловкостта дава бонус скорост на движение и далекобоен обсег; Силата дава бонус обсег на заклинанията и устойчивост на забавяне. Запазва се при метаморфоза.
+PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,"Скачане между близките врагове във вихър от неуязвими удари: пълен имунитет към всякакви щети и отрицателни ефекти, докато съсича близък враг на всеки ход."
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Пасивно (Танц на острието): Близките атаки, ударите на Омнислеш и завъртанията на Ярост на острието имат 20% / 25% / 30% / 35% шанс (според ниво 1–4 на Танц на острието) да нанесат критичен удар за 1,8x щети."
+PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Въртене в разрушителна буря от остриета: имунитет към отрицателни ефекти, 80% намаление на магическите щети и нанасяне на магически щети около вас на всеки ход."
 PropertyName,blade dance,танц на острието
 PropertyName,blade fury,ярост на острието
 PropertyName,bladeform,форма на острието
+PropertyName,counter helix,
 PropertyName,ebb and flow,прилив и отлив
 PropertyName,omnislash,омнислеш
+PropertyName,one man army,
 RaceName,waterkin//female,воден дух
 RaceName,waterkin//male,воден дух
 RaceName,waterkin//non-binary,воден дух
+SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Приемете формата на избрано същество, копирайки тялото, характеристиките, уменията и заклинанията му, като запазите Прилив и Отлив."
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Разсейте отрицателните ефекти и се въртете 10 до 12 хода: имунитет към дебъфове, 80% намаление на магическите щети и 1d4 до 2d4+2 базови магически щети на ход (85–205 DPS чрез K_dmg=15, скалирано от DEX и скоростта на Форма на острието) към съседни 3x3 врагове; може да нанася критични удари с Танц на острието."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Разтворете се в надигаща се вълна, проблясвайки напред, нанасяйки водни щети наоколо и получавайки за кратко преминаване през стени и изместване."
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Изстреляйте водна вълна, която нанася базови щети, отблъсква и зашеметява целта. Допълнителните щети зависят от съотношението Ловкост/Сила, а продължителността на зашеметяването — от Сила/Ловкост."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Скочете към избрания враг и нанесете 5 до 12 бързи неуязвими удара с оръжие (оръжие + характеристика + 2 до 3 бонус щети на удар) по близките врагове, активирайки критични удари от Танц на острието и бонуси от Форма на острието."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Освободете преобразената си форма и незабавно се върнете в истинското си тяло на воден дух.
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Прехвърлете Ловкост към Сила и Телосложение (1 до 5 точки според майсторството), запазвайки общия сбор и повишавайки както максималното, така и текущото HP."
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Прехвърлете Сила и Телосложение към Ловкост (1 до 5 точки според майсторството), запазвайки общия сбор и намалявайки максималното HP, без да източвате текущото HP."
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Призовете крехък подвижен Лечебен тотем (1 HP, макс. 1 активен) за 36 до 48 хода, който лекува всички съюзници в обхват от 2 квадрата с 1% до 3,25% от максималното им HP на всеки ход."
 SpellName,adaptive strike,адаптивен удар
+SpellName,battle hunger,
+SpellName,berserkers call,
 SpellName,blade fury,ярост на острието
+SpellName,culling blade,
 SpellName,healing ward,лечебен тотем
 SpellName,morph,метаморфоза
 SpellName,morph agility,преобразуване в ловкост
@@ -50,6 +67,8 @@ SpellName,morph strength,преобразуване в сила
 SpellName,omnislash,омнислеш
 SpellName,waveform,вълнова форма
 StrikeName,adaptive strike impact,
+StrikeName,battle hunger mark,
 StrikeName,blade dance crit,критичен танц на острието
+StrikeName,culling blade strike,
 StrikeName,healing ward pulse,импулс на лечебен тотем
 StrikeName,omnislash slash,сеч на омнислеш

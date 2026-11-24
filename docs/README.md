@@ -22,3 +22,4 @@
 - [英雄总览清单](heroes/README.md)
 - [变体精灵（Morphling / 水人）](heroes/morphling.md)
 - [主宰（Juggernaut / 尤涅若）](heroes/juggernaut.md)
+- [斧王（Axe / 蒙哥可汗）](heroes/axe.md)

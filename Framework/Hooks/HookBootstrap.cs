@@ -279,12 +279,13 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           new[] { CharacterType, CharacterType, typeof(Property), typeof(Dice) },
           prefix: nameof(ApplyTransientPrefix));
 
-        // 9. 角色行动完成钩子：Director.Execute(Character, Command)
+        // 9. 角色行动前后钩子：Director.Execute(Character, Command)
         PatchMethod(
           Harmony,
           DirectorType,
           "Execute",
           new[] { CharacterType, CommandType },
+          prefix: nameof(ExecutePrefix),
           postfix: nameof(ExecutePostfix));
 
         // 10. 角色普通攻击钩子：Director.Attack(Character, AttackCommand)
@@ -586,6 +587,17 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var Args = new TransientEventArgs(__instance, Applier, Character, Property, Duration);
         DotaHookBus.DispatchBeforeApplyTransient(Args);
         Duration = Args.Duration;
+        return !Args.Cancel;
+      }
+
+      private static bool ExecutePrefix(object __instance, Character Character, object Command)
+      {
+        if (Character == null || Command == null)
+          return true;
+
+        var Engine = PathosEngineBridge.GetDirectorEngine(__instance);
+        var Args = new CommandEventArgs(Engine, __instance, Character, Command);
+        DotaHookBus.DispatchBeforeExecuteCommand(Args);
         return !Args.Cancel;
       }
 

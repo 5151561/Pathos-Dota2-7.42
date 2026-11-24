@@ -1,9 +1,14 @@
 ﻿BeamName,omnislash dash,یورش آمنی‌اسلش
 BeamName,waveform dash,
+CharacterName,Axe,
 CharacterName,Juggernaut,جاگرنات
 CharacterName,Morphling,مورفلینگ
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",قهرمانی سیال از DOTA2 که امواج خروشان را فرمان می‌دهد، آزادانه میان قدرت و چابکی جابه‌جا می‌شود، با جزر و مد تقویت می‌گردد و به شکل دشمنان درمی‌آید.
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",شمشیرزن نقاب‌دار DOTA2 که با شکل تیغه شتابی توقف‌ناپذیر می‌سازد، با خشم تیغه جادو را می‌شکافد، با توتم شفا یاران را پایدار نگه می‌دارد و با رقص تیغه و آمنی‌اسلش دشمنان را درو می‌کند.
+ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",
+ClassName,axe//female,
+ClassName,axe//male,
+ClassName,axe//non-binary,
 ClassName,juggernaut//female,جاگرنات
 ClassName,juggernaut//male,جاگرنات
 ClassName,juggernaut//non-binary,جاگرنات
@@ -14,34 +19,46 @@ EntityDescription,A floating restorative totem summoned by Juggernaut that heals
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",عنصری هوشمند ساخته‌شده از آب‌های زنده جزرومد که می‌تواند ویژگی‌های جسمی خود را به دلخواه بازآرایی کند.
 EntityName,healing ward,توتم شفا
 EntityName,waterkin,روح آب
+ExplosionName,berserkers call wave,
 ExplosionName,blade fury spin,گردباد خشم تیغه
+ExplosionName,counter helix spin,
 ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,گوی فشرده‌ای از آب زنده جزرومد که به‌عنوان مهمات دوربرد بی‌پایان از قلاب‌سنگ شلیک می‌شود.
 ItemName,tidal orb,گوی جزرومد
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,ذاتی (شکل تیغه): هر 4 نوبت بدون دریافت آسیب 1 انباشت بگیرید (تا 10 انباشت). هر انباشت +1% سرعت حرکت و +2.5% قدرت ضربه چابکی و سرعت حمله می‌دهد؛ پس از دریافت آسیب تا 4 نوبت باقی می‌ماند.
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,ذاتی (جزر و مد): چابکی سرعت حرکت و برد حمله دوربرد را افزایش می‌دهد؛ قدرت برد جادوها و مقاومت در برابر کندی را بالا می‌برد. هنگام دگرگونی نیز حفظ می‌شود.
+PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,جهش میان دشمنان نزدیک در هاله‌ای از ضربات آسیب‌ناپذیر: مصون از هرگونه آسیب و اثر منفی هم‌زمان با بریدن یک دشمن نزدیک در هر نوبت.
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",غیرفعال (رقص تیغه): حملات تن‌به‌تن، ضربات آمنی‌اسلش و چرخش‌های خشم تیغه بسته به سطح 1 تا 4 رقص تیغه 20% / 25% / 30% / 35% شانس ضربه مرگبار با 1.8 برابر آسیب دارند.
+PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",چرخان در طوفانی ویرانگر از تیغه‌ها: مصون از اثرات منفی، 80% کاهش آسیب جادویی و وارد کردن آسیب جادویی به اطراف در هر نوبت.
 PropertyName,blade dance,رقص تیغه
 PropertyName,blade fury,خشم تیغه
 PropertyName,bladeform,شکل تیغه
+PropertyName,counter helix,
 PropertyName,ebb and flow,جزر و مد
 PropertyName,omnislash,آمنی‌اسلش
+PropertyName,one man army,
 RaceName,waterkin//female,روح آب
 RaceName,waterkin//male,روح آب
 RaceName,waterkin//non-binary,روح آب
+SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",شکل موجود هدف را به خود بگیرید و ضمن حفظ جزر و مد، بدن، ویژگی‌ها، مهارت‌ها و جادوهای آن را کپی کنید.
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",اثرات منفی را بزداید و 10 تا 12 نوبت بچرخید: مصونیت از تضعیف‌ها، 80% کاهش آسیب جادویی و 1d4 تا 2d4+2 آسیب جادویی پایه در هر نوبت (معادل 85-205 DPS با K_dmg=15 و مقیاس‌شده با DEX و سرعت شکل تیغه) به دشمنان مجاور 3x3؛ با رقص تیغه امکان ضربه مرگبار دارد.
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",در موجی خروشان حل شوید، به جلو جهش کنید، آسیب آبی در اطراف بپاشید و برای مدتی کوتاه عبور از موانع و جابه‌جایی به‌دست آورید.
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",موجی از آب شلیک کنید که آسیب پایه وارد کرده و هدف را به عقب رانده و گیج می‌کند. آسیب افزوده با نسبت چابکی به قدرت و مدت گیجی با نسبت قدرت به چابکی افزایش می‌یابد.
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",به سوی دشمن هدف بجهید و 5 تا 12 ضربه سریع و آسیب‌ناپذیر سلاح (سلاح + ویژگی + 2 تا 3 آسیب افزوده در هر ضربه) به دشمنان نزدیک وارد کنید و ضربات مرگبار رقص تیغه و پاداش‌های شکل تیغه را فعال سازید.
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,شکل دگرگون‌شده خود را رها کنید و بی‌درنگ به بدن واقعی روح آب خود بازگردید.
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",چابکی را به قدرت و بنیه تبدیل کنید (1 تا 5 امتیاز بر اساس مهارت)، با حفظ مجموع امتیازها و افزایش هم‌زمان حداکثر و مقدار کنونی HP.
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",قدرت و بنیه را به چابکی تبدیل کنید (1 تا 5 امتیاز بر اساس مهارت)، با حفظ مجموع امتیازها و کاهش حداکثر HP بدون کم کردن HP کنونی.
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",یک توتم شفای شکننده و متحرک (1 HP، حداکثر 1 فعال) برای 36 تا 48 نوبت احضار کنید که هر نوبت تمام یاران تا فاصله 2 خانه را به میزان 1% تا 3.25% حداکثر HP آن‌ها درمان می‌کند.
 SpellName,adaptive strike,ضربه تطبیقی
+SpellName,battle hunger,
+SpellName,berserkers call,
 SpellName,blade fury,خشم تیغه
+SpellName,culling blade,
 SpellName,healing ward,توتم شفا
 SpellName,morph,دگرگونی
 SpellName,morph agility,تبدیل به چابکی
@@ -50,6 +67,8 @@ SpellName,morph strength,تبدیل به قدرت
 SpellName,omnislash,آمنی‌اسلش
 SpellName,waveform,شکل موج
 StrikeName,adaptive strike impact,
+StrikeName,battle hunger mark,
 StrikeName,blade dance crit,ضربه مرگبار رقص تیغه
+StrikeName,culling blade strike,
 StrikeName,healing ward pulse,تپش توتم شفا
 StrikeName,omnislash slash,برش آمنی‌اسلش

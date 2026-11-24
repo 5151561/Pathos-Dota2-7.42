@@ -23,10 +23,10 @@ namespace Pathos
       {
         new MorphlingHero(),
         new JuggernautHero(),
+        new AxeHero(),
         // 后续新增 DOTA2 英雄只需在此追加，例如：
         // new AntiMageHero(),
         // new InvokerHero(),
-        // new AxeHero(),
       };
 
       foreach (var Hero in HeroRegistry)

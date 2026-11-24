@@ -48,6 +48,7 @@ dotnet build .\DotaHeroesExpansion.csproj -c Release
 | :--- | :--- | :--- |
 | **变体精灵（Morphling / 水人）** | `变体水灵 (waterkin)` / `变体精灵 (morphling)` | [docs/heroes/morphling.md](docs/heroes/morphling.md) |
 | **主宰（Juggernaut / 尤涅若）** | 人类 (`human`) / `主宰 (juggernaut)` | [docs/heroes/juggernaut.md](docs/heroes/juggernaut.md) |
+| **斧王（Axe / 蒙哥可汗）** | 兽人 (`orc`) / `斧王 (axe)` | [docs/heroes/axe.md](docs/heroes/axe.md) |
 
 查看完整对照与资源索引：[英雄总览清单](docs/heroes/README.md)
 

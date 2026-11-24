@@ -46,6 +46,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly ConcurrentDictionary<string, Action<AttackRangeQueryEventArgs>> AttackRangeQueryHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<CastRangeEventArgs>> CastRangeHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<TransientEventArgs>> BeforeApplyTransientHandlers = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Action<CommandEventArgs>> BeforeExecuteCommandHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<CommandEventArgs>> AfterExecuteCommandHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<AttackEventArgs>> BeforeAttackHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<AttackEventArgs>> AfterAttackHandlers = new(StringComparer.Ordinal);
@@ -85,6 +86,9 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     public static void RegisterBeforeApplyTransient(string Key, Action<TransientEventArgs> Handler)
       => Register(BeforeApplyTransientHandlers, Key, Handler);
+
+    public static void RegisterBeforeExecuteCommand(string Key, Action<CommandEventArgs> Handler)
+      => Register(BeforeExecuteCommandHandlers, Key, Handler);
 
     public static void RegisterAfterExecuteCommand(string Key, Action<CommandEventArgs> Handler)
       => Register(AfterExecuteCommandHandlers, Key, Handler);
@@ -174,6 +178,9 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     internal static void DispatchBeforeApplyTransient(TransientEventArgs Args)
       => Dispatch(BeforeApplyTransientHandlers, Args, nameof(BeforeApplyTransientHandlers));
+
+    internal static void DispatchBeforeExecuteCommand(CommandEventArgs Args)
+      => Dispatch(BeforeExecuteCommandHandlers, Args, nameof(BeforeExecuteCommandHandlers));
 
     internal static void DispatchAfterExecuteCommand(CommandEventArgs Args)
       => Dispatch(AfterExecuteCommandHandlers, Args, nameof(AfterExecuteCommandHandlers));

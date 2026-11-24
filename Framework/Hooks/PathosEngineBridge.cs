@@ -177,6 +177,18 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly PropertyInfo AttackCmdDirectionProp =
       AttackCommandType?.GetProperty("Direction", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
+    private static readonly ConstructorInfo AttackCmdDirectionCtor =
+      AttackCommandType?.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Direction) }, null);
+
+    private static readonly MethodInfo DirectorAttackMethod =
+      DirectorType?.GetMethod("Attack", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), AttackCommandType }, null);
+
+    private static readonly MethodInfo EngineGetDefenceClassMethod =
+      EngineType?.GetMethod("GetDefenceClass", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(DamageType?) }, null);
+
     private static readonly MethodInfo EngineHarmCharacterMethod =
       EngineType?.GetMethod("HarmCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character), typeof(Character), typeof(Direction), typeof(Element), typeof(Dice), typeof(Modifier), typeof(string) }, null);
@@ -425,6 +437,70 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         return default;
       var Val = AttackCmdDirectionProp.GetValue(Command);
       return Val is Direction Dir ? Dir : default;
+    }
+
+    public static bool IsAttackCommand(object Command)
+    {
+      return Command != null && AttackCommandType != null && AttackCommandType.IsInstanceOfType(Command);
+    }
+
+    /// <summary>
+    /// 强制指定角色通过原生 Director.Attack 向指定方向发起一次近战攻击（用于狂战士之吼嘲讽重定向）。
+    /// </summary>
+    public static bool ForceDirectorAttack(object Director, Character Attacker, Direction Direction)
+    {
+      if (Director == null || Attacker == null || DirectorAttackMethod == null || AttackCmdDirectionCtor == null)
+        return false;
+
+      try
+      {
+        var Cmd = AttackCmdDirectionCtor.Invoke(new object[] { Direction });
+        DirectorAttackMethod.Invoke(Director, new object[] { Attacker, Cmd });
+        return true;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"ForceDirectorAttack failed: {Ex}");
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// 查询角色当前总防御值（Defence），包含装备、敏捷与 Hook 加甲。
+    /// </summary>
+    public static int GetDefenceClass(object Engine, Character Character)
+    {
+      if (Engine == null || Character == null || EngineGetDefenceClassMethod == null)
+        return 10;
+
+      try
+      {
+        return EngineGetDefenceClassMethod.Invoke(Engine, new object[] { Character, null }) is int Def ? Def : 10;
+      }
+      catch
+      {
+        return 10;
+      }
+    }
+
+    /// <summary>
+    /// 通过原生 Engine.KillCharacter 直接斩杀目标（用于淘汰之刃低于斩杀线时的无视减伤处决）。
+    /// </summary>
+    public static bool KillCharacter(object Engine, Character Attacker, Character Defender, string Cause)
+    {
+      if (Engine == null || Defender == null || Defender.Deceased || EngineKillCharacterMethod == null)
+        return false;
+
+      try
+      {
+        EngineKillCharacterMethod.Invoke(Engine, new object[] { Attacker, Defender, Cause });
+        return true;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"KillCharacter failed: {Ex}");
+        return false;
+      }
     }
 
     public static void HarmCharacter(

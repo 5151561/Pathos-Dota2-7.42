@@ -35,6 +35,7 @@ namespace Pathos.DotaHeroes.Framework
       public string RawTag;
       public readonly Dictionary<string, int> Skills = new(StringComparer.OrdinalIgnoreCase);
       public readonly HashSet<string> Talents = new(StringComparer.OrdinalIgnoreCase);
+      public readonly Dictionary<string, int> CustomInts = new(StringComparer.OrdinalIgnoreCase);
     }
 
     private static readonly ConditionalWeakTable<Character, CachedState> Cache = new();
@@ -81,6 +82,48 @@ namespace Pathos.DotaHeroes.Framework
       return SaveState(Character, State);
     }
 
+    /// <summary>
+    /// 读取英雄自定义的持久化整数计数（如斧王淘汰之刃永久护甲层数），不占用 Codex.Properties。
+    /// </summary>
+    public static int GetCustomInt(Character Character, string Key, int DefaultValue = 0)
+    {
+      if (Character == null || string.IsNullOrWhiteSpace(Key))
+        return DefaultValue;
+
+      var State = LoadState(Character);
+      return State.CustomInts.TryGetValue(Key, out int Value) ? Value : DefaultValue;
+    }
+
+    /// <summary>
+    /// 写入英雄自定义的持久化整数计数（值为 0 时自动清理键）。
+    /// </summary>
+    public static bool SetCustomInt(Character Character, string Key, int Value)
+    {
+      if (Character == null || string.IsNullOrWhiteSpace(Key))
+        return false;
+
+      var State = LoadState(Character);
+      if (Value == 0)
+        State.CustomInts.Remove(Key);
+      else
+        State.CustomInts[Key] = Value;
+
+      return SaveState(Character, State);
+    }
+
+    /// <summary>
+    /// 原子累加英雄自定义持久化整数计数并返回新值。
+    /// </summary>
+    public static int AddCustomInt(Character Character, string Key, int Delta)
+    {
+      if (Character == null || string.IsNullOrWhiteSpace(Key))
+        return 0;
+
+      int Next = GetCustomInt(Character, Key) + Delta;
+      SetCustomInt(Character, Key, Next);
+      return Next;
+    }
+
     private static CachedState LoadState(Character Character)
     {
       var Entry = Cache.GetValue(Character, _ => new CachedState());
@@ -92,6 +135,7 @@ namespace Pathos.DotaHeroes.Framework
       Entry.RawTag = Raw;
       Entry.Skills.Clear();
       Entry.Talents.Clear();
+      Entry.CustomInts.Clear();
 
       if (!Raw.StartsWith(Prefix, StringComparison.Ordinal))
         return Entry;
@@ -123,6 +167,20 @@ namespace Pathos.DotaHeroes.Framework
               Entry.Talents.Add(Item);
           }
         }
+        else if (Section.StartsWith("m:", StringComparison.Ordinal))
+        {
+          var Pairs = Section.Substring(2).Split(',', StringSplitOptions.RemoveEmptyEntries);
+          foreach (var Pair in Pairs)
+          {
+            int Eq = Pair.IndexOf('=');
+            if (Eq <= 0 || Eq >= Pair.Length - 1)
+              continue;
+
+            string Key = Pair.Substring(0, Eq);
+            if (int.TryParse(Pair.Substring(Eq + 1), out int Val) && Val != 0)
+              Entry.CustomInts[Key] = Val;
+          }
+        }
       }
 
       return Entry;
@@ -130,7 +188,7 @@ namespace Pathos.DotaHeroes.Framework
 
     private static bool SaveState(Character Character, CachedState State)
     {
-      var Parts = new List<string>(2);
+      var Parts = new List<string>(3);
 
       if (State.Skills.Count > 0)
       {
@@ -146,6 +204,18 @@ namespace Pathos.DotaHeroes.Framework
 
       if (State.Talents.Count > 0)
         Parts.Add("t:" + string.Join(",", State.Talents));
+
+      if (State.CustomInts.Count > 0)
+      {
+        var MetaPairs = new List<string>(State.CustomInts.Count);
+        foreach (var Kv in State.CustomInts)
+        {
+          if (Kv.Value != 0)
+            MetaPairs.Add($"{Kv.Key}={Kv.Value}");
+        }
+        if (MetaPairs.Count > 0)
+          Parts.Add("m:" + string.Join(",", MetaPairs));
+      }
 
       string Raw = Prefix + string.Join(";", Parts);
       if (!WriteRawTag(Character, Raw))
