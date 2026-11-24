@@ -38,6 +38,20 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       InteractionType?.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character), typeof(Square), typeof(string) }, null);
 
+    private static readonly PropertyInfo InteractionSourceCharacterProp =
+      InteractionType?.GetProperty("SourceCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo InteractionTargetCharacterProp =
+      InteractionType?.GetProperty("TargetCharacter", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo EngineGetAttackDelayMethod =
+      EngineType?.GetMethod("GetAttackDelay", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character) }, null);
+
+    private static readonly MethodInfo EngineSetBusyMethod =
+      EngineType?.GetMethod("SetBusy", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Delay) }, null);
+
     private static readonly ConstructorInfo SummonEntityEffectCtor =
       SummonEntityEffectType?.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         Type.EmptyTypes, null);
@@ -681,6 +695,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     /// <summary>
     /// 调用 Pathos 原生 Story.Exploding 播放 3×3 贴图爆炸特效。
+    /// 注意：Delay 为动画持续帧数（60 帧 = 1 秒，原版爆炸默认 Delay.HalfSecond = 30 帧），传 Delay.Zero 会瞬间消失。
     /// </summary>
     public static void StoryExploding(object Engine, Delay Delay, Square Square, Explosion Explosion)
     {
@@ -694,6 +709,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     /// <summary>
     /// 调用 Pathos 原生 Story.Beaming 播放方向光束/残影连线贴图特效。
+    /// 注意：Delay 为动画持续帧数（60 帧 = 1 秒，建议 Delay.HalfSecond 起步并沿射线逐格递增），传 Delay.Zero 会瞬间消失。
     /// </summary>
     public static void StoryBeaming(object Engine, Delay Delay, Square Square, Direction Direction, Beam Beam)
     {
@@ -707,6 +723,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     /// <summary>
     /// 调用 Pathos 原生 Story.Striking 播放单格贴图打击/斩击特效。
+    /// 注意：Delay 为动画持续帧数（60 帧 = 1 秒，原版打击默认 Delay.HalfSecond = 30 帧），传 Delay.Zero 会瞬间消失且无缩放渐隐。
     /// </summary>
     public static void StoryStriking(object Engine, Delay Delay, Square Square, Strike Strike)
     {
@@ -794,6 +811,32 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       var Decision = CharacterDecisionProp.GetValue(Character);
       if (Decision != null)
         DecisionWaitMethod.Invoke(Decision, null);
+    }
+
+    public static Character GetInteractionSourceCharacter(object Interaction)
+      => Interaction != null && InteractionSourceCharacterProp != null
+        ? InteractionSourceCharacterProp.GetValue(Interaction) as Character
+        : null;
+
+    public static Character GetInteractionTargetCharacter(object Interaction)
+      => Interaction != null && InteractionTargetCharacterProp != null
+        ? InteractionTargetCharacterProp.GetValue(Interaction) as Character
+        : null;
+
+    public static Delay GetAttackDelay(object Engine, Character Character)
+    {
+      if (Engine == null || Character == null || EngineGetAttackDelayMethod == null)
+        return Delay.FromTurns(12);
+
+      return EngineGetAttackDelayMethod.Invoke(Engine, new object[] { Character }) is Delay D ? D : Delay.FromTurns(12);
+    }
+
+    public static void SetBusy(object Engine, Character Character, Delay Delay)
+    {
+      if (Engine == null || Character == null || EngineSetBusyMethod == null)
+        return;
+
+      EngineSetBusyMethod.Invoke(Engine, new object[] { Character, Delay });
     }
 
     public static string GetLocalizedName(Property Property)

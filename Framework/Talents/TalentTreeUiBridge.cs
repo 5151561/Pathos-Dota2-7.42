@@ -671,6 +671,9 @@ namespace Pathos.DotaHeroes.Framework.Talents
           StageAddModalityPanelMethod?.Invoke(StagePanel, new object[] { SidePanelFrame });
         }
 
+        // 防止此前弹窗（ModalityPanel.ShowQuery）对已收起的 SidePanelFrame 遗留 Window.PreventInput 锁死状态
+        Surface.Window.AllowInput(SidePanelFrame);
+
         UpdateLayoutMetrics();
         MenuButtonIsCheckedProp?.SetValue(MenuButtonObj, true);
         MenuButtonIsHighlightedProp?.SetValue(MenuButtonObj, false);
@@ -684,7 +687,10 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         PanelOpen = false;
         if (SidePanelFrame != null)
+        {
+          Surface.Window.AllowInput(SidePanelFrame);
           StageRemoveModalityPanelMethod?.Invoke(StagePanel, new object[] { SidePanelFrame });
+        }
 
         MenuButtonIsCheckedProp?.SetValue(MenuButtonObj, false);
       }

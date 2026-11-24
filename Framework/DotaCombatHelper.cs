@@ -384,8 +384,16 @@ namespace Pathos.DotaHeroes.Framework
 
     /// <summary>
     /// 沿 Bresenham 直线在两格之间播放 Pathos 原生 Beam 残影/光束连线特效。
+    /// 对齐 Pathos 原生 Beam 节奏：默认基础时长 12 帧（0.2 秒），每前进一格递增 StepIncrementTurns 帧，干净收尾不糊屏。
     /// </summary>
-    public static void PlayBeamTrail(object Engine, Square FromSq, Square ToSq, Beam Beam, int MaxSteps = 12)
+    public static void PlayBeamTrail(
+      object Engine,
+      Square FromSq,
+      Square ToSq,
+      Beam Beam,
+      int MaxSteps = 12,
+      Delay? BaseDelay = null,
+      int StepIncrementTurns = 1)
     {
       if (Engine == null || FromSq == null || ToSq == null || FromSq.Map != ToSq.Map || Beam == null)
         return;
@@ -398,12 +406,18 @@ namespace Pathos.DotaHeroes.Framework
       int Sx = X0 < X1 ? 1 : -1, Sy = Y0 < Y1 ? 1 : -1;
       int Err = Dx - Dy;
 
+      int BaseTurns = Math.Max(1, (BaseDelay ?? Delay.FromTurns(12)).GetTurns());
+      int StepInc = Math.Max(0, StepIncrementTurns);
       int Steps = 0;
-      while (Steps++ < MaxSteps)
+      while (Steps < MaxSteps)
       {
         if (Map.IsValid(X0, Y0))
-          PathosEngineBridge.StoryBeaming(Engine, Delay.Zero, Map[X0, Y0], Dir, Beam);
+        {
+          var StepDelay = Delay.FromTurns(BaseTurns + Steps * StepInc);
+          PathosEngineBridge.StoryBeaming(Engine, StepDelay, Map[X0, Y0], Dir, Beam);
+        }
 
+        Steps++;
         if (X0 == X1 && Y0 == Y1)
           break;
 

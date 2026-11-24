@@ -53,6 +53,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly ConcurrentDictionary<string, Action<DefenceQueryEventArgs>> DefenceQueryHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<SpellCostQueryEventArgs>> SpellCostQueryHandlers = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Action<LevelUpEventArgs>> AfterLevelUpHandlers = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Func<Character, bool>> InvulnerableQueries = new(StringComparer.Ordinal);
 
     public static void RegisterBeforeCastSpell(string Key, Action<SpellCastEventArgs> Handler)
       => Register(BeforeCastSpellHandlers, Key, Handler);
@@ -104,6 +105,41 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     public static void RegisterAfterLevelUp(string Key, Action<LevelUpEventArgs> Handler)
       => Register(AfterLevelUpHandlers, Key, Handler);
+
+    /// <summary>
+    /// 注册「无敌/不可选中（Invulnerable）」状态查询器：
+    /// 返回 true 时，引擎层自动拦截敌方近战攻击命中、地面陷阱触发、病痛/疫病感染、敌方/环境特效、负面状态与一切伤害。
+    /// </summary>
+    public static void RegisterInvulnerableQuery(string Key, Func<Character, bool> Predicate)
+    {
+      if (string.IsNullOrWhiteSpace(Key))
+        throw new ArgumentException("Hook handler key cannot be null or empty.", nameof(Key));
+      if (Predicate == null)
+        throw new ArgumentNullException(nameof(Predicate));
+
+      InvulnerableQueries[Key] = Predicate;
+    }
+
+    public static bool QueryInvulnerable(Character Character)
+    {
+      if (Character == null || InvulnerableQueries.IsEmpty)
+        return false;
+
+      foreach (var Pair in InvulnerableQueries)
+      {
+        try
+        {
+          if (Pair.Value(Character))
+            return true;
+        }
+        catch (Exception Ex)
+        {
+          HookBootstrap.WriteError($"Handler '{Pair.Key}' failed in InvulnerableQueries: {Ex}");
+        }
+      }
+
+      return false;
+    }
 
     internal static void DispatchBeforeCastSpell(SpellCastEventArgs Args)
       => Dispatch(BeforeCastSpellHandlers, Args, nameof(BeforeCastSpellHandlers));

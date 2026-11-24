@@ -352,6 +352,9 @@ namespace Pathos.DotaHeroes.Heroes
       // 0.3 注册主宰 3 个主动技能的帮助面板数值与 5 阶熟练度详情（含游戏内实时面板预览）
       RegisterSpellHelpSpecs(Ctx);
 
+      // 0.4 注册无敌斩「无敌/不可选中」引擎级保护（免疫敌方攻击命中、狂犬病/病痛、地面陷阱、敌方/环境法术与负面状态）
+      DotaHookBus.RegisterInvulnerableQuery("juggernaut.omnislash_invulnerable", IsInOmnislash);
+
       // 1. 施法后置钩子：Q 剑刃风暴（驱散+立刻触发一次转伤）、W 治疗守卫（追踪/替换）、R 无敌斩（连续瞬移斩击）
       DotaHookBus.RegisterAfterCastSpell("juggernaut.spell_casts", Args =>
       {
@@ -546,7 +549,7 @@ namespace Pathos.DotaHeroes.Heroes
             }
             else if (Args.Defender?.Square != null)
             {
-              PathosEngineBridge.StoryStriking(Args.Engine, Delay.Zero, Args.Defender.Square, BladeDanceCritStrike ?? Ctx.Strikes.flame);
+              PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, Args.Defender.Square, BladeDanceCritStrike ?? Ctx.Strikes.flame);
               PathosEngineBridge.StoryCaption(Args.Engine, Args.Defender.Square, Colour.OrangeRed, "暴击!", Delayed: false);
             }
 
@@ -654,8 +657,8 @@ namespace Pathos.DotaHeroes.Heroes
 
       var Targets = DotaCombatHelper.FindHostilesInRadius(Caster, Caster.Square, Radius: 1);
 
-      // 播放自定义 3×3 剑刃风暴金橙旋风贴图（Pathos 原生 Explosion 管线），精准标出 3×3 生效范围
-      PathosEngineBridge.StoryExploding(Engine, Delay.Zero, Caster.Square, BladeFuryExplosion ?? Ctx.Explosions.fiery);
+      // 播放自定义 3×3 剑刃风暴金橙旋风贴图（Pathos 原生 Explosion 管线，对齐原版火球爆炸 0.5 秒持续时长），精准标出 3×3 生效范围
+      PathosEngineBridge.StoryExploding(Engine, Delay.HalfSecond, Caster.Square, BladeFuryExplosion ?? Ctx.Explosions.fiery);
 
       if (Targets.Count == 0)
         return;
@@ -768,10 +771,10 @@ namespace Pathos.DotaHeroes.Heroes
 
       if (HealedSquares.Count > 0)
       {
-        // Pathos 原生 2 格范围脉冲 + 自定义翡翠治疗光环贴图
+        // Pathos 原生 2 格范围脉冲 + 自定义翡翠治疗光环贴图（0.5 秒完整渐隐）
         PathosEngineBridge.StoryDetecting(Engine, Ward.Square, 2, Colour.LimeGreen);
         foreach (var Sq in HealedSquares)
-          PathosEngineBridge.StoryStriking(Engine, Delay.Zero, Sq, HealingWardPulseStrike ?? Ctx.Strikes.boost);
+          PathosEngineBridge.StoryStriking(Engine, Delay.HalfSecond, Sq, HealingWardPulseStrike ?? Ctx.Strikes.boost);
       }
 
       State.RemainingTurns--;
@@ -897,12 +900,12 @@ namespace Pathos.DotaHeroes.Heroes
       {
         if (DestSquare != null && DestSquare != Caster.Square)
         {
-          DotaCombatHelper.PlayBeamTrail(Engine, FromSq, DestSquare, OmnislashDashBeam);
+          DotaCombatHelper.PlayBeamTrail(Engine, FromSq, DestSquare, OmnislashDashBeam, BaseDelay: Delay.FromTurns(10), StepIncrementTurns: 1);
           PathosEngineBridge.TeleportCharacter(Engine, Caster, DestSquare, MasterMode: false);
         }
         else if (FromSq != TargetSq)
         {
-          DotaCombatHelper.PlayBeamTrail(Engine, FromSq, TargetSq, OmnislashDashBeam);
+          DotaCombatHelper.PlayBeamTrail(Engine, FromSq, TargetSq, OmnislashDashBeam, BaseDelay: Delay.FromTurns(10), StepIncrementTurns: 1);
         }
 
         var ToSq = Caster.Square;
@@ -919,11 +922,11 @@ namespace Pathos.DotaHeroes.Heroes
           Delay.Zero,
           "omnislash");
 
-        // 播放 Pathos 原生挥砍动作 + 自定义无敌斩金白交叉斩击贴图（暴击时切换炽红新月暴击贴图）
-        PathosEngineBridge.StoryAttacking(Engine, Delay.Zero, Caster, Dir);
+        // 播放 Pathos 原生挥砍动作（0.25 秒紧凑连斩节奏）+ 自定义无敌斩金白交叉斩击贴图（0.5 秒完整放大渐隐，暴击时切换炽红新月暴击贴图）
+        PathosEngineBridge.StoryAttacking(Engine, Delay.FromTurns(15), Caster, Dir);
         PathosEngineBridge.StoryStriking(
           Engine,
-          Delay.Zero,
+          Delay.HalfSecond,
           TargetSq,
           LastOmnislashStrikeCritted
             ? (BladeDanceCritStrike ?? Ctx.Strikes.flame)

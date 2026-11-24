@@ -199,6 +199,8 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var PropertySetType = EngineAsm.GetType("Pathos.PropertySet");
         var MasteryType = EngineAsm.GetType("Pathos.Mastery");
         var GeneratorType = EngineAsm.GetType("Pathos.Generator");
+        var InteractionType = EngineAsm.GetType("Pathos.Interaction");
+        var AfflictionType = EngineAsm.GetType("Pathos.Affliction");
 
         var Harmony = new Harmony(HarmonyId);
 
@@ -333,6 +335,34 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           prefix: nameof(AdvanceLevelPrefix),
           postfix: nameof(AdvanceLevelPostfix));
 
+        // 14.5 无敌/不可选中保护钩子：拦截地面陷阱、病痛/疫病感染（狂犬病等）与敌方/环境 Effect 结算
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "TrapSquare",
+          new[] { CharacterType, SquareType, typeof(Asset), typeof(bool) },
+          prefix: nameof(TrapSquarePrefix));
+
+        if (AfflictionType != null)
+        {
+          PatchMethod(
+            Harmony,
+            EngineType,
+            "AfflictCharacter",
+            new[] { CharacterType, AfflictionType },
+            prefix: nameof(AfflictCharacterPrefix));
+        }
+
+        if (InteractionType != null)
+        {
+          PatchMethod(
+            Harmony,
+            EngineType,
+            "ApplyEffects",
+            new[] { InteractionType, typeof(IEnumerable<Effect>) },
+            prefix: nameof(ApplyEffectsPrefix));
+        }
+
         // 15. 天赋树独立面板 UI 补丁（仅在游戏客户端存在 Pathos.dll 时挂载）
         Talents.TalentTreeUiBridge.ApplyUiPatches(Harmony);
 
@@ -370,8 +400,15 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var PrefixMethod = prefix != null ? new HarmonyMethod(typeof(HarmonyDispatcher), prefix) : null;
         var PostfixMethod = postfix != null ? new HarmonyMethod(typeof(HarmonyDispatcher), postfix) : null;
 
-        Harmony.Patch(TargetMethod, prefix: PrefixMethod, postfix: PostfixMethod);
-        WriteDebug($"Patched {TargetType.FullName}.{MethodName}");
+        try
+        {
+          Harmony.Patch(TargetMethod, prefix: PrefixMethod, postfix: PostfixMethod);
+          WriteDebug($"Patched {TargetType.FullName}.{MethodName}");
+        }
+        catch (Exception Ex)
+        {
+          WriteError($"Failed to patch {TargetType.FullName}.{MethodName}: {Ex}");
+        }
       }
 
       private static bool CastSpellPrefix(object __instance, Character Character, object Command, out CastSpellState __state)
@@ -430,6 +467,9 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         __state = null;
         if (Defender == null)
           return true;
+
+        if (DotaHookBus.QueryInvulnerable(Defender))
+          return false;
 
         var Args = new DamageEventArgs(__instance, Attacker, Defender, DamagePoints, Cause);
         __state = Args;
@@ -529,6 +569,11 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         if (Character == null || Property == null)
           return true;
 
+        // 无敌状态下免疫来自敌方或环境施加的所有临时状态（无论是否在标准 14 项减益列表中）
+        if (DotaHookBus.QueryInvulnerable(Character) &&
+            (Applier == null || !PathosEngineBridge.IsAllied(Applier, Character)))
+          return false;
+
         var Args = new TransientEventArgs(__instance, Applier, Character, Property, Duration);
         DotaHookBus.DispatchBeforeApplyTransient(Args);
         Duration = Args.Duration;
@@ -550,11 +595,33 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         if (Character == null)
           return true;
 
+        var Engine = PathosEngineBridge.GetDirectorEngine(__instance);
+        var Direction = PathosEngineBridge.GetAttackCommandDirection(Command);
+
+        // 无敌/不可选中目标保护：拦截敌方近战攻击命中，杜绝狂犬病、偷窃、吞噬、腐蚀等一切命中附加特效
+        if (Character.Square != null && Direction != Direction.Self)
+        {
+          var FirstSq = Character.Square.Adjacent(Direction, 1);
+          var Target = FirstSq?.Character;
+          if (Target == null && FirstSq != null && !FirstSq.IsBlocked(Vision: false))
+            Target = Character.Square.Adjacent(Direction, 2)?.Character;
+
+          if (Target != null && Target != Character && DotaHookBus.QueryInvulnerable(Target))
+          {
+            var AtkDelay = PathosEngineBridge.GetAttackDelay(Engine, Character);
+            PathosEngineBridge.SetBusy(Engine, Character, AtkDelay);
+            PathosEngineBridge.StoryAttacking(Engine, Delay.FromTurns(10), Character, Direction);
+            if (Target.Square != null)
+              PathosEngineBridge.StoryCaption(Engine, Target.Square, Inv.Colour.Silver, "无敌", Delayed: false);
+            return false;
+          }
+        }
+
         var Args = new AttackEventArgs(
-          Engine: PathosEngineBridge.GetDirectorEngine(__instance),
+          Engine: Engine,
           Director: __instance,
           Character: Character,
-          Direction: PathosEngineBridge.GetAttackCommandDirection(Command));
+          Direction: Direction);
 
         var Previous = DotaHookBus.ActiveAttack;
         DotaHookBus.ActiveAttack = Args;
@@ -638,6 +705,29 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
         var Engine = PathosEngineBridge.GetGeneratorEngine(__instance);
         DotaHookBus.DispatchAfterLevelUp(new LevelUpEventArgs(Engine, Character, __state, Character.Level));
+      }
+
+      private static bool TrapSquarePrefix(Character TrapperCharacter)
+      {
+        return TrapperCharacter == null || !DotaHookBus.QueryInvulnerable(TrapperCharacter);
+      }
+
+      private static bool AfflictCharacterPrefix(Character Character)
+      {
+        return Character == null || !DotaHookBus.QueryInvulnerable(Character);
+      }
+
+      private static bool ApplyEffectsPrefix(object Interaction)
+      {
+        var Target = PathosEngineBridge.GetInteractionTargetCharacter(Interaction);
+        if (Target == null || !DotaHookBus.QueryInvulnerable(Target))
+          return true;
+
+        var Source = PathosEngineBridge.GetInteractionSourceCharacter(Interaction);
+        if (Source != null && PathosEngineBridge.IsAllied(Source, Target))
+          return true;
+
+        return false;
       }
     }
   }

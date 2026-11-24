@@ -215,7 +215,7 @@ namespace Pathos.DotaHeroes.Heroes
             PathosEngineBridge.TeleportCharacter(Args.Engine, Caster, Pending.TargetSquare, MasterMode: false);
           }
 
-          PathosEngineBridge.StoryExploding(Args.Engine, Delay.Zero, Caster.Square, Ctx.Explosions.watery);
+          PathosEngineBridge.StoryExploding(Args.Engine, Delay.HalfSecond, Caster.Square, Ctx.Explosions.watery);
         }
         else if (string.Equals(SpellName, "adaptive strike", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(SpellName, "morph", StringComparison.OrdinalIgnoreCase))
