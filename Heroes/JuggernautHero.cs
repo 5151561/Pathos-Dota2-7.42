@@ -271,6 +271,9 @@ namespace Pathos.DotaHeroes.Heroes
         };
       });
 
+      // 0.3 注册主宰 3 个主动技能的帮助面板数值与 5 阶熟练度详情（含游戏内实时面板预览）
+      RegisterSpellHelpSpecs(Ctx);
+
       // 1. 施法后置钩子：Q 剑刃风暴（驱散+立刻触发一次转伤）、W 治疗守卫（追踪/替换）、R 无敌斩（连续瞬移斩击）
       DotaHookBus.RegisterAfterCastSpell("juggernaut.spell_casts", Args =>
       {
@@ -896,30 +899,277 @@ namespace Pathos.DotaHeroes.Heroes
       return ActiveOmnislashSessions.TryGetValue(Character, out var Session) && Session.RemainingSlashes > 0;
     }
 
-    private static int GetOmnislashCastRange(DotaHeroContext Ctx, Character Caster)
+    private static int GetOmnislashCastRangeByTier(int Tier) => Tier switch
     {
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.transmutation);
-      return Tier switch
-      {
-        1 => 4,
-        2 => 5,
-        3 => 5,
-        4 => 6,
-        _ => 7
-      };
-    }
+      1 => 4,
+      2 => 5,
+      3 => 5,
+      4 => 6,
+      _ => 7
+    };
+
+    private static int GetOmnislashCastRange(DotaHeroContext Ctx, Character Caster)
+      => GetOmnislashCastRangeByTier(DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.transmutation));
+
+    private static int GetHealingWardCastRangeByTier(int Tier) => Tier switch
+    {
+      1 => 3,
+      2 => 3,
+      3 => 4,
+      4 => 4,
+      _ => 5
+    };
 
     private static int GetHealingWardCastRange(DotaHeroContext Ctx, Character Caster)
+      => GetHealingWardCastRangeByTier(DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.clerical));
+
+    private static int GetHealingWardDurationByTier(int Tier)
     {
-      int Tier = DotaCombatHelper.GetSkillTier(Ctx, Caster, Ctx.Skills.clerical);
-      return Tier switch
+      float Seconds = Tier switch
       {
-        1 => 3,
-        2 => 3,
-        3 => 4,
-        4 => 4,
-        _ => 5
+        1 => 18.0f,
+        2 => 20.0f,
+        3 => 22.0f,
+        _ => 24.0f
       };
+      return DotaMechanicsMapper.MapDurationTurns(Seconds);
+    }
+
+    private static float GetHealingWardHealPctByTier(int Tier)
+    {
+      float HealPerSec = Tier switch
+      {
+        1 => 0.02f,
+        2 => 0.03f,
+        3 => 0.04f,
+        4 => 0.05f,
+        _ => 0.065f
+      };
+      return HealPerSec / DotaMechanicsMapper.TurnsPerSecond;
+    }
+
+    private static int GetBladeFuryDurationByTier(int Tier)
+      => DotaMechanicsMapper.MapDurationTurns(Tier >= 5 ? 6.0f : 5.0f);
+
+    private static float GetBladeDanceCritChance(DotaHeroContext Ctx, Character Character)
+    {
+      int MasteryTier = DotaCombatHelper.GetSkillTier(Ctx, Character, Ctx.Skills.medium_blade);
+      return MasteryTier >= 5 ? 0.35f : 0.20f + (MasteryTier - 1) * 0.04f;
+    }
+
+    private static void RegisterSpellHelpSpecs(DotaHeroContext Ctx)
+    {
+      // 1. Q：剑刃风暴
+      DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
+      {
+        SpellName = BladeFurySpellName,
+        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation),
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation);
+          int Turns = GetBladeFuryDurationByTier(Tier);
+          int Dex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
+          int BladeformStacks = IsJuggernaut(Ch) ? GetBladeformState(Ch).Stacks : 0;
+
+          float BaseDps = BladeFuryDotaDps[Math.Clamp(Tier - 1, 0, BladeFuryDotaDps.Length - 1)];
+          bool HasDmgTalent = TalentService.HasTalent(Ch, TalentT3BladeFuryDamage);
+          if (HasDmgTalent)
+            BaseDps += BladeFuryTalentBonusDotaDps;
+
+          float Cadence = 1.0f + Math.Max(0, Dex - 10) * 0.05f + BladeformStacks * 0.025f;
+          Dice SpinDice = DotaMechanicsMapper.MapDotDamageDicePerTurn(BaseDps * Cadence, DieFaces: 4);
+
+          float CritChance = GetBladeDanceCritChance(Ctx, Ch);
+          bool HasCritTalent = TalentService.HasTalent(Ch, TalentT3BladeDanceCrit);
+          float CritMult = HasCritTalent ? 1.95f : 1.80f;
+          bool HasSpeedTalent = TalentService.HasTalent(Ch, TalentT2BladeFurySpeed);
+
+          string TalentDmgNote = HasDmgTalent
+            ? $"，{DotaHelpColor.Talent("T3 天赋 +120 DPS")}"
+            : string.Empty;
+          string TalentSpeedNote = HasSpeedTalent
+            ? $" + {DotaHelpColor.Talent("15% 移速（T2）")}"
+            : string.Empty;
+          string CritMultText = HasCritTalent
+            ? DotaHelpColor.Talent($"{CritMult:0.##}×")
+            : DotaHelpColor.Passive($"{CritMult:0.##}×");
+
+          var Rows = new List<(string, string)>
+          {
+            ("持续时间", $"{DotaHelpColor.Control($"{Turns} 回合")}（施法当回合即触发首次转伤）"),
+            ("生效范围", $"自身周围 {DotaHelpColor.Control("3×3 格")}（半径 {DotaHelpColor.Control("1 格")}）"),
+            ("每回合伤害", $"{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(SpinDice))} 魔法伤害（均伤 {DotaHelpColor.Magic($"{SpinDice.Average():0.#}")}）"),
+            ("攻速频率缩放", $"{DotaHelpColor.Stat($"×{Cadence:0.##}")}（{DotaHelpColor.Stat($"敏捷 {Dex}")}，{DotaHelpColor.Passive($"剑心犹在 {BladeformStacks} 层")}{TalentDmgNote}）"),
+            ("防御与暴击", $"基础驱散 + 减益免疫 + {DotaHelpColor.Control("80% 魔法减伤")}{TalentSpeedNote}；{DotaHelpColor.Passive($"剑舞 {CritChance * 100:0}%")} 暴击（{CritMultText}）")
+          };
+          return Rows;
+        },
+        BuildTiers = _ =>
+        {
+          var List = new List<DotaSpellHelpTier>(5);
+          for (int Tier = 1; Tier <= 5; Tier++)
+          {
+            int Turns = GetBladeFuryDurationByTier(Tier);
+            Dice BaseDice = DotaMechanicsMapper.MapDotDamageDicePerTurn(BladeFuryDotaDps[Tier - 1], DieFaces: 4);
+            List.Add(new DotaSpellHelpTier
+            {
+              Tier = Tier,
+              HeaderSuffix = $"自身施法 持续 {Turns} 回合",
+              Bullets = new[]
+              {
+                $"基础每回合伤害：{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice))} 魔法伤害（周围 {DotaHelpColor.Control("3×3 格")}，随{DotaHelpColor.Stat("敏捷")}与{DotaHelpColor.Passive("剑心犹在")}攻速频率缩放）",
+                $"基础驱散自身负面状态，期间减益免疫并获得 {DotaHelpColor.Control("80% 魔法/元素减伤")}",
+                $"旋转伤害可触发{DotaHelpColor.Passive("剑舞暴击")}；期间普通物理普攻不造成常规伤害"
+              }
+            });
+          }
+          return List;
+        }
+      });
+
+      // 2. W：治疗守卫
+      DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
+      {
+        SpellName = HealingWardSpellName,
+        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.clerical),
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.clerical);
+          int Range = GetHealingWardCastRangeByTier(Tier);
+          int Duration = GetHealingWardDurationByTier(Tier);
+          float HealPct = GetHealingWardHealPctByTier(Tier);
+          bool HasManaTalent = TalentService.HasTalent(Ch, TalentT1HealingWardMana);
+          int ActualMana = HasManaTalent
+            ? DotaMechanicsMapper.MapCooldownReductionToManaCost(HealingWardManaCost, HealingWardTalentCdr)
+            : HealingWardManaCost;
+
+          int MaxHp = Ch.Life?.Total ?? 0;
+          int SelfHealPerTurn = MaxHp > 0 ? Math.Max(1, (int)MathF.Round(MaxHp * HealPct)) : 1;
+
+          var Rows = new List<(string, string)>
+          {
+            ("实际蓝耗", HasManaTalent
+              ? $"{DotaHelpColor.Mana($"{ActualMana}")}（基础 {HealingWardManaCost}，{DotaHelpColor.Talent("T1 天赋 -20%")}）"
+              : DotaHelpColor.Mana($"{ActualMana}")),
+            ("施法与光环", $"施法范围 {DotaHelpColor.Control($"{Range} 格")}，治疗光环半径 {DotaHelpColor.Control("2 格")}"),
+            ("持续时间", $"{DotaHelpColor.Control($"{Duration} 回合")}（1 HP 可移动图腾，同时上限 1 个）"),
+            ("每回合回复", $"{DotaHelpColor.Heal($"{HealPct * 100:0.##}%")} 最大生命值（自身约 {DotaHelpColor.Heal($"+{SelfHealPerTurn} HP/回合")}，总计约 {DotaHelpColor.Heal($"+{SelfHealPerTurn * Duration} HP")}）")
+          };
+          return Rows;
+        },
+        BuildTiers = _ =>
+        {
+          var List = new List<DotaSpellHelpTier>(5);
+          for (int Tier = 1; Tier <= 5; Tier++)
+          {
+            int Range = GetHealingWardCastRangeByTier(Tier);
+            int Duration = GetHealingWardDurationByTier(Tier);
+            float HealPct = GetHealingWardHealPctByTier(Tier);
+            List.Add(new DotaSpellHelpTier
+            {
+              Tier = Tier,
+              HeaderSuffix = $"施咒 范围 {Range}",
+              Bullets = new[]
+              {
+                $"召唤 1 HP 可移动治疗守卫（同时上限 1 个），持续 {DotaHelpColor.Control($"{Duration} 回合")}",
+                $"每回合为周围 {DotaHelpColor.Control("2 格")}所有友军回复 {DotaHelpColor.Heal($"{HealPct * 100:0.##}% 最大生命值")}（最低 {DotaHelpColor.Heal("1 HP")}）"
+              }
+            });
+          }
+          return List;
+        }
+      });
+
+      // 3. R：无敌斩
+      DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
+      {
+        SpellName = OmnislashSpellName,
+        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
+          int CastRange = GetOmnislashCastRangeByTier(Tier);
+          int Dex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
+          int Str = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
+
+          int BaseSlashes = Math.Clamp(4 + Tier + Math.Max(0, (Dex - 14) / 6), 5, 12);
+          bool HasSlashTalent = TalentService.HasTalent(Ch, TalentT4OmnislashSlashes);
+          int TotalSlashes = HasSlashTalent ? BaseSlashes + 3 : BaseSlashes;
+
+          bool HasManaTalent = TalentService.HasTalent(Ch, TalentT2OmnislashMana);
+          int ActualMana = HasManaTalent
+            ? DotaMechanicsMapper.MapCooldownReductionToManaCost(OmnislashManaCost, OmnislashTalentCdr)
+            : OmnislashManaCost;
+
+          var WeaponAsset = DotaCombatHelper.GetEquippedWeapon(Ctx, Ch);
+          var WeaponDice = PathosEngineBridge.GetMeleeDamageDice(HelpCtx.Engine, Ch, WeaponAsset);
+          int StatBonus = Math.Max(0, (Math.Max(Str, Dex) - 10) / 2);
+          int OmniBonus = DotaMechanicsMapper.MapSkillDamage(
+            OmnislashBonusDotaDamage[Math.Clamp(Tier - 1, 0, OmnislashBonusDotaDamage.Length - 1)]);
+
+          int BladeformStacks = IsJuggernaut(Ch) ? GetBladeformState(Ch).Stacks : 0;
+          int BladeformBonus = BladeformStacks > 0 ? (int)MathF.Round(Dex * 0.025f * BladeformStacks) : 0;
+
+          int FlatBonus = StatBonus + OmniBonus + BladeformBonus;
+          int MinSlash = DotaSpellHelpBridge.GetDiceMin(WeaponDice) + FlatBonus;
+          int MaxSlash = DotaSpellHelpBridge.GetDiceMax(WeaponDice) + FlatBonus;
+          float AvgSlash = WeaponDice.Average() + FlatBonus;
+
+          float CritChance = GetBladeDanceCritChance(Ctx, Ch);
+          bool HasCritTalent = TalentService.HasTalent(Ch, TalentT3BladeDanceCrit);
+          float CritMult = HasCritTalent ? 1.95f : 1.80f;
+
+          string WeaponPart = $"{DotaHelpColor.Physical(DotaSpellHelpBridge.FormatDiceNotation(WeaponDice))}（武器）";
+          string StatPart = $"{DotaHelpColor.Stat($"+{StatBonus}")}（属性）";
+          string SkillPart = $"{DotaHelpColor.Skill($"+{OmniBonus}")}（技能）";
+          string Breakdown = BladeformBonus > 0
+            ? $"{WeaponPart} {StatPart} {SkillPart} {DotaHelpColor.Passive($"+{BladeformBonus}")}（剑心）"
+            : $"{WeaponPart} {StatPart} {SkillPart}";
+
+          string CritMultText = HasCritTalent
+            ? DotaHelpColor.Talent($"{CritMult:0.##}×")
+            : DotaHelpColor.Passive($"{CritMult:0.##}×");
+
+          var Rows = new List<(string, string)>
+          {
+            ("实际蓝耗", HasManaTalent
+              ? $"{DotaHelpColor.Mana($"{ActualMana}")}（基础 {OmnislashManaCost}，{DotaHelpColor.Talent("T2 天赋 -12.5%")}）"
+              : DotaHelpColor.Mana($"{ActualMana}")),
+            ("施法与跳斩", $"施法范围 {DotaHelpColor.Control($"{CastRange} 格")}，连斩跳斩半径 {DotaHelpColor.Control("3 格")}"),
+            ("预计斩数", HasSlashTalent
+              ? $"{DotaHelpColor.Skill($"{TotalSlashes} 斩")}（基础 {DotaHelpColor.Skill($"{BaseSlashes}")} + {DotaHelpColor.Talent("T4 天赋 +3")}）"
+              : $"{DotaHelpColor.Skill($"{TotalSlashes} 斩")}（随{DotaHelpColor.Stat("敏捷")}最高 {DotaHelpColor.Skill("12 斩")}）"),
+            ("单斩伤害", $"{DotaHelpColor.Physical($"{MinSlash}~{MaxSlash}")}（均伤 {DotaHelpColor.Physical($"{AvgSlash:0.#}")}；{Breakdown}）"),
+            ("理论总伤", $"{DotaHelpColor.Physical($"{MinSlash * TotalSlashes}~{MaxSlash * TotalSlashes}")}（未计暴击；{DotaHelpColor.Passive($"剑舞 {CritChance * 100:0}%")} 触发 {CritMultText} 暴击）")
+          };
+          return Rows;
+        },
+        BuildTiers = _ =>
+        {
+          var List = new List<DotaSpellHelpTier>(5);
+          for (int Tier = 1; Tier <= 5; Tier++)
+          {
+            int Range = GetOmnislashCastRangeByTier(Tier);
+            int MinSlashes = Math.Clamp(4 + Tier, 5, 12);
+            int BonusDmg = DotaMechanicsMapper.MapSkillDamage(OmnislashBonusDotaDamage[Tier - 1]);
+            List.Add(new DotaSpellHelpTier
+            {
+              Tier = Tier,
+              HeaderSuffix = $"施咒 范围 {Range}",
+              Bullets = new[]
+              {
+                $"连续斩击：{DotaHelpColor.Skill($"{MinSlashes}~12 斩")}（每超出 14 点{DotaHelpColor.Stat("敏捷")} 6 点额外 {DotaHelpColor.Stat("+1 斩")}，{DotaHelpColor.Talent("T4 天赋 +3 斩")}）",
+                $"单斩伤害：{DotaHelpColor.Physical("装备武器骰")} + {DotaHelpColor.Stat("力/敏高者修正")} + {DotaHelpColor.Skill($"{BonusDmg} 额外攻击力")}（跳斩半径 {DotaHelpColor.Control("3 格")}）",
+                $"全程免疫一切伤害与负面状态，每斩均可触发{DotaHelpColor.Passive("剑舞暴击")}与{DotaHelpColor.Passive("剑心犹在")}加成"
+              }
+            });
+          }
+          return List;
+        }
+      });
     }
 
     private static BladeformState GetBladeformState(Character Character)

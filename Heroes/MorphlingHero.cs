@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Targeting;
+using Pathos.DotaHeroes.Framework.UI;
 
 namespace Pathos.DotaHeroes.Heroes
 {
@@ -113,6 +115,9 @@ namespace Pathos.DotaHeroes.Heroes
         Mode: DotaTargetMode.UnitHostile,
         ResolveRange: Caster => GetMorphRange(Ctx, Caster),
         AllowSelf: false));
+
+      // 0.2 注册变体精灵主动技能的帮助面板数值与 5 阶熟练度详情（含游戏内实时面板预览）
+      RegisterSpellHelpSpecs(Ctx);
 
       // Q/W 水系技能落点校准与 Pathos 原生水爆特效
       DotaHookBus.RegisterAfterCastSpell("morphling.range_and_vfx", Args =>
@@ -392,6 +397,248 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static bool IsMorphling(Character Character)
       => DotaCombatHelper.IsClass(Character, MorphlingClassName);
+
+    private static readonly float[] WaveformDotaDamages = { 75.0f, 150.0f, 225.0f, 300.0f, 360.0f };
+    private static readonly int[] WaveformBaseRanges = { 5, 6, 7, 9, 11 };
+    private static readonly int[] WaveformRadii = { 2, 2, 2, 3, 3 };
+    private static readonly int[] WaveformEvasionTurns = { 3, 4, 4, 5, 6 };
+
+    private static readonly float[] AdaptiveStrikeDotaDamages = { 50.0f, 70.0f, 90.0f, 110.0f, 130.0f };
+    private static readonly int[] AdaptiveStrikeBaseRanges = { 5, 6, 7, 8, 9 };
+    private static readonly int[] MorphBaseRanges = { 5, 6, 7, 8, 10 };
+
+    private static void RegisterSpellHelpSpecs(DotaHeroContext Ctx)
+    {
+      // 1. Q：波浪形态
+      DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
+      {
+        SpellName = "waveform",
+        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
+          int Idx = Math.Clamp(Tier - 1, 0, 4);
+          int BaseRange = WaveformBaseRanges[Idx];
+          int StrBonus = GetStrRangeBonus(Ch);
+          Dice WaveDice = DotaMechanicsMapper.MapSkillDamageDice(WaveformDotaDamages[Idx]);
+          int Radius = WaveformRadii[Idx];
+          int Evasion = WaveformEvasionTurns[Idx];
+
+          return new List<(string, string)>
+          {
+            ("实际突进射程", StrBonus > 0
+              ? $"{DotaHelpColor.Control($"{BaseRange + StrBonus} 格")}（基础 {BaseRange} + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}）"
+              : DotaHelpColor.Control($"{BaseRange} 格")),
+            ("落地水波伤害", $"{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice))} 水系伤害（均伤 {DotaHelpColor.Magic($"{WaveDice.Average():0.#}")}，半径 {DotaHelpColor.Control($"{Radius} 格")}）"),
+            ("位移与生存", $"瞬移至目标格，获得穿墙与闪避位移 {DotaHelpColor.Control($"{Evasion} 回合")}")
+          };
+        },
+        BuildTiers = _ =>
+        {
+          var List = new List<DotaSpellHelpTier>(5);
+          for (int Tier = 1; Tier <= 5; Tier++)
+          {
+            int Idx = Tier - 1;
+            Dice WaveDice = DotaMechanicsMapper.MapSkillDamageDice(WaveformDotaDamages[Idx]);
+            List.Add(new DotaSpellHelpTier
+            {
+              Tier = Tier,
+              HeaderSuffix = $"施咒 范围 {WaveformBaseRanges[Idx]}",
+              Bullets = new[]
+              {
+                $"瞬移突进至目标空地，落地对周围 {DotaHelpColor.Control($"{WaveformRadii[Idx]} 格")}造成 {DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice))} 水系伤害",
+                $"获得穿墙与闪避位移 {DotaHelpColor.Control($"{WaveformEvasionTurns[Idx]} 回合")}"
+              }
+            });
+          }
+          return List;
+        }
+      });
+
+      // 2. W：变体打击
+      DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
+      {
+        SpellName = "adaptive strike",
+        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation),
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.evocation);
+          int Idx = Math.Clamp(Tier - 1, 0, 4);
+          int BaseRange = AdaptiveStrikeBaseRanges[Idx];
+          int StrBonus = GetStrRangeBonus(Ch);
+          Dice BaseDice = DotaMechanicsMapper.MapSkillDamageDice(AdaptiveStrikeDotaDamages[Idx]);
+
+          int Dex = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity"));
+          int Str = Math.Max(1, PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength"));
+
+          float DexScale = Math.Clamp((Dex / (float)Str - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
+          int BonusDmg = (int)MathF.Round(Dex * (0.35f + 1.15f * DexScale));
+
+          float StrScale = Math.Clamp((Str / (float)Dex - 0.67f) / (1.50f - 0.67f), 0.0f, 1.0f);
+          int MaxStun = DotaMechanicsMapper.MapDurationTurns(1.0f + Tier * 0.5f);
+          int FinalStun = Math.Max(1, (int)MathF.Round(1.0f + (MaxStun - 1.0f) * StrScale));
+
+          int TotalMin = DotaSpellHelpBridge.GetDiceMin(BaseDice) + BonusDmg;
+          int TotalMax = DotaSpellHelpBridge.GetDiceMax(BaseDice) + BonusDmg;
+          float TotalAvg = BaseDice.Average() + BonusDmg;
+
+          return new List<(string, string)>
+          {
+            ("实际射程", StrBonus > 0
+              ? $"{DotaHelpColor.Control($"{BaseRange + StrBonus} 格")}（基础 {BaseRange} + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}）"
+              : DotaHelpColor.Control($"{BaseRange} 格")),
+            ("预计总伤害", $"{DotaHelpColor.Magic($"{TotalMin}~{TotalMax}")} 水系伤害（均伤 {DotaHelpColor.Magic($"{TotalAvg:0.#}")}；基础 {DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceNotation(BaseDice))} + {DotaHelpColor.Stat($"敏捷追加 +{BonusDmg}")}）"),
+            ("击退与眩晕", $"击退目标并眩晕 {DotaHelpColor.Control($"{FinalStun} 回合")}（当前阶上限 {DotaHelpColor.Control($"{MaxStun} 回合")}）"),
+            ("当前力敏比", $"{DotaHelpColor.Stat($"敏捷 {Dex}")} / {DotaHelpColor.Stat($"力量 {Str}")}（敏≥1.5×力达满额伤害；力≥1.5×敏达满额眩晕）")
+          };
+        },
+        BuildTiers = _ =>
+        {
+          var List = new List<DotaSpellHelpTier>(5);
+          for (int Tier = 1; Tier <= 5; Tier++)
+          {
+            int Idx = Tier - 1;
+            Dice BaseDice = DotaMechanicsMapper.MapSkillDamageDice(AdaptiveStrikeDotaDamages[Idx]);
+            int MaxStun = DotaMechanicsMapper.MapDurationTurns(1.0f + Tier * 0.5f);
+            List.Add(new DotaSpellHelpTier
+            {
+              Tier = Tier,
+              HeaderSuffix = $"施咒 范围 {AdaptiveStrikeBaseRanges[Idx]}",
+              Bullets = new[]
+              {
+                $"基础水系伤害：{DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(BaseDice))} + {DotaHelpColor.Stat("敏捷爆发追加（0.35× ~ 1.50× 敏捷")}，随敏/力比缩放）",
+                $"击退目标并眩晕 {DotaHelpColor.Control($"1~{MaxStun} 回合")}（随{DotaHelpColor.Stat("力/敏比")}缩放）"
+              }
+            });
+          }
+          return List;
+        }
+      });
+
+      // 3. E1：属性转换·敏捷
+      DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
+      {
+        SpellName = "morph agility",
+        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          int Step = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
+          int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
+          int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
+          int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
+          int MaxDex = PathosEngineBridge.GetLimitAbilityScore(Ch, "dexterity");
+
+          return new List<(string, string)>
+          {
+            ("当前单次转换", $"{DotaHelpColor.Stat($"力量/体质 -{Step}")} → {DotaHelpColor.Stat($"敏捷 +{Step}")}（{DotaHelpColor.Mana("0 蓝耗")}）"),
+            ("血量联动", $"最大生命 {DotaHelpColor.Physical($"-{Step * HpPerShiftedPoint} HP")}（当前生命不扣减，仅超过新上限时截断）"),
+            ("当前属性", $"{DotaHelpColor.Stat($"力量 {CurStr}")} / {DotaHelpColor.Stat($"敏捷 {CurDex}")}（上限 {MaxDex}）/ {DotaHelpColor.Stat($"体质 {CurCon}")}（最低保留 {MinAttributeScore}）")
+          };
+        },
+        BuildTiers = _ =>
+        {
+          var List = new List<DotaSpellHelpTier>(5);
+          for (int Tier = 1; Tier <= 5; Tier++)
+          {
+            List.Add(new DotaSpellHelpTier
+            {
+              Tier = Tier,
+              HeaderSuffix = "自身施法 0 蓝耗",
+              Bullets = new[]
+              {
+                $"将 {DotaHelpColor.Stat($"{Tier} 点力量与体质")}转换为 {DotaHelpColor.Stat($"{Tier} 点敏捷")}（总量守恒，力量/体质最低保留 {MinAttributeScore}）",
+                $"最大生命 {DotaHelpColor.Physical($"-{Tier * HpPerShiftedPoint} HP")}（最低保留 {MinMaxLifePoints} HP），当前生命不扣减"
+              }
+            });
+          }
+          return List;
+        }
+      });
+
+      // 4. E2：属性转换·力量
+      DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
+      {
+        SpellName = "morph strength",
+        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          int Step = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
+          int CurStr = PathosEngineBridge.GetCurrentAbilityScore(Ch, "strength");
+          int CurCon = PathosEngineBridge.GetCurrentAbilityScore(Ch, "constitution");
+          int CurDex = PathosEngineBridge.GetCurrentAbilityScore(Ch, "dexterity");
+          int MaxStr = PathosEngineBridge.GetLimitAbilityScore(Ch, "strength");
+
+          return new List<(string, string)>
+          {
+            ("当前单次转换", $"{DotaHelpColor.Stat($"敏捷 -{Step}")} → {DotaHelpColor.Stat($"力量/体质 +{Step}")}（{DotaHelpColor.Mana("0 蓝耗")}）"),
+            ("血量联动", $"最大生命与当前生命同步 {DotaHelpColor.Heal($"+{Step * HpPerShiftedPoint} HP")}"),
+            ("当前属性", $"{DotaHelpColor.Stat($"力量 {CurStr}")}（上限 {MaxStr}）/ {DotaHelpColor.Stat($"敏捷 {CurDex}")}（最低保留 {MinAttributeScore}）/ {DotaHelpColor.Stat($"体质 {CurCon}")}")
+          };
+        },
+        BuildTiers = _ =>
+        {
+          var List = new List<DotaSpellHelpTier>(5);
+          for (int Tier = 1; Tier <= 5; Tier++)
+          {
+            List.Add(new DotaSpellHelpTier
+            {
+              Tier = Tier,
+              HeaderSuffix = "自身施法 0 蓝耗",
+              Bullets = new[]
+              {
+                $"将 {DotaHelpColor.Stat($"{Tier} 点敏捷")}转换为 {DotaHelpColor.Stat($"{Tier} 点力量与体质")}（总量守恒，敏捷最低保留 {MinAttributeScore}）",
+                $"最大生命与当前生命同步 {DotaHelpColor.Heal($"+{Tier * HpPerShiftedPoint} HP")}"
+              }
+            });
+          }
+          return List;
+        }
+      });
+
+      // 5. R1：变形
+      DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
+      {
+        SpellName = "morph",
+        ResolveCurrentTier = Ch => DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation),
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          int Tier = DotaCombatHelper.GetSkillTier(Ctx, Ch, Ctx.Skills.transmutation);
+          int BaseRange = MorphBaseRanges[Math.Clamp(Tier - 1, 0, 4)];
+          int StrBonus = GetStrRangeBonus(Ch);
+
+          return new List<(string, string)>
+          {
+            ("实际施法射程", StrBonus > 0
+              ? $"{DotaHelpColor.Control($"{BaseRange + StrBonus} 格")}（基础 {BaseRange} + {DotaHelpColor.Passive($"潮涨潮落 +{StrBonus}")}）"
+              : DotaHelpColor.Control($"{BaseRange} 格")),
+            ("变形机制", $"化身目标敌方生物，复制其外形、属性、技能与法术，且全程保留先天{DotaHelpColor.Passive("「潮涨潮落」")}")
+          };
+        },
+        BuildTiers = _ =>
+        {
+          var List = new List<DotaSpellHelpTier>(5);
+          for (int Tier = 1; Tier <= 5; Tier++)
+          {
+            List.Add(new DotaSpellHelpTier
+            {
+              Tier = Tier,
+              HeaderSuffix = $"施咒 范围 {MorphBaseRanges[Tier - 1]}",
+              Bullets = new[]
+              {
+                "化身目标生物，复制其外形、属性、技能与法术",
+                $"变形期间持续保留先天技能{DotaHelpColor.Passive("「潮涨潮落」")}，可随时施放「解除变形」恢复本体"
+              }
+            });
+          }
+          return List;
+        }
+      });
+    }
 
     private static Property RegisterEbbAndFlowTalent(DotaHeroContext Ctx, Glyph Icon)
       => Ctx.RegisterPassiveProperty(

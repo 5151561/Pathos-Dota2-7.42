@@ -341,6 +341,9 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
         // 17. DOTA2 左上角状态栏动态叠层徽章补丁（仅在游戏客户端存在 Pathos.dll 时挂载）
         UI.DotaStatusBarBridge.ApplyPatches(Harmony);
+
+        // 18. DOTA2 技能帮助面板数值与阶梯详情补丁（仅在游戏客户端存在 Pathos.dll 时挂载）
+        UI.DotaSpellHelpBridge.ApplyPatches(Harmony);
       }
 
       private static void PatchMethod(
