@@ -187,7 +187,8 @@ namespace Pathos.DotaHeroes.Heroes
                 Lv - 1,
                 Lv < 3 ? DotaLocalization.T("morph.skill.r.desc_next_suffix") : string.Empty),
           TitleResolver: () => DotaLocalization.T("morph.skill.r.title")),
-        HeroDisplayNameResolver: () => DotaLocalization.T("morph.hero_display"));
+        HeroDisplayNameResolver: () => DotaLocalization.T("morph.hero_display"),
+        PrimaryAttribute: DotaPrimaryAttribute.Agility);
 
       HeroSkillRegistry.Register(Ctx, Build);
     }

@@ -98,13 +98,13 @@ namespace Pathos.DotaHeroes.Framework
     /// <summary>
     /// 按 DOTA2 英雄 30 级自然属性（Base + 29 × Gain）推导 Pathos 单项属性上限（20 ~ 34）：
     /// - 锚定公式：Clamp(Round(25 + (Lv30 - 80) * 0.12), 20, 34)
-    /// - 保底不低于 StartingScore + 7，确保 7 级全属性黄点 100% 有效不撞墙，同时防止突破 Pathos d20 平衡。
+    /// - 保底不低于 StartingScore + 3，确保 7 级三系轮转黄点（单项最多 +3）100% 有效不撞墙，同时防止突破 Pathos d20 平衡。
     /// </summary>
     public static int MapAttributeLimit(int DotaBaseValue, float DotaGainPerLevel, int StartingScore)
     {
       float Lv30 = DotaBaseValue + 29.0f * Math.Max(0.0f, DotaGainPerLevel);
       int Mapped = Math.Clamp((int)MathF.Round(25.0f + (Lv30 - 80.0f) * 0.12f), 20, 34);
-      int MinForYellowBonus = Math.Min(34, Math.Max(20, StartingScore + 7));
+      int MinForYellowBonus = Math.Min(34, Math.Max(20, StartingScore + 3));
       return Math.Max(Mapped, MinForYellowBonus);
     }
 
@@ -125,7 +125,7 @@ namespace Pathos.DotaHeroes.Framework
       int StrConLimit = MapAttributeLimit(BaseStr, StrGain, Starting.Str);
       int DexLimit = MapAttributeLimit(BaseAgi, AgiGain, Starting.Dex);
       int IntWisLimit = MapAttributeLimit(BaseInt, IntGain, Starting.Int);
-      int ChaLimit = Math.Clamp(Math.Max(CharismaLimit, Starting.Cha + 7), 20, 34);
+      int ChaLimit = Math.Clamp(Math.Max(CharismaLimit, Starting.Cha + 1), 20, 34);
       return new PathosStatLimits(
         Str: StrConLimit,
         Dex: DexLimit,

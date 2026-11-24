@@ -35,10 +35,10 @@ DotaMechanicsMapper.RegisterHeroStatLimits(ClassName, StatLimits);
 ### 英雄属性上限映射（种族管风味，职业管上限）
 Pathos 原生人类等种族六维上限仅为 `20`，会导致高初始属性英雄（如主宰 17 敏）点满 7 级全属性黄点时提前撞墙。因此框架通过 Hook `Character.GetLimitForm()`（变形期间自动保留目标生物上限），按 DOTA2 7.42 **30 级自然属性**（$\text{Lv30} = \text{Base} + 29 \times \text{Gain}$）统一推导每个英雄职业专属的 `LimitForm`（`DotaMechanicsMapper.MapStatLimits`）：
 
-$$\text{Limit} = \max\Big(\text{Starting} + 7,\ \text{Clamp}\big(\text{Round}(25 + (\text{Lv30} - 80) \times 0.12),\ 20,\ 34\big)\Big)$$
+$$\text{Limit} = \max\Big(\text{Starting} + 3,\ \text{Clamp}\big(\text{Round}(25 + (\text{Lv30} - 80) \times 0.12),\ 20,\ 34\big)\Big)$$
 
 - **不污染种族列表**：人类系英雄继续复用 `human`，有强生态特征的非人英雄（如水人 `waterkin`）可继续建专属种族。
-- **7 级黄点 100% 生效**：保底 $\ge \text{Starting} + 7$，确保全属性黄点绝不浪费，同时上限封顶 `34` 防止击穿 Pathos d20 平衡。
+- **7 级三系轮转黄点 100% 生效**：保底 $\ge \text{Starting} + 3$（魅力保底 $\ge \text{StartingCHA} + 1$），确保 7 级三系轮转黄点（核心属性各 `+2`、魅力 `+1`、主属性额外 `+1`）绝不浪费，同时上限封顶 `34` 防止击穿 Pathos d20 平衡。
 
 ---
 

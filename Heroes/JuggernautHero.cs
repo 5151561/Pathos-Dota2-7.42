@@ -283,7 +283,8 @@ namespace Pathos.DotaHeroes.Heroes
                 (Lv - 1) * 2,
                 Lv < 3 ? DotaLocalization.T("jugg.skill.r.desc_next_suffix") : string.Empty),
           TitleResolver: () => DotaLocalization.T("jugg.skill.r.title")),
-        HeroDisplayNameResolver: () => DotaLocalization.T("jugg.hero_display"));
+        HeroDisplayNameResolver: () => DotaLocalization.T("jugg.hero_display"),
+        PrimaryAttribute: DotaPrimaryAttribute.Agility);
 
       HeroSkillRegistry.Register(Ctx, Build);
     }

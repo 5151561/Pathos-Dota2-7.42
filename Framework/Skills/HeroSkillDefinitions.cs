@@ -5,6 +5,14 @@ using Pathos.DotaHeroes.Framework.Localization;
 
 namespace Pathos.DotaHeroes.Framework.Skills
 {
+  public enum DotaPrimaryAttribute
+  {
+    Strength,
+    Agility,
+    Intelligence,
+    Universal
+  }
+
   public enum DotaSkillSlotKind
   {
     Active,
@@ -24,7 +32,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
   /// 单个 DOTA2 英雄技能加点槽位定义（Q / W / E / R / 黄点）。
   /// - Active：0→1 级通过 Engine.LearnSpell 学会法术，1→MaxLevel 每次加点原生升星（★~★★★）并叠加英雄自定义数值增幅。
   /// - Passive：0→1 级通过 Engine.GainTalent 授予原生可见被动天赋，1→MaxLevel 由独立技能等级直接驱动被动数值。
-  /// - AttributeBonus：全属性黄点（默认 7 级上限，每级永久全六维 +1）。
+  /// - AttributeBonus：全属性黄点（默认 7 级上限，按力/敏/智三系轮转提升，满级核心属性各 +2、CHA +1、主属性额外 +1）。
   /// </summary>
   public sealed class DotaSkillSlot
   {
@@ -165,9 +173,16 @@ namespace Pathos.DotaHeroes.Framework.Skills
     }
 
     /// <summary>
-    /// 创建标准 DOTA2 7.42 全属性黄点槽位（上限 7 级，每级永久提升全六维 +1，受 LimitForm 上限保护）。
+    /// 创建标准 DOTA2 7.42 全属性黄点槽位（上限 7 级，按力/敏/智三系轮转提升）：
+    /// - Lv 1 / 4：STR +1, CON +1
+    /// - Lv 2 / 5：DEX +1
+    /// - Lv 3 / 6：INT +1, WIS +1
+    /// - Lv 7：CHA +1 + 主属性 +1（总计 +12 点 Pathos 属性，契合 DOTA2 14 全属性 × 0.12 ≈ +2 的换算标尺）
     /// </summary>
-    public static DotaSkillSlot CreateStandardAttributeBonus(string HeroId, Glyph IconGlyph = null)
+    public static DotaSkillSlot CreateStandardAttributeBonus(
+      string HeroId,
+      Glyph IconGlyph = null,
+      DotaPrimaryAttribute PrimaryAttribute = DotaPrimaryAttribute.Universal)
     {
       return new DotaSkillSlot(
         Id: $"{HeroId}.attr_bonus",
@@ -177,44 +192,127 @@ namespace Pathos.DotaHeroes.Framework.Skills
         MaxLevel: 7,
         UnlockLevels: AttributeBonusUnlockLevels,
         IconGlyph: IconGlyph,
-        DescribeLevel: Lv => Lv <= 0
-          ? DotaLocalization.T("ui.skill.attr_bonus.desc_zero")
-          : DotaLocalization.Format("ui.skill.attr_bonus.desc_lv", Lv),
-        OnUpgrade: ApplyAllAttributesBonus,
+        DescribeLevel: Lv => DescribeAttributeBonusLevel(Lv, PrimaryAttribute),
+        OnUpgrade: (Engine, Character, NewLevel) => ApplyAttributeBonusForLevel(Engine, Character, NewLevel, PrimaryAttribute),
         TitleResolver: () => DotaLocalization.T("ui.skill.attr_bonus.title"));
     }
 
-    private static readonly string[] AllAttributeNames =
+    private static string[] GetAttributeBonusGrantForLevel(int Level, DotaPrimaryAttribute PrimaryAttribute)
     {
-      "strength",
-      "dexterity",
-      "constitution",
-      "intelligence",
-      "wisdom",
-      "charisma"
-    };
+      return Level switch
+      {
+        1 or 4 => new[] { "strength", "constitution" },
+        2 or 5 => new[] { "dexterity" },
+        3 or 6 => new[] { "intelligence", "wisdom" },
+        7 => new[] { "charisma", GetPrimaryPathosAttribute(PrimaryAttribute) },
+        _ => Array.Empty<string>()
+      };
+    }
 
-    private static void ApplyAllAttributesBonus(object Engine, Character Character, int NewLevel)
+    private static string GetPrimaryPathosAttribute(DotaPrimaryAttribute PrimaryAttribute)
+    {
+      return PrimaryAttribute switch
+      {
+        DotaPrimaryAttribute.Strength => "strength",
+        DotaPrimaryAttribute.Agility => "dexterity",
+        DotaPrimaryAttribute.Intelligence => "intelligence",
+        _ => "constitution"
+      };
+    }
+
+    private static string GetLocalizedAttributeName(string AttrName)
+    {
+      return AttrName switch
+      {
+        "strength" => DotaLocalization.T("ui.attr.str"),
+        "dexterity" => DotaLocalization.T("ui.attr.dex"),
+        "constitution" => DotaLocalization.T("ui.attr.con"),
+        "intelligence" => DotaLocalization.T("ui.attr.int"),
+        "wisdom" => DotaLocalization.T("ui.attr.wis"),
+        "charisma" => DotaLocalization.T("ui.attr.cha"),
+        _ => AttrName.ToUpperInvariant()
+      };
+    }
+
+    private static string FormatAttributeGrant(IReadOnlyList<string> AttrNames)
+    {
+      if (AttrNames == null || AttrNames.Count == 0)
+        return string.Empty;
+
+      string Separator = DotaLocalization.IsCjkActive() ? "、" : ", ";
+      var Parts = new string[AttrNames.Count];
+      for (int i = 0; i < AttrNames.Count; i++)
+        Parts[i] = $"{GetLocalizedAttributeName(AttrNames[i])} +1";
+      return string.Join(Separator, Parts);
+    }
+
+    private static string FormatCumulativeBonus(int CurrentLevel, DotaPrimaryAttribute PrimaryAttribute)
+    {
+      int Str = 0, Dex = 0, Con = 0, Int = 0, Wis = 0, Cha = 0;
+      int Clamped = Math.Clamp(CurrentLevel, 0, 7);
+      for (int Lv = 1; Lv <= Clamped; Lv++)
+      {
+        foreach (var Attr in GetAttributeBonusGrantForLevel(Lv, PrimaryAttribute))
+        {
+          switch (Attr)
+          {
+            case "strength": Str++; break;
+            case "dexterity": Dex++; break;
+            case "constitution": Con++; break;
+            case "intelligence": Int++; break;
+            case "wisdom": Wis++; break;
+            case "charisma": Cha++; break;
+          }
+        }
+      }
+
+      var Parts = new List<string>(6);
+      if (Str > 0) Parts.Add($"{GetLocalizedAttributeName("strength")}+{Str}");
+      if (Dex > 0) Parts.Add($"{GetLocalizedAttributeName("dexterity")}+{Dex}");
+      if (Con > 0) Parts.Add($"{GetLocalizedAttributeName("constitution")}+{Con}");
+      if (Int > 0) Parts.Add($"{GetLocalizedAttributeName("intelligence")}+{Int}");
+      if (Wis > 0) Parts.Add($"{GetLocalizedAttributeName("wisdom")}+{Wis}");
+      if (Cha > 0) Parts.Add($"{GetLocalizedAttributeName("charisma")}+{Cha}");
+      return string.Join(" ", Parts);
+    }
+
+    private static string DescribeAttributeBonusLevel(int CurrentLevel, DotaPrimaryAttribute PrimaryAttribute)
+    {
+      if (CurrentLevel >= 7)
+        return DotaLocalization.Format("ui.skill.attr_bonus.desc_max", FormatCumulativeBonus(CurrentLevel, PrimaryAttribute));
+
+      int NextLv = Math.Max(1, CurrentLevel + 1);
+      string Next = FormatAttributeGrant(GetAttributeBonusGrantForLevel(NextLv, PrimaryAttribute));
+      return DotaLocalization.Format("ui.skill.attr_bonus.desc_next", Next);
+    }
+
+    private static void ApplyAttributeBonusForLevel(
+      object Engine,
+      Character Character,
+      int NewLevel,
+      DotaPrimaryAttribute PrimaryAttribute)
     {
       if (Character == null)
         return;
 
-      int Increased = 0;
-      foreach (var Attr in AllAttributeNames)
+      var Grants = GetAttributeBonusGrantForLevel(NewLevel, PrimaryAttribute);
+      var Applied = new List<string>(Grants.Length);
+      foreach (var Attr in Grants)
       {
         int Cur = PathosEngineBridge.GetCurrentAbilityScore(Character, Attr);
         int Limit = PathosEngineBridge.GetLimitAbilityScore(Character, Attr);
         if (Cur < Limit && PathosEngineBridge.SetPermanentAbilityScore(Character, Attr, Cur + 1))
-          Increased++;
+          Applied.Add($"{GetLocalizedAttributeName(Attr)} +1");
       }
 
-      if (Increased > 0)
+      if (Applied.Count > 0)
       {
+        string Separator = DotaLocalization.IsCjkActive() ? "、" : ", ";
         PathosEngineBridge.WriteInternalLog(
           Engine,
           Character,
           null,
-          DotaLocalization.Format("ui.skill.attr_bonus.log", NewLevel, Increased));
+          DotaLocalization.Format("ui.skill.attr_bonus.log", NewLevel, string.Join(Separator, Applied)));
       }
     }
 
@@ -266,7 +364,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       DotaSkillSlot SlotW,
       DotaSkillSlot SlotE,
       DotaSkillSlot SlotR,
-      Func<string> HeroDisplayNameResolver = null)
+      Func<string> HeroDisplayNameResolver = null,
+      DotaPrimaryAttribute PrimaryAttribute = DotaPrimaryAttribute.Universal)
     {
       var Slots = new[]
       {
@@ -274,7 +373,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
         SlotW ?? throw new ArgumentNullException(nameof(SlotW)),
         SlotE ?? throw new ArgumentNullException(nameof(SlotE)),
         SlotR ?? throw new ArgumentNullException(nameof(SlotR)),
-        DotaSkillSlot.CreateStandardAttributeBonus(HeroId, IconGlyph)
+        DotaSkillSlot.CreateStandardAttributeBonus(HeroId, IconGlyph, PrimaryAttribute)
       };
 
       return new HeroSkillBuild(ClassName, HeroDisplayName, Slots, IconGlyph, HeroDisplayNameResolver);
