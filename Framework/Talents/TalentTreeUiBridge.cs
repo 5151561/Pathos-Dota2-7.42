@@ -140,11 +140,8 @@ namespace Pathos.DotaHeroes.Framework.Talents
         PatchSafe(Harmony, StagePanelType, "ArrangeLeft", Type.EmptyTypes,
           postfix: nameof(StageArrangeLeftPostfix));
 
-        // 3. StagePanel.CheckCancel：ESC 优先关闭天赋树面板
-        PatchSafe(Harmony, StagePanelType, "CheckCancel", Type.EmptyTypes,
-          prefix: nameof(StageCheckCancelPrefix));
-
-        // 4. StagePanel.RouteKeystroke：支持 F2 一键开关天赋树面板
+        // 3. StagePanel.RouteKeystroke：支持 F2 一键开关与 ESC 关闭天赋树面板
+        // 注意：不要拦截 StagePanel.CheckCancel，因为 ScenePanel.Prepare() 在视角/格位变化时会自动调用 CheckCancel()，会导致面板误关闭
         var RouteKeyMethod = StagePanelType.GetMethod("RouteKeystroke", AnyInstance);
         if (RouteKeyMethod != null)
         {
@@ -237,18 +234,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
       }
     }
 
-    private static bool StageCheckCancelPrefix(object __instance, ref bool __result)
-    {
-      if (__instance != null && StageControllers.TryGetValue(__instance, out var Controller) && Controller.IsPanelOpen)
-      {
-        Controller.ClosePanel();
-        __result = true;
-        return false;
-      }
-
-      return true;
-    }
-
     private static bool StageRouteKeystrokePrefix(object __instance, object Keystroke)
     {
       if (__instance == null || Keystroke == null || KeystrokeKeyProp == null)
@@ -256,13 +241,24 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
       try
       {
-        if (KeystrokeKeyProp.GetValue(Keystroke) is Inv.Key Key && Key == Inv.Key.F2)
+        if (KeystrokeKeyProp.GetValue(Keystroke) is Inv.Key Key)
         {
-          var Controller = GetOrCreateController(__instance);
-          if (Controller != null && Controller.CanOpenForCurrentCharacter())
+          if (Key == Inv.Key.Escape &&
+              StageControllers.TryGetValue(__instance, out var OpenController) &&
+              OpenController.IsPanelOpen)
           {
-            Controller.TogglePanel();
+            OpenController.ClosePanel();
             return false;
+          }
+
+          if (Key == Inv.Key.F2)
+          {
+            var Controller = GetOrCreateController(__instance);
+            if (Controller != null && Controller.CanOpenForCurrentCharacter())
+            {
+              Controller.TogglePanel();
+              return false;
+            }
           }
         }
       }
@@ -757,14 +753,24 @@ namespace Pathos.DotaHeroes.Framework.Talents
         SidePanelFrame.Background.Colour = GetThemePanelColour();
         SidePanelFrame.Border.Set(1);
         SidePanelFrame.Border.Colour = GetThemeStrokeColour();
-        SidePanelFrame.Padding.Set(10, 10);
         // 底部留足 112px 避开左下角圆形菜单栏，顶部留足 68px 避开菜单按钮
         SidePanelFrame.Margin.Set(4, 68, 0, 112);
         SidePanelFrame.Size.SetWidth(Math.Max(GetStageEdgeWidth(StagePanel), 420));
         SidePanelFrame.Size.SetMaximumHeight(660);
 
+        var RootOverlay = Surface.NewOverlay();
+        SidePanelFrame.Content = RootOverlay;
+
+        // 底层透明按钮拦截面板内非交互区域的鼠标点击，避免穿透到下层地图 ScenePanel
+        var ClickBlocker = Surface.NewFlatButton();
+        ClickBlocker.Alignment.Stretch();
+        ClickBlocker.Background.Colour = Inv.Colour.Transparent;
+        ClickBlocker.SingleTapEvent += () => { };
+        RootOverlay.AddPanel(ClickBlocker);
+
         var RootDock = Surface.NewVerticalDock();
-        SidePanelFrame.Content = RootDock;
+        RootDock.Padding.Set(10, 10);
+        RootOverlay.AddPanel(RootDock);
 
         // 顶部标题栏（与原版角色面板风格统一）
         var HeaderDock = Surface.NewHorizontalDock();
@@ -1102,10 +1108,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         if (HeroSkillService.TryUpgradeSkill(Engine, Character, Slot))
         {
-          HeroSkillRegistry.TryGetBuild(Character, out var SkillBuild);
-          TalentRegistry.TryGetTree(Character, out var Tree);
-          RebuildPanelContent(Character, SkillBuild, Tree);
-
           Refresh();
           StageRefreshPanelsMethod?.Invoke(StagePanel, null);
         }
@@ -1243,10 +1245,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         if (TalentService.TryLearnTalent(Engine, Character, Tier, Branch))
         {
-          HeroSkillRegistry.TryGetBuild(Character, out var SkillBuild);
-          TalentRegistry.TryGetTree(Character, out var Tree);
-          RebuildPanelContent(Character, SkillBuild, Tree);
-
           Refresh();
           StageRefreshPanelsMethod?.Invoke(StagePanel, null);
         }
