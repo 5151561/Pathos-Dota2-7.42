@@ -659,6 +659,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           return;
 
         DotaHookBus.DispatchAfterCreateActor(new ActorCreateEventArgs(__instance, Actor, Actor.Character, IsReroll: false));
+        PathosEngineBridge.RefreshConductStarting(Actor);
       }
 
       private static void RerollActorPostfix(object __instance, Actor Actor)
@@ -667,6 +668,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           return;
 
         DotaHookBus.DispatchAfterCreateActor(new ActorCreateEventArgs(__instance, Actor, Actor.Character, IsReroll: true));
+        PathosEngineBridge.RefreshConductStarting(Actor);
       }
 
       private static void GetDefenceClassPostfix(object __instance, Character Character, DamageType? DamageType, ref int __result)

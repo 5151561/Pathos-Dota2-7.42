@@ -25,6 +25,14 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly Type InteractionType = EngineAsm.GetType("Pathos.Interaction");
     private static readonly Type SummonEntityEffectType = EngineAsm.GetType("Pathos.SummonEntityEffect");
     private static readonly Type TranslationType = EngineAsm.GetType("Pathos.Translation");
+    private static readonly Type ConductType = EngineAsm.GetType("Pathos.Conduct");
+
+    private static readonly PropertyInfo ActorConductProp =
+      typeof(Actor).GetProperty("Conduct", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo ConductStartingMethod =
+      ConductType?.GetMethod("Starting", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        Type.EmptyTypes, null);
 
     private static readonly MethodInfo TranslationGetPropertyNameMethod =
       TranslationType?.GetMethod("GetName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
@@ -655,6 +663,23 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         return false;
 
       MeterSetBothMethod.Invoke(Target, new object[] { Points, Total });
+      return true;
+    }
+
+    /// <summary>
+    /// 重新同步 Actor.Conduct 的开局基准（StartingLife / StartingMana / StartingAttributes / StartingSpells 等）。
+    /// 在 CreateActor / RerollActor 修改固定六维与初始资源后必须调用，避免结算名望时因差值出现巨额负分。
+    /// </summary>
+    public static bool RefreshConductStarting(Actor Actor)
+    {
+      if (Actor == null || ActorConductProp == null || ConductStartingMethod == null)
+        return false;
+
+      var Conduct = ActorConductProp.GetValue(Actor);
+      if (Conduct == null)
+        return false;
+
+      ConductStartingMethod.Invoke(Conduct, null);
       return true;
     }
 
