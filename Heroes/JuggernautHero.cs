@@ -240,7 +240,12 @@ namespace Pathos.DotaHeroes.Heroes
                 "jugg.skill.q.desc_lv",
                 $"{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}",
                 Lv >= 4 ? DotaLocalization.T("jugg.skill.q.desc_max_suffix") : DotaLocalization.T("jugg.skill.q.desc_next_suffix")),
-          TitleResolver: () => DotaLocalization.T("jugg.skill.q.title")),
+          TitleResolver: () => DotaLocalization.T("jugg.skill.q.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.damage_mult", Lv => Lv > 0 ? $"×{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}" : null),
+            DotaSkillStat.Of("ui.stat.bonus_duration", Lv => Lv > 0 ? "+" + DotaHelpFormat.Turns(Lv >= 4 ? 2 : 0) : null)
+          }),
         SlotW: DotaSkillSlot.CreateActive(
           Id: SkillHealingWardId,
           Hotkey: "W",
@@ -254,7 +259,12 @@ namespace Pathos.DotaHeroes.Heroes
                 $"{(Lv - 1) * 0.5f:0.#}",
                 (Lv - 1) * 4,
                 Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
-          TitleResolver: () => DotaLocalization.T("jugg.skill.w.title")),
+          TitleResolver: () => DotaLocalization.T("jugg.skill.w.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.bonus_heal_per_turn", Lv => Lv > 0 ? $"+{(Lv - 1) * 0.5f:0.#}%" : null),
+            DotaSkillStat.Of("ui.stat.bonus_duration", Lv => Lv > 0 ? "+" + DotaHelpFormat.Turns((Lv - 1) * 4) : null)
+          }),
         SlotE: DotaSkillSlot.CreatePassive(
           Id: SkillBladeDanceId,
           Hotkey: "E",
@@ -269,7 +279,11 @@ namespace Pathos.DotaHeroes.Heroes
                 Lv < 4
                   ? DotaLocalization.Format("jugg.skill.e.desc_next_suffix", $"{GetBladeDanceCritChanceByLevel(Lv + 1) * 100:0}")
                   : DotaLocalization.T("jugg.skill.e.desc_max_suffix")),
-          TitleResolver: () => DotaLocalization.T("jugg.skill.e.title")),
+          TitleResolver: () => DotaLocalization.T("jugg.skill.e.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.crit_chance", Lv => Lv > 0 ? $"{GetBladeDanceCritChanceByLevel(Lv) * 100:0}%" : null)
+          }),
         SlotR: DotaSkillSlot.CreateActive(
           Id: SkillOmnislashId,
           Hotkey: "R",
@@ -284,7 +298,12 @@ namespace Pathos.DotaHeroes.Heroes
                 (Lv - 1) * 2,
                 (Lv - 1) * 2,
                 Lv < 3 ? DotaLocalization.T("jugg.skill.r.desc_next_suffix") : string.Empty),
-          TitleResolver: () => DotaLocalization.T("jugg.skill.r.title")),
+          TitleResolver: () => DotaLocalization.T("jugg.skill.r.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.bonus_slashes", Lv => Lv > 0 ? $"+{(Lv - 1) * 2}" : null),
+            DotaSkillStat.Of("ui.stat.bonus_slash_attack", Lv => Lv > 0 ? $"+{(Lv - 1) * 2}" : null)
+          }),
         HeroDisplayNameResolver: () => DotaLocalization.T("jugg.hero_display"),
         PrimaryAttribute: DotaPrimaryAttribute.Agility);
 

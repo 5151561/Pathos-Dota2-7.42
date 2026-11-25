@@ -33,7 +33,7 @@ Framework/
 │   ├── HookEventArgs.cs       # 强类型 Hook 事件参数
 │   └── PathosEngineBridge.cs  # 引擎内部成员反射缓存（伤害/治疗/召唤/销毁/学法升星/Story 特效/自动回合）
 ├── Skills/                    # DOTA2 升级技能加点系统（Q/W/E/R 原生升星 + 被动独立升级 + 7 级全属性黄点）
-├── Talents/                   # 四层双修天赋树（Lv 10/15/20/25 + Lv 27~30 双修）与左下角「技能与天赋」双 Tab 面板
+├── Talents/                   # 四层双修天赋树（Lv 10/15/20/25 + Lv 27~30 双修）与左下角 DOTA2 风格「技能与天赋」合并面板
 ├── Targeting/                 # DotaRangeTargetingBridge（全射程方格选框与点击捕获）
 └── UI/
     ├── PathosClientReflection.cs  # Pathos.dll 查找、PatchSafe 与 Theme.GetImage 共享封装

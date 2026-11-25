@@ -29,6 +29,27 @@ namespace Pathos.DotaHeroes.Framework.Skills
   }
 
   /// <summary>
+  /// 技能面板「升级效果预览」的一行数值（如 持续 3 回合 → 6 回合）。
+  /// Value(Lv) 返回该技能等级下的显示文本；返回 null 表示该等级没有此项（显示为「—」，两端都为 null 时整行隐藏）。
+  /// 必须与 DescribeLevel / 施法共用同一套按等级函数，避免面板与实际结算不一致。
+  /// </summary>
+  public sealed class DotaSkillStat
+  {
+    public DotaSkillStat(Func<string> Label, Func<int, string> Value)
+    {
+      this.Label = Label ?? throw new ArgumentNullException(nameof(Label));
+      this.Value = Value ?? throw new ArgumentNullException(nameof(Value));
+    }
+
+    public Func<string> Label { get; }
+    public Func<int, string> Value { get; }
+
+    /// <summary>以本地化 Key 作为标签声明一行预览数值。</summary>
+    public static DotaSkillStat Of(string LabelKey, Func<int, string> Value)
+      => new(() => DotaLocalization.T(LabelKey), Value);
+  }
+
+  /// <summary>
   /// 单个 DOTA2 英雄技能加点槽位定义（Q / W / E / R / 黄点）。
   /// - Active：0→1 级通过 Engine.LearnSpell 学会法术，1→MaxLevel 每次加点原生升星（★~★★★）并叠加英雄自定义数值增幅。
   /// - Passive：0→1 级通过 Engine.GainTalent 授予原生可见被动天赋，1→MaxLevel 由独立技能等级直接驱动被动数值。
@@ -56,7 +77,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       Func<int, string> DescribeLevel = null,
       Action<object, Character, int> OnUpgrade = null,
       Func<string> TitleResolver = null,
-      DotaPrimaryAttribute PrimaryAttribute = DotaPrimaryAttribute.Universal)
+      DotaPrimaryAttribute PrimaryAttribute = DotaPrimaryAttribute.Universal,
+      IReadOnlyList<DotaSkillStat> Stats = null)
     {
       if (string.IsNullOrWhiteSpace(Id))
         throw new ArgumentException("DotaSkillSlot Id cannot be null or empty.", nameof(Id));
@@ -76,6 +98,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
       this.DescribeLevel = DescribeLevel;
       this.OnUpgrade = OnUpgrade;
       this.PrimaryAttribute = PrimaryAttribute;
+      this.Stats = Stats ?? Array.Empty<DotaSkillStat>();
     }
 
     public string Id { get; }
@@ -90,6 +113,9 @@ namespace Pathos.DotaHeroes.Framework.Skills
     public Func<int, string> DescribeLevel { get; }
     public Action<object, Character, int> OnUpgrade { get; }
     public DotaPrimaryAttribute PrimaryAttribute { get; }
+
+    /// <summary>技能面板升级预览数值行（当前等级 → 下一级）。</summary>
+    public IReadOnlyList<DotaSkillStat> Stats { get; }
 
     public int GetRequiredHeroLevel(int TargetSkillLevel)
     {
@@ -109,7 +135,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       Func<int, string> DescribeLevel = null,
       bool IsUltimate = false,
       Action<object, Character, int> OnUpgrade = null,
-      Func<string> TitleResolver = null)
+      Func<string> TitleResolver = null,
+      IReadOnlyList<DotaSkillStat> Stats = null)
     {
       return CreateActiveGroup(
         Id,
@@ -120,7 +147,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
         DescribeLevel,
         IsUltimate,
         OnUpgrade,
-        TitleResolver);
+        TitleResolver,
+        Stats);
     }
 
     public static DotaSkillSlot CreateActiveGroup(
@@ -132,7 +160,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       Func<int, string> DescribeLevel = null,
       bool IsUltimate = false,
       Action<object, Character, int> OnUpgrade = null,
-      Func<string> TitleResolver = null)
+      Func<string> TitleResolver = null,
+      IReadOnlyList<DotaSkillStat> Stats = null)
     {
       return new DotaSkillSlot(
         Id: Id,
@@ -146,7 +175,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
         PassiveProperty: null,
         DescribeLevel: DescribeLevel,
         OnUpgrade: OnUpgrade,
-        TitleResolver: TitleResolver);
+        TitleResolver: TitleResolver,
+        Stats: Stats);
     }
 
     public static DotaSkillSlot CreatePassive(
@@ -158,7 +188,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       Func<int, string> DescribeLevel = null,
       bool IsUltimate = false,
       Action<object, Character, int> OnUpgrade = null,
-      Func<string> TitleResolver = null)
+      Func<string> TitleResolver = null,
+      IReadOnlyList<DotaSkillStat> Stats = null)
     {
       return new DotaSkillSlot(
         Id: Id,
@@ -172,7 +203,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
         PassiveProperty: PassiveProperty,
         DescribeLevel: DescribeLevel,
         OnUpgrade: OnUpgrade,
-        TitleResolver: TitleResolver);
+        TitleResolver: TitleResolver,
+        Stats: Stats);
     }
 
     /// <summary>
@@ -198,7 +230,30 @@ namespace Pathos.DotaHeroes.Framework.Skills
         DescribeLevel: Lv => DescribeAttributeBonusLevel(Lv, PrimaryAttribute),
         OnUpgrade: (Engine, Character, NewLevel) => ApplyAttributeBonusForLevel(Engine, Character, NewLevel, PrimaryAttribute),
         TitleResolver: () => DotaLocalization.T("ui.skill.attr_bonus.title"),
-        PrimaryAttribute: PrimaryAttribute);
+        PrimaryAttribute: PrimaryAttribute,
+        Stats: BuildAttributeBonusStats(PrimaryAttribute));
+    }
+
+    private static IReadOnlyList<DotaSkillStat> BuildAttributeBonusStats(DotaPrimaryAttribute PrimaryAttribute)
+    {
+      string[] Attrs = { "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma" };
+      var Result = new DotaSkillStat[Attrs.Length];
+      for (int i = 0; i < Attrs.Length; i++)
+      {
+        string Attr = Attrs[i];
+        Result[i] = new DotaSkillStat(
+          () => GetLocalizedAttributeName(Attr),
+          Lv =>
+          {
+            int Total = 0;
+            for (int L = 1; L <= Math.Min(Lv, 7); L++)
+              foreach (var Granted in GetAttributeBonusGrantForLevel(L, PrimaryAttribute))
+                if (Granted == Attr)
+                  Total++;
+            return Total > 0 ? $"+{Total}" : null;
+          });
+      }
+      return Result;
     }
 
     /// <summary>

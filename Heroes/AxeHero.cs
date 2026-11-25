@@ -237,7 +237,12 @@ namespace Pathos.DotaHeroes.Heroes
                 GetCallBaseDurationTurns(Lv),
                 DotaMechanicsMapper.MapArmorToDefence(GetCallBaseArmor(Lv)),
                 Lv >= 4 ? DotaLocalization.T("axe.skill.desc_max_suffix") : DotaLocalization.T("axe.skill.q.desc_next_suffix")),
-          TitleResolver: () => DotaLocalization.T("axe.skill.q.title")),
+          TitleResolver: () => DotaLocalization.T("axe.skill.q.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.duration", Lv => Lv > 0 ? DotaHelpFormat.Turns(GetCallBaseDurationTurns(Lv)) : null),
+            DotaSkillStat.Of("ui.stat.defence", Lv => Lv > 0 ? $"+{DotaMechanicsMapper.MapArmorToDefence(GetCallBaseArmor(Lv))}" : null)
+          }),
         SlotW: DotaSkillSlot.CreateActive(
           Id: SkillHungerId,
           Hotkey: "W",
@@ -251,7 +256,12 @@ namespace Pathos.DotaHeroes.Heroes
                 $"{GetHungerBaseDps(Lv):0}",
                 $"{GetHungerSlowRatio(Lv) * 100.0f:0}",
                 Lv >= 4 ? DotaLocalization.T("axe.skill.desc_max_suffix") : DotaLocalization.T("axe.skill.w.desc_next_suffix")),
-          TitleResolver: () => DotaLocalization.T("axe.skill.w.title")),
+          TitleResolver: () => DotaLocalization.T("axe.skill.w.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.pure_dps", Lv => Lv > 0 ? $"{GetHungerBaseDps(Lv):0}" : null),
+            DotaSkillStat.Of("ui.stat.slow", Lv => Lv > 0 ? $"{GetHungerSlowRatio(Lv) * 100.0f:0}%" : null)
+          }),
         SlotE: DotaSkillSlot.CreatePassive(
           Id: SkillHelixId,
           Hotkey: "E",
@@ -267,7 +277,12 @@ namespace Pathos.DotaHeroes.Heroes
                 Lv < 4
                   ? DotaLocalization.Format("axe.skill.e.desc_next_suffix", GetHelixThresholdByLevel(Lv + 1))
                   : DotaLocalization.T("axe.skill.desc_max_suffix")),
-          TitleResolver: () => DotaLocalization.T("axe.skill.e.title")),
+          TitleResolver: () => DotaLocalization.T("axe.skill.e.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.trigger_hits", Lv => Lv > 0 ? $"{GetHelixThresholdByLevel(Lv)}" : null),
+            DotaSkillStat.Of("ui.stat.pure_damage", Lv => Lv > 0 ? $"{DotaMechanicsMapper.MapSkillDamageDice(GetHelixBaseDotaDamage(Lv), 6)}" : null)
+          }),
         SlotR: DotaSkillSlot.CreateActive(
           Id: SkillCullingId,
           Hotkey: "R",
@@ -282,7 +297,12 @@ namespace Pathos.DotaHeroes.Heroes
                 DotaMechanicsMapper.MapSkillDamage(GetCullingBaseDotaThreshold(Lv)),
                 $"{CullingEliteArmorTenths[Math.Clamp(Lv - 1, 0, 2)] / 10.0f:0.#}",
                 Lv >= 3 ? DotaLocalization.T("axe.skill.desc_max_suffix") : DotaLocalization.T("axe.skill.r.desc_next_suffix")),
-          TitleResolver: () => DotaLocalization.T("axe.skill.r.title")),
+          TitleResolver: () => DotaLocalization.T("axe.skill.r.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.kill_threshold", Lv => Lv > 0 ? $"{DotaMechanicsMapper.MapSkillDamage(GetCullingBaseDotaThreshold(Lv))} HP" : null),
+            DotaSkillStat.Of("ui.stat.elite_armor", Lv => Lv > 0 ? $"+{CullingEliteArmorTenths[Math.Clamp(Lv - 1, 0, 2)] / 10.0f:0.#}" : null)
+          }),
         HeroDisplayNameResolver: () => DotaLocalization.T("axe.hero_display"),
         PrimaryAttribute: DotaPrimaryAttribute.Strength);
 

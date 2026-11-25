@@ -208,7 +208,12 @@ namespace Pathos.DotaHeroes.Heroes
                 $"{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}",
                 Lv - 1,
                 Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
-          TitleResolver: () => DotaLocalization.T("morph.skill.q.title")),
+          TitleResolver: () => DotaLocalization.T("morph.skill.q.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.damage_mult", Lv => Lv > 0 ? $"×{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}" : null),
+            DotaSkillStat.Of("ui.stat.bonus_range", Lv => Lv > 0 ? "+" + DotaHelpFormat.Tiles(Lv - 1) : null)
+          }),
         SlotW: DotaSkillSlot.CreateActive(
           Id: SkillAdaptiveStrikeId,
           Hotkey: "W",
@@ -222,7 +227,12 @@ namespace Pathos.DotaHeroes.Heroes
                 $"{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}",
                 Lv - 1,
                 Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
-          TitleResolver: () => DotaLocalization.T("morph.skill.w.title")),
+          TitleResolver: () => DotaLocalization.T("morph.skill.w.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.damage_mult", Lv => Lv > 0 ? $"×{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}" : null),
+            DotaSkillStat.Of("ui.stat.bonus_max_stun", Lv => Lv > 0 ? "+" + DotaHelpFormat.Turns(Lv - 1) : null)
+          }),
         SlotE: DotaSkillSlot.CreateActiveGroup(
           Id: SkillAttributeShiftId,
           Hotkey: "E",
@@ -235,7 +245,11 @@ namespace Pathos.DotaHeroes.Heroes
                 "morph.skill.e.desc_lv",
                 Lv - 1,
                 Lv < 4 ? DotaLocalization.T("morph.skill.e.desc_next_suffix") : string.Empty),
-          TitleResolver: () => DotaLocalization.T("morph.skill.e.title")),
+          TitleResolver: () => DotaLocalization.T("morph.skill.e.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.bonus_shift_step", Lv => Lv > 0 ? $"+{Lv - 1}" : null)
+          }),
         SlotR: DotaSkillSlot.CreateActiveGroup(
           Id: SkillMorphId,
           Hotkey: "R",
@@ -249,7 +263,11 @@ namespace Pathos.DotaHeroes.Heroes
                 "morph.skill.r.desc_lv",
                 Lv - 1,
                 Lv < 3 ? DotaLocalization.T("morph.skill.r.desc_next_suffix") : string.Empty),
-          TitleResolver: () => DotaLocalization.T("morph.skill.r.title")),
+          TitleResolver: () => DotaLocalization.T("morph.skill.r.title"),
+          Stats: new[]
+          {
+            DotaSkillStat.Of("ui.stat.bonus_cast_range", Lv => Lv > 0 ? "+" + DotaHelpFormat.Tiles(Lv - 1) : null)
+          }),
         HeroDisplayNameResolver: () => DotaLocalization.T("morph.hero_display"),
         PrimaryAttribute: DotaPrimaryAttribute.Agility);
 
