@@ -40,7 +40,7 @@
 | [TalentDefinitions.cs](../../Framework/Talents/TalentDefinitions.cs) | 定义 `HeroTalentTree`、`TalentTier`、`TalentNode`、`TalentBranch`、`TalentNodeState` 与声明式 `SpellManaReductionRule`。 |
 | [TalentRegistry.cs](../../Framework/Talents/TalentRegistry.cs) | 按 `Class.Name` 索引所有英雄天赋树；自动在 `Codex.Properties` 生成 `dota_talent_<id>` 内部标记并登记至 `DotaPropertyVisibility` 隐藏。 |
 | [TalentService.cs](../../Framework/Talents/TalentService.cs) | 查询已学天赋与可用点数、执行不可洗点学习（调用 `Engine.GainTalent` 写入 `AcquiredTalentSet`）、自动订阅 `SpellCostQuery`（减冷却 → 减蓝耗）与 `AfterLevelUp`（升级解锁日志提示）。 |
-| [TalentTreeUiBridge.cs](../../Framework/Talents/TalentTreeUiBridge.cs) | 挂载 `StagePanel`、`TalentPanel`、`HelpLibrary`：在左下角「休息」按钮右侧注入原生 `MenuButton`（紧贴 `EdgeWidth` 不裁切），提供与角色/法术/日志同位互斥的左侧停靠DOTA2 风格单页面板（上方天赋树：左右天赋 + 中间等级徽章，双修等级小字标注；下方技能栏：金色「+」直接加点、金色等级格；底部技能详情与升级效果预览「当前值 → 下级值」，数值来自 `DotaSkillSlot.Stats`），支持 `F2` 开关与 `ESC` 关闭。新英雄声明技能槽时应在 `Stats` 中用 `DotaSkillStat.Of(labelKey, Lv => ...)` 列出随等级变化的数值，并与 `DescribeLevel` / 施法共用同一套按等级函数。 | |
+| [TalentTreeUiBridge.cs](../../Framework/Talents/TalentTreeUiBridge.cs) | 挂载 `StagePanel`、`TalentPanel`、`HelpLibrary`：在左下角「休息」按钮右侧注入原生 `MenuButton`（紧贴 `EdgeWidth` 不裁切），提供与角色/法术/日志同位互斥的左侧停靠DOTA2 风格单页面板（上方天赋树：左右天赋 + 中间等级徽章，双修等级小字标注；下方技能栏：金色「+」直接加点、金色等级格；技能图标与天赋格支持悬停高亮，技能详情与升级预览统一放在 DOTA2 风格悬停卡片中（`Inv.Button.Tooltip.Content`，按「Lv1 / Lv2 / Lv3 / Lv4」列出逐级数值，当前级金色、可升级时下一级绿色；数值来自 `DotaSkillSlot.Stats`），面板本体不再有详情框），支持 `F2` 开关与 `ESC` 关闭。新英雄声明技能槽时应在 `Stats` 中用 `DotaSkillStat.Of(labelKey, Lv => ...)` 列出随等级变化的数值，并与 `DescribeLevel` / 施法共用同一套按等级函数。 | |
 
 ### 1.2 解锁阶梯与存档持久化
 

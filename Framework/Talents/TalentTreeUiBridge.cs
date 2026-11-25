@@ -14,7 +14,8 @@ namespace Pathos.DotaHeroes.Framework.Talents
   /// <summary>
   /// DOTA2 独立天赋树面板 UI 桥接层（原生 Pathos 风格）：
   /// - 入口按钮为原生 Pathos.MenuButton，放置在左下角「休息」按钮右侧（通过 StagePanel.EdgeWidth 动态对齐，避免被 LeftDock 裁切）。
-  /// - 天赋树面板为左下角停靠的原生 Pathos 风格侧边面板（与角色/法术左侧面板同位互斥），复用 Pathos.Theme 配色与标准字体。
+  /// - 天赋树面板为左下角停靠的侧边面板（与角色/法术左侧面板同位互斥），统一 DOTA2 HUD 配色 + Pathos 标准字体；
+  ///   技能详情与升级预览全部放在悬停卡片中（DOTA2 风格 Inv.Tooltip），面板本体只保留天赋树与技能栏，高度固定不跳动。
   /// - 支持 F2 快捷开关、ESC 关闭；原生 TalentPanel.Refresh 中自动隐藏内部持久化标记（dota_talent_*）。
   /// </summary>
   internal static class TalentTreeUiBridge
@@ -47,9 +48,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
     private static MethodInfo MenuButtonArrangeMethod;
     private static EventInfo MenuButtonSingleTapEvent;
 
-    private static PropertyInfo ThemePanelColourProp;
-    private static PropertyInfo ThemeStrokeColourProp;
-
     private static FieldInfo TalentPanelDictField;
     private static PropertyInfo TileOptionIsVisibleProp;
     private static PropertyInfo KeystrokeKeyProp;
@@ -79,7 +77,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
         var GameType = PathosClientAsm.GetType("Pathos.Game");
         var MenuStackType = PathosClientAsm.GetType("Pathos.MenuStack");
         var MenuButtonType = PathosClientAsm.GetType("Pathos.MenuButton");
-        var ThemeType = PathosClientAsm.GetType("Pathos.Theme");
         var TileOptionType = PathosClientAsm.GetType("Pathos.TileOption");
         var HelpLibraryType = PathosClientAsm.GetType("Pathos.HelpLibrary");
         var HelpSectionType = PathosClientAsm.GetType("Pathos.HelpSection");
@@ -116,9 +113,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
         MenuButtonVisibilityProp = MenuButtonType?.GetProperty("Visibility", AnyInstance);
         MenuButtonArrangeMethod = MenuButtonType?.GetMethod("Arrange", AnyInstance, null, new[] { typeof(bool) }, null);
         MenuButtonSingleTapEvent = MenuButtonType?.GetEvent("SingleTapEvent", AnyInstance);
-
-        ThemePanelColourProp = ThemeType?.GetProperty("PanelColour", AnyStatic);
-        ThemeStrokeColourProp = ThemeType?.GetProperty("StrokeColour", AnyStatic);
 
         TalentPanelDictField = TalentPanelType?.GetField("PropertyOptionDictionary", AnyInstance);
         TileOptionIsVisibleProp = TileOptionType?.GetProperty("IsVisible", AnyInstance);
@@ -435,30 +429,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
       return null;
     }
 
-    private static Inv.Colour GetThemePanelColour()
-    {
-      try
-      {
-        if (ThemePanelColourProp?.GetValue(null) is Inv.Colour C)
-          return C;
-      }
-      catch { }
-
-      return Inv.Colour.FromArgb(245, 30, 31, 35);
-    }
-
-    private static Inv.Colour GetThemeStrokeColour()
-    {
-      try
-      {
-        if (ThemeStrokeColourProp?.GetValue(null) is Inv.Colour C)
-          return C;
-      }
-      catch { }
-
-      return Inv.Colour.FromArgb(255, 62, 66, 74);
-    }
-
     private static Inv.Image GetGlyphImage(Glyph Glyph)
       => PathosClientReflection.GetThemeGlyphImage(Glyph);
 
@@ -485,37 +455,53 @@ namespace Pathos.DotaHeroes.Framework.Talents
     /// </summary>
     private sealed class StageTalentController
     {
-      // 配色：底色/描边沿用 Pathos 原生冷灰主题，仅「可操作 / 已学」使用 DOTA2 金橙色点缀
-      private static readonly Inv.Colour TileBgColour = Inv.Colour.FromArgb(255, 38, 40, 45);
-      private static readonly Inv.Colour TileBorderColour = Inv.Colour.FromArgb(255, 52, 55, 63);
-      private static readonly Inv.Colour TileDimBgColour = Inv.Colour.FromArgb(255, 30, 31, 35);
-      private static readonly Inv.Colour IconBgColour = Inv.Colour.FromArgb(255, 42, 44, 50);
-      private static readonly Inv.Colour BadgeBgColour = Inv.Colour.FromArgb(255, 23, 24, 27);
-      private static readonly Inv.Colour UnlearnedShadeColour = Inv.Colour.FromArgb(160, 12, 13, 15);
+      // 配色：统一采用 DOTA2 HUD 风格（近黑蓝灰底 + 钢灰描边 + 金色强调），不再混用 Pathos 原生冷灰
+      private static readonly Inv.Colour PanelBgColour = Inv.Colour.FromArgb(248, 15, 18, 22);
+      private static readonly Inv.Colour PanelBorderColour = Inv.Colour.FromArgb(255, 54, 60, 68);
+      private static readonly Inv.Colour PanelAccentColour = Inv.Colour.FromArgb(255, 150, 118, 58);
+      private static readonly Inv.Colour SectionLineColour = Inv.Colour.FromArgb(255, 44, 50, 58);
 
-      private static readonly Inv.Colour TextPrimaryColour = Inv.Colour.FromArgb(255, 240, 242, 246);
-      private static readonly Inv.Colour TextSecondaryColour = Inv.Colour.FromArgb(255, 190, 195, 204);
-      private static readonly Inv.Colour TextMutedColour = Inv.Colour.FromArgb(255, 128, 134, 146);
-      private static readonly Inv.Colour TextDisabledColour = Inv.Colour.FromArgb(255, 78, 82, 92);
+      private static readonly Inv.Colour TileBgColour = Inv.Colour.FromArgb(255, 26, 30, 36);
+      private static readonly Inv.Colour TileHoverBgColour = Inv.Colour.FromArgb(255, 36, 41, 49);
+      private static readonly Inv.Colour TileBorderColour = Inv.Colour.FromArgb(255, 46, 52, 60);
+      private static readonly Inv.Colour TileHoverBorderColour = Inv.Colour.FromArgb(255, 120, 128, 140);
+      private static readonly Inv.Colour TileDimBgColour = Inv.Colour.FromArgb(255, 19, 22, 26);
+      private static readonly Inv.Colour HeaderStripColour = Inv.Colour.FromArgb(255, 30, 35, 42);
+      private static readonly Inv.Colour IconBgColour = Inv.Colour.FromArgb(255, 8, 9, 11);
+      private static readonly Inv.Colour IconBorderColour = Inv.Colour.FromArgb(255, 0, 0, 0);
+      private static readonly Inv.Colour BadgeBgColour = Inv.Colour.FromArgb(255, 12, 14, 17);
+      private static readonly Inv.Colour UnlearnedShadeColour = Inv.Colour.FromArgb(170, 8, 9, 11);
 
-      private static readonly Inv.Colour GoldBgColour = Inv.Colour.FromArgb(255, 46, 42, 32);
-      private static readonly Inv.Colour GoldBorderColour = Inv.Colour.FromArgb(255, 201, 165, 90);
-      private static readonly Inv.Colour GoldTextColour = Inv.Colour.FromArgb(255, 240, 220, 168);
-      private static readonly Inv.Colour GoldBrightColour = Inv.Colour.FromArgb(255, 243, 205, 110);
+      private static readonly Inv.Colour TextPrimaryColour = Inv.Colour.FromArgb(255, 238, 240, 243);
+      private static readonly Inv.Colour TextSecondaryColour = Inv.Colour.FromArgb(255, 176, 184, 194);
+      private static readonly Inv.Colour TextMutedColour = Inv.Colour.FromArgb(255, 112, 120, 132);
+      private static readonly Inv.Colour TextDisabledColour = Inv.Colour.FromArgb(255, 70, 76, 86);
+
+      private static readonly Inv.Colour GoldBgColour = Inv.Colour.FromArgb(255, 44, 37, 22);
+      private static readonly Inv.Colour GoldHoverBgColour = Inv.Colour.FromArgb(255, 64, 53, 28);
+      private static readonly Inv.Colour GoldBorderColour = Inv.Colour.FromArgb(255, 190, 150, 72);
+      private static readonly Inv.Colour GoldTextColour = Inv.Colour.FromArgb(255, 240, 216, 158);
+      private static readonly Inv.Colour GoldBrightColour = Inv.Colour.FromArgb(255, 255, 210, 100);
       private static readonly Inv.Colour DualLevelColour = Inv.Colour.FromArgb(255, 140, 118, 70);
 
-      private static readonly Inv.Colour LearnedBgColour = Inv.Colour.FromArgb(255, 96, 60, 26);
-      private static readonly Inv.Colour LearnedBorderColour = Inv.Colour.FromArgb(255, 224, 160, 80);
-      private static readonly Inv.Colour LearnedTextColour = Inv.Colour.FromArgb(255, 255, 243, 220);
+      private static readonly Inv.Colour LearnedBgColour = Inv.Colour.FromArgb(255, 104, 70, 26);
+      private static readonly Inv.Colour LearnedBorderColour = Inv.Colour.FromArgb(255, 232, 178, 82);
+      private static readonly Inv.Colour LearnedTextColour = Inv.Colour.FromArgb(255, 255, 240, 205);
 
-      private static readonly Inv.Colour PlusBgColour = Inv.Colour.FromArgb(255, 201, 165, 90);
-      private static readonly Inv.Colour PlusTextColour = Inv.Colour.FromArgb(255, 42, 31, 8);
-      private static readonly Inv.Colour PipFilledColour = Inv.Colour.FromArgb(255, 232, 184, 74);
-      private static readonly Inv.Colour PipEmptyColour = Inv.Colour.FromArgb(255, 58, 61, 69);
+      private static readonly Inv.Colour PlusBgColour = Inv.Colour.FromArgb(255, 196, 150, 56);
+      private static readonly Inv.Colour PlusHoverBgColour = Inv.Colour.FromArgb(255, 236, 190, 86);
+      private static readonly Inv.Colour PlusTextColour = Inv.Colour.FromArgb(255, 36, 26, 6);
+      private static readonly Inv.Colour PipFilledColour = Inv.Colour.FromArgb(255, 236, 186, 70);
+      private static readonly Inv.Colour PipEmptyColour = Inv.Colour.FromArgb(255, 40, 45, 52);
       private static readonly Inv.Colour UpgradeGreenColour = Inv.Colour.FromArgb(255, 146, 222, 120);
+      private static readonly Inv.Colour WarnColour = Inv.Colour.FromArgb(255, 214, 120, 96);
+
+      private static readonly Inv.Colour TooltipBgColour = Inv.Colour.FromArgb(252, 20, 23, 28);
+      private static readonly Inv.Colour TooltipBorderColour = Inv.Colour.FromArgb(255, 70, 78, 90);
 
       private const int AbilityIconSize = 54;
-      private const int AbilityColumnWidth = 60;
+      private const int AbilityColumnWidth = 64;
+      private const int TooltipWidth = 320;
 
       private readonly object StagePanel;
       private readonly Inv.Surface Surface;
@@ -532,7 +518,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
       private Inv.Frame PointsBadgeFrame;
       private Inv.Label PointsBadgeLabel;
       private Inv.Stack ContentStack;
-      private string SelectedSlotId;
       private bool PanelOpen;
 
       public bool IsPanelOpen => PanelOpen;
@@ -650,10 +635,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
         if (!HasBuild && !HasTree)
           return;
 
-        // 每次打开重新挑选默认详情：优先显示可升级的技能
-        if (!PanelOpen)
-          SelectedSlotId = null;
-
         // 关闭同侧原版面板（仅左侧角色/法术面板；不隐藏顶部 JournalPanel 日志横幅）
         HideNativeSidePanel(StageCharacterPanelProp?.GetValue(StagePanel));
         HideNativeSidePanel(StageCastPanelProp?.GetValue(StagePanel));
@@ -753,9 +734,10 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         SidePanelFrame = Surface.NewFrame();
         SidePanelFrame.Alignment.BottomLeft();
-        SidePanelFrame.Background.Colour = GetThemePanelColour();
+        SidePanelFrame.Background.Colour = PanelBgColour;
         SidePanelFrame.Border.Set(1);
-        SidePanelFrame.Border.Colour = GetThemeStrokeColour();
+        SidePanelFrame.Border.Colour = PanelBorderColour;
+        SidePanelFrame.Corner.Set(3);
         // 底部留足 112px 避开左下角圆形菜单栏，顶部留足 68px 避开菜单按钮
         SidePanelFrame.Margin.Set(4, 68, 0, 112);
         SidePanelFrame.Size.SetWidth(Math.Max(GetStageEdgeWidth(StagePanel), 440));
@@ -775,20 +757,29 @@ namespace Pathos.DotaHeroes.Framework.Talents
         RootDock.Padding.Set(10, 10);
         RootOverlay.AddPanel(RootDock);
 
-        // 顶部：英雄头像 + 名称/等级 + 可用点数徽章
+        // 顶部：英雄头像 + 名称/等级 + 可用点数徽章，下方一条金色细线分隔（DOTA2 HUD 标题样式）
+        var HeaderHost = Surface.NewVerticalStack();
+        HeaderHost.Margin.Set(0, 0, 0, 10);
+        RootDock.AddHeader(HeaderHost);
+
         var HeaderDock = Surface.NewHorizontalDock();
         HeaderDock.Margin.Set(0, 0, 0, 8);
-        RootDock.AddHeader(HeaderDock);
+        HeaderHost.AddPanel(HeaderDock);
+
+        var HeaderRule = Surface.NewFrame();
+        HeaderRule.Size.SetHeight(1);
+        HeaderRule.Background.Colour = PanelAccentColour;
+        HeaderHost.AddPanel(HeaderRule);
 
         var PortraitFrame = Surface.NewFrame();
-        PortraitFrame.Size.Set(36, 36);
+        PortraitFrame.Size.Set(40, 40);
         PortraitFrame.Background.Colour = IconBgColour;
         PortraitFrame.Border.Set(1);
-        PortraitFrame.Border.Colour = GetThemeStrokeColour();
-        PortraitFrame.Margin.Set(0, 0, 8, 0);
+        PortraitFrame.Border.Colour = GoldBorderColour;
+        PortraitFrame.Margin.Set(0, 0, 10, 0);
         PortraitFrame.Alignment.CenterLeft();
         HeaderPortrait = Surface.NewGraphic();
-        HeaderPortrait.Size.Set(32, 32);
+        HeaderPortrait.Size.Set(36, 36);
         HeaderPortrait.Alignment.Center();
         PortraitFrame.Content = HeaderPortrait;
         HeaderDock.AddHeader(PortraitFrame);
@@ -806,7 +797,8 @@ namespace Pathos.DotaHeroes.Framework.Talents
         PointsBadgeFrame.Border.Set(1);
         PointsBadgeFrame.Border.Colour = GoldBorderColour;
         PointsBadgeFrame.Background.Colour = GoldBgColour;
-        PointsBadgeFrame.Padding.Set(8, 3);
+        PointsBadgeFrame.Padding.Set(10, 3);
+        PointsBadgeFrame.Corner.Set(10);
         PointsBadgeLabel = CreateLabel(GoldTextColour, FontSize: 13);
         PointsBadgeFrame.Content = PointsBadgeLabel;
         HeaderDock.AddFooter(PointsBadgeFrame);
@@ -864,57 +856,61 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
           ContentStack.AddPanel(BuildSectionCaption(DotaLocalization.T("ui.panel.section.skills")));
 
-          var Selected = ResolveSelectedSlot(Character, SkillBuild);
-          ContentStack.AddPanel(BuildAbilityBar(Character, SkillBuild, Selected));
-          if (Selected != null)
-            ContentStack.AddPanel(BuildSkillDetail(Character, Selected));
+          ContentStack.AddPanel(BuildAbilityBar(Character, SkillBuild));
         }
       }
 
-      private DotaSkillSlot ResolveSelectedSlot(Character Character, HeroSkillBuild SkillBuild)
-      {
-        if (SkillBuild.Slots.Count == 0)
-          return null;
-
-        var Current = SkillBuild.Slots.FirstOrDefault(S => S.Id == SelectedSlotId);
-        if (Current != null)
-          return Current;
-
-        // 首次打开：优先选中可升级的技能
-        var Upgradable = SkillBuild.Slots.FirstOrDefault(S =>
-          HeroSkillService.GetUpgradeState(Character, S, out _) == DotaSkillUpgradeState.Available);
-        var Pick = Upgradable ?? SkillBuild.Slots[0];
-        SelectedSlotId = Pick.Id;
-        return Pick;
-      }
-
-      private void RebuildForActiveCharacter()
-      {
-        var Character = GetActiveCharacter(StagePanel);
-        if (Character == null)
-          return;
-
-        HeroSkillRegistry.TryGetBuild(Character, out var SkillBuild);
-        TalentRegistry.TryGetTree(Character, out var Tree);
-        RebuildPanelContent(Character, SkillBuild, Tree);
-      }
-
+      // DOTA2 风格分节标题：── 天赋树 ──
       private Inv.Panel BuildSectionCaption(string Text)
       {
-        var Label = CreateLabel(TextMutedColour, FontSize: 13);
+        var Table = Surface.NewTable();
+        Table.Margin.Set(0, 0, 0, 8);
+        var ColL = Table.AddStarColumn(1);
+        var ColText = Table.AddAutoColumn();
+        var ColR = Table.AddStarColumn(1);
+        var Row = Table.AddAutoRow();
+
+        Table.GetCell(ColL, Row).Content = BuildSectionLine();
+        var Label = CreateLabel(GoldTextColour, FontSize: 13);
         Label.Text = Text;
         Label.Justify.Center();
-        Label.Margin.Set(0, 0, 0, 6);
-        return Label;
+        Label.Margin.Set(10, 0, 10, 0);
+        Table.GetCell(ColText, Row).Content = Label;
+        Table.GetCell(ColR, Row).Content = BuildSectionLine();
+        return Table;
+      }
+
+      private Inv.Panel BuildSectionLine()
+      {
+        var Line = Surface.NewFrame();
+        Line.Size.SetHeight(1);
+        Line.Alignment.StretchCenter();
+        Line.Background.Colour = SectionLineColour;
+        return Line;
       }
 
       private Inv.Panel BuildDivider()
       {
-        var Line = Surface.NewFrame();
-        Line.Size.SetHeight(1);
-        Line.Background.Colour = GetThemeStrokeColour();
-        Line.Margin.Set(0, 8, 0, 10);
-        return Line;
+        var Spacer = Surface.NewFrame();
+        Spacer.Size.SetHeight(10);
+        return Spacer;
+      }
+
+      /// <summary>为按钮挂上 DOTA2 式悬停反馈：鼠标移入时切换底色/描边，移出时恢复。</summary>
+      private static void AttachHover(Inv.Button Btn, Inv.Colour Bg, Inv.Colour Border, Inv.Colour HoverBg, Inv.Colour HoverBorder)
+      {
+        Btn.Background.Colour = Bg;
+        Btn.Border.Colour = Border;
+        Btn.OverEvent += () =>
+        {
+          Btn.Background.Colour = HoverBg;
+          Btn.Border.Colour = HoverBorder;
+        };
+        Btn.AwayEvent += () =>
+        {
+          Btn.Background.Colour = Bg;
+          Btn.Border.Colour = Border;
+        };
       }
 
       // ───────────────────────── 天赋树 ─────────────────────────
@@ -926,26 +922,28 @@ namespace Pathos.DotaHeroes.Framework.Talents
         bool TierReached = Character.Level >= Tier.UnlockLevel;
 
         var Table = Surface.NewTable();
-        Table.Margin.Set(0, 0, 0, 5);
+        Table.Margin.Set(0, 0, 0, 6);
         var ColLeft = Table.AddStarColumn(1);
-        var ColBadge = Table.AddFixedColumn(52);
+        var ColBadge = Table.AddFixedColumn(56);
         var ColRight = Table.AddStarColumn(1);
         var Row = Table.AddAutoRow();
 
-        Table.GetCell(ColLeft, Row).Content = BuildTalentTile(Tier, TalentBranch.Left, LeftState, HasTalentPoints);
+        Table.GetCell(ColLeft, Row).Content = BuildTalentTile(Character, Tier, TalentBranch.Left, LeftState, HasTalentPoints);
         Table.GetCell(ColBadge, Row).Content = BuildTalentLevelBadge(Tier, TierReached);
-        Table.GetCell(ColRight, Row).Content = BuildTalentTile(Tier, TalentBranch.Right, RightState, HasTalentPoints);
+        Table.GetCell(ColRight, Row).Content = BuildTalentTile(Character, Tier, TalentBranch.Right, RightState, HasTalentPoints);
         return Table;
       }
 
       private Inv.Panel BuildTalentLevelBadge(TalentTier Tier, bool Reached)
       {
+        // DOTA2 天赋树中轴的圆形等级徽章
         var Badge = Surface.NewFrame();
-        Badge.Size.Set(40, 40);
+        Badge.Size.Set(42, 42);
         Badge.Alignment.Center();
+        Badge.Corner.Set(21);
         Badge.Background.Colour = BadgeBgColour;
         Badge.Border.Set(2);
-        Badge.Border.Colour = Reached ? GoldBorderColour : GetThemeStrokeColour();
+        Badge.Border.Colour = Reached ? GoldBorderColour : TileBorderColour;
 
         var Stack = Surface.NewVerticalStack();
         Stack.Alignment.Center();
@@ -968,53 +966,57 @@ namespace Pathos.DotaHeroes.Framework.Talents
         return Badge;
       }
 
-      private Inv.Panel BuildTalentTile(TalentTier Tier, TalentBranch Branch, TalentNodeState State, bool HasTalentPoints)
+      private Inv.Panel BuildTalentTile(Character Character, TalentTier Tier, TalentBranch Branch, TalentNodeState State, bool HasTalentPoints)
       {
         var Node = Tier.GetNode(Branch);
         bool Clickable = State == TalentNodeState.Available && HasTalentPoints;
 
-        Inv.Colour Bg, Border, TextCol;
+        Inv.Colour Bg, Border, HoverBg, HoverBorder, TextCol;
         if (State == TalentNodeState.Learned)
         {
-          Bg = LearnedBgColour;
-          Border = LearnedBorderColour;
+          Bg = HoverBg = LearnedBgColour;
+          Border = HoverBorder = LearnedBorderColour;
           TextCol = LearnedTextColour;
         }
         else if (Clickable)
         {
           Bg = GoldBgColour;
           Border = GoldBorderColour;
+          HoverBg = GoldHoverBgColour;
+          HoverBorder = GoldBrightColour;
           TextCol = GoldTextColour;
         }
         else if (State == TalentNodeState.OppositeBlocked)
         {
-          Bg = TileDimBgColour;
+          Bg = HoverBg = TileDimBgColour;
           Border = TileDimBgColour;
+          HoverBorder = TileBorderColour;
           TextCol = TextDisabledColour;
         }
         else
         {
           Bg = TileBgColour;
+          HoverBg = TileHoverBgColour;
           Border = TileBorderColour;
-          TextCol = TextMutedColour;
+          HoverBorder = TileHoverBorderColour;
+          TextCol = TextSecondaryColour;
         }
 
         var Label = CreateLabel(TextCol, FontSize: 14);
-        Label.Text = State == TalentNodeState.Learned ? "✓ " + Node.Title : Node.Title;
+        Label.Text = Node.Title;
         Label.Justify.Center();
         Label.LineWrapping = true;
         Label.Alignment.Center();
 
-        // 全部用按钮承载，保证悬停时都能看到天赋完整说明；仅可学习状态响应点击
+        // 全部用按钮承载：悬停高亮 + 弹出天赋说明卡片；仅可学习状态响应点击
         var Btn = Surface.NewFlatButton();
         Btn.Alignment.Stretch();
-        Btn.Size.SetMinimumHeight(42);
-        Btn.Background.Colour = Bg;
+        Btn.Size.SetMinimumHeight(44);
         Btn.Border.Set(1);
-        Btn.Border.Colour = Border;
+        Btn.Corner.Set(2);
         Btn.Padding.Set(6, 4);
-        if (!string.IsNullOrWhiteSpace(Node.Description))
-          Btn.Hint = Node.Description;
+        AttachHover(Btn, Bg, Border, HoverBg, HoverBorder);
+        Btn.Tooltip.Content = BuildTalentTooltip(Character, Tier, Node, State, HasTalentPoints);
         Btn.Content = Label;
         if (Clickable)
           Btn.SingleTapEvent += () => HandleSelectTalent(Tier, Branch);
@@ -1023,59 +1025,104 @@ namespace Pathos.DotaHeroes.Framework.Talents
         return Btn;
       }
 
+      private Inv.Panel BuildTalentTooltip(Character Character, TalentTier Tier, TalentNode Node, TalentNodeState State, bool HasTalentPoints)
+      {
+        var Card = NewTooltipCard(out var Body);
+
+        Body.AddPanel(BuildTooltipTitle(Node.Title, DotaLocalization.Format("ui.talent.tier_title", Tier.UnlockLevel)));
+
+        if (!string.IsNullOrWhiteSpace(Node.Description))
+        {
+          var Desc = CreateLabel(TextSecondaryColour, FontSize: 13);
+          Desc.Text = Node.Description;
+          Desc.LineWrapping = true;
+          Desc.Margin.Set(10, 8, 10, 0);
+          Body.AddPanel(Desc);
+        }
+
+        string StatusText;
+        Inv.Colour StatusColour;
+        switch (State)
+        {
+          case TalentNodeState.Learned:
+            StatusText = DotaLocalization.T("ui.talent.learned_tag");
+            StatusColour = GoldBrightColour;
+            break;
+          case TalentNodeState.Available when HasTalentPoints:
+            StatusText = DotaLocalization.T("ui.talent.click_tag");
+            StatusColour = UpgradeGreenColour;
+            break;
+          case TalentNodeState.Available:
+            StatusText = DotaLocalization.T("ui.talent.status.no_points");
+            StatusColour = TextMutedColour;
+            break;
+          case TalentNodeState.OppositeBlocked:
+            StatusText = Tier.DualUnlockLevel > Tier.UnlockLevel
+              ? DotaLocalization.Format("ui.talent.status.blocked_dual", Tier.DualUnlockLevel)
+              : DotaLocalization.T("ui.talent.status.blocked");
+            StatusColour = TextMutedColour;
+            break;
+          default:
+            StatusText = DotaLocalization.Format("ui.talent.status.locked", Tier.UnlockLevel);
+            StatusColour = WarnColour;
+            break;
+        }
+
+        Body.AddPanel(BuildTooltipFooter(StatusText, StatusColour));
+        return Card;
+      }
+
       // ───────────────────────── 技能栏 ─────────────────────────
 
-      private Inv.Panel BuildAbilityBar(Character Character, HeroSkillBuild SkillBuild, DotaSkillSlot Selected)
+      private Inv.Panel BuildAbilityBar(Character Character, HeroSkillBuild SkillBuild)
       {
         var Bar = Surface.NewHorizontalStack();
         Bar.Alignment.TopCenter();
         Bar.Margin.Set(0, 0, 0, 8);
 
         foreach (var Slot in SkillBuild.Slots)
-          Bar.AddPanel(BuildAbilityColumn(Character, Slot, Slot == Selected));
+          Bar.AddPanel(BuildAbilityColumn(Character, Slot));
 
         return Bar;
       }
 
-      private Inv.Panel BuildAbilityColumn(Character Character, DotaSkillSlot Slot, bool IsSelected)
+      private Inv.Panel BuildAbilityColumn(Character Character, DotaSkillSlot Slot)
       {
         int CurrentLv = HeroSkillService.GetSkillLevel(Character, Slot);
-        var State = HeroSkillService.GetUpgradeState(Character, Slot, out _);
+        var State = HeroSkillService.GetUpgradeState(Character, Slot, out int RequiredHeroLv);
 
         var Column = Surface.NewVerticalStack();
         Column.Size.SetWidth(AbilityColumnWidth);
-        Column.Margin.Set(3, 0, 3, 0);
+        Column.Margin.Set(2, 0, 2, 0);
 
-        // 1. DOTA2 风格金色「+」：可升级时出现在图标上方，点击直接加点
+        // 1. DOTA2 风格金色「+」：可升级时出现在图标上方，点击直接加点（无论是否可升级都占位，保证布局稳定）
         if (State == DotaSkillUpgradeState.Available)
         {
           var PlusBtn = Surface.NewFlatButton();
           PlusBtn.Size.Set(AbilityIconSize, 18);
           PlusBtn.Alignment.Center();
-          PlusBtn.Background.Colour = PlusBgColour;
+          PlusBtn.Margin.Set(0, 0, 0, 3);
+          PlusBtn.Corner.Set(2);
           PlusBtn.Border.Set(1);
-          PlusBtn.Border.Colour = GoldBrightColour;
+          AttachHover(PlusBtn, PlusBgColour, GoldBorderColour, PlusHoverBgColour, GoldBrightColour);
           PlusBtn.Hint = DotaLocalization.Format("ui.skill.plus_hint", Slot.Title);
           var PlusLabel = CreateLabel(PlusTextColour, FontSize: 14);
           PlusLabel.Text = "+";
           PlusLabel.Justify.Center();
           PlusLabel.Alignment.Center();
           PlusBtn.Content = PlusLabel;
-          PlusBtn.SingleTapEvent += () =>
-          {
-            SelectedSlotId = Slot.Id;
-            HandleUpgradeSkill(Slot);
-          };
+          PlusBtn.SingleTapEvent += () => HandleUpgradeSkill(Slot);
           Column.AddPanel(PlusBtn);
         }
         else
         {
           var Spacer = Surface.NewFrame();
           Spacer.Size.Set(AbilityIconSize, 18);
+          Spacer.Margin.Set(0, 0, 0, 3);
           Column.AddPanel(Spacer);
         }
 
-        // 2. 技能图标（点击查看详情）+ 左上角快捷键 + 未学习暗化遮罩
+        // 2. 技能图标：左上角快捷键 + 未学习暗化遮罩；悬停描边变亮并弹出技能卡片（详情与升级预览都在卡片中）
         var IconOverlay = Surface.NewOverlay();
 
         var GlyphImg = Slot.IconGlyph != null ? GetGlyphImage(Slot.IconGlyph) : null;
@@ -1083,7 +1130,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
         {
           var Graphic = Surface.NewGraphic();
           Graphic.Image = GlyphImg;
-          Graphic.Size.Set(AbilityIconSize - 8, AbilityIconSize - 8);
+          Graphic.Size.Set(AbilityIconSize - 6, AbilityIconSize - 6);
           Graphic.Alignment.Center();
           IconOverlay.AddPanel(Graphic);
         }
@@ -1096,30 +1143,25 @@ namespace Pathos.DotaHeroes.Framework.Talents
           IconOverlay.AddPanel(Shade);
         }
 
+        var HotkeyFrame = Surface.NewFrame();
+        HotkeyFrame.Alignment.TopLeft();
+        HotkeyFrame.Background.Colour = Inv.Colour.FromArgb(200, 0, 0, 0);
+        HotkeyFrame.Padding.Set(3, 0);
         var HotkeyLabel = CreateLabel(CurrentLv > 0 ? TextPrimaryColour : TextMutedColour, FontSize: 11);
         HotkeyLabel.Text = Slot.Hotkey;
-        HotkeyLabel.Alignment.TopLeft();
-        HotkeyLabel.Margin.Set(3, 1, 0, 0);
-        IconOverlay.AddPanel(HotkeyLabel);
+        HotkeyFrame.Content = HotkeyLabel;
+        IconOverlay.AddPanel(HotkeyFrame);
+
+        Inv.Colour IconBorder = State == DotaSkillUpgradeState.Available ? GoldBorderColour : IconBorderColour;
 
         var IconBtn = Surface.NewFlatButton();
         IconBtn.Size.Set(AbilityIconSize, AbilityIconSize);
         IconBtn.Alignment.Center();
-        IconBtn.Background.Colour = IconBgColour;
         IconBtn.Border.Set(2);
-        IconBtn.Border.Colour = IsSelected
-          ? GoldBrightColour
-          : State == DotaSkillUpgradeState.Available ? GoldBorderColour : TileBorderColour;
-        IconBtn.Hint = Slot.Title;
+        AttachHover(IconBtn, IconBgColour, IconBorder, IconBgColour, GoldBrightColour);
+        IconBtn.Tooltip.Content = BuildSkillTooltip(Character, Slot, CurrentLv, State, RequiredHeroLv);
         IconBtn.Content = IconOverlay;
-        IconBtn.SingleTapEvent += () =>
-        {
-          if (SelectedSlotId != Slot.Id)
-          {
-            SelectedSlotId = Slot.Id;
-            RebuildForActiveCharacter();
-          }
-        };
+        IconBtn.SingleTapEvent += () => { };
         Column.AddPanel(IconBtn);
 
         // 3. 等级格（金色 = 已学等级）
@@ -1129,79 +1171,183 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
       private Inv.Panel BuildLevelPips(int CurrentLv, int MaxLevel)
       {
-        const int Gap = 2;
-        int PipW = Math.Clamp((AbilityIconSize - (MaxLevel - 1) * Gap) / Math.Max(1, MaxLevel), 4, 11);
+        const int Gap = 3;
+        int PipW = Math.Clamp((AbilityIconSize - (MaxLevel - 1) * Gap) / Math.Max(1, MaxLevel), 4, 10);
 
         var Pips = Surface.NewHorizontalStack();
         Pips.Alignment.TopCenter();
-        Pips.Margin.Set(0, 4, 0, 0);
+        Pips.Margin.Set(0, 5, 0, 0);
         for (int i = 0; i < MaxLevel; i++)
         {
           var Pip = Surface.NewFrame();
-          Pip.Size.Set(PipW, 4);
+          Pip.Size.Set(PipW, 5);
           Pip.Margin.Set(i == 0 ? 0 : Gap, 0, 0, 0);
           Pip.Background.Colour = i < CurrentLv ? PipFilledColour : PipEmptyColour;
+          Pip.Border.Set(1);
+          Pip.Border.Colour = i < CurrentLv ? GoldBorderColour : Inv.Colour.FromArgb(255, 0, 0, 0);
           Pips.AddPanel(Pip);
         }
         return Pips;
       }
 
-      // ───────────────────────── 技能详情 + 升级预览 ─────────────────────────
+      // ───────────────────────── 悬停技能卡片（DOTA2 风格） ─────────────────────────
 
-      private Inv.Panel BuildSkillDetail(Character Character, DotaSkillSlot Slot)
+      private Inv.Frame NewTooltipCard(out Inv.Stack Body)
       {
-        int CurrentLv = HeroSkillService.GetSkillLevel(Character, Slot);
-        var State = HeroSkillService.GetUpgradeState(Character, Slot, out int RequiredHeroLv);
-        bool IsMaxed = CurrentLv >= Slot.MaxLevel;
+        var Card = Surface.NewFrame();
+        Card.Size.SetWidth(TooltipWidth);
+        Card.Background.Colour = TooltipBgColour;
+        Card.Border.Set(1);
+        Card.Border.Colour = TooltipBorderColour;
 
-        var Frame = Surface.NewFrame();
-        Frame.Background.Colour = TileBgColour;
-        Frame.Border.Set(1);
-        Frame.Border.Colour = TileBorderColour;
-        Frame.Padding.Set(10, 8);
+        Body = Surface.NewVerticalStack();
+        Card.Content = Body;
+        return Card;
+      }
+
+      private Inv.Panel BuildTooltipTitle(string Title, string Subtitle)
+      {
+        var Strip = Surface.NewFrame();
+        Strip.Background.Colour = HeaderStripColour;
+        Strip.Padding.Set(10, 6);
 
         var Stack = Surface.NewVerticalStack();
-        Frame.Content = Stack;
+        var TitleLabel = CreateLabel(TextPrimaryColour, FontSize: 16);
+        TitleLabel.Text = Title;
+        TitleLabel.LineWrapping = true;
+        Stack.AddPanel(TitleLabel);
 
-        // 标题行：名称 + 等级/星级 | 升级按钮或状态
-        var TitleDock = Surface.NewHorizontalDock();
-        var TitleStack = Surface.NewVerticalStack();
-        TitleStack.Alignment.CenterLeft();
+        if (!string.IsNullOrEmpty(Subtitle))
+        {
+          var Sub = CreateLabel(GoldTextColour, FontSize: 12);
+          Sub.Text = Subtitle;
+          Stack.AddPanel(Sub);
+        }
 
-        var NameLabel = CreateLabel(TextPrimaryColour, FontSize: 16);
-        NameLabel.Text = Slot.Title;
-        NameLabel.LineWrapping = true;
-        TitleStack.AddPanel(NameLabel);
+        Strip.Content = Stack;
+        return Strip;
+      }
 
-        var LevelLabel = CreateLabel(CurrentLv > 0 ? GoldBrightColour : TextMutedColour, FontSize: 13);
-        LevelLabel.Text = DescribeSlotLevel(Character, Slot, CurrentLv);
-        TitleStack.AddPanel(LevelLabel);
-        TitleDock.AddClient(TitleStack);
+      private Inv.Panel BuildTooltipFooter(string Text, Inv.Colour Colour)
+      {
+        var Host = Surface.NewVerticalStack();
+        Host.Margin.Set(0, 8, 0, 0);
 
-        var ActionHost = Surface.NewFrame();
-        ActionHost.Alignment.CenterRight();
-        ActionHost.Content = BuildSkillActionControl(Slot, CurrentLv, State, RequiredHeroLv);
-        TitleDock.AddFooter(ActionHost);
-        Stack.AddPanel(TitleDock);
+        var Rule = Surface.NewFrame();
+        Rule.Size.SetHeight(1);
+        Rule.Background.Colour = SectionLineColour;
+        Host.AddPanel(Rule);
 
-        // 描述
+        var Label = CreateLabel(Colour, FontSize: 12);
+        Label.Text = Text;
+        Label.LineWrapping = true;
+        Label.Margin.Set(10, 5, 10, 6);
+        Host.AddPanel(Label);
+        return Host;
+      }
+
+      private Inv.Panel BuildSkillTooltip(Character Character, DotaSkillSlot Slot, int CurrentLv, DotaSkillUpgradeState State, int RequiredHeroLv)
+      {
+        var Card = NewTooltipCard(out var Body);
+
+        string KindText = Slot.Kind switch
+        {
+          DotaSkillSlotKind.Active => DotaLocalization.T("ui.skill.kind.active"),
+          DotaSkillSlotKind.Passive => DotaLocalization.T("ui.skill.kind.passive"),
+          _ => DotaLocalization.T("ui.skill.kind.attribute")
+        };
+        Body.AddPanel(BuildTooltipTitle(
+          $"[{Slot.Hotkey}] {Slot.Title}",
+          $"{KindText} · {DescribeSlotLevel(Character, Slot, CurrentLv)}"));
+
         string DescText = Slot.DescribeLevel?.Invoke(CurrentLv);
         if (!string.IsNullOrWhiteSpace(DescText))
         {
-          var DescLabel = CreateLabel(TextSecondaryColour, FontSize: 13);
-          DescLabel.Text = DescText;
-          DescLabel.LineWrapping = true;
-          DescLabel.Margin.Set(0, 6, 0, 0);
-          Stack.AddPanel(DescLabel);
+          var Desc = CreateLabel(TextSecondaryColour, FontSize: 13);
+          Desc.Text = DescText;
+          Desc.LineWrapping = true;
+          Desc.Margin.Set(10, 8, 10, 0);
+          Body.AddPanel(Desc);
         }
 
-        // 升级效果预览：当前值 → 下一级值
-        var Preview = BuildUpgradePreview(Slot, CurrentLv, IsMaxed);
-        if (Preview != null)
-          Stack.AddPanel(Preview);
+        // DOTA2 式逐级数值：100 / 150 / 200 / 250，当前等级金色高亮；可升级时下一级绿色高亮（即升级预览）
+        bool CanUpgrade = State == DotaSkillUpgradeState.Available;
+        if (Slot.Stats != null && Slot.Stats.Count > 0)
+        {
+          var StatStack = Surface.NewVerticalStack();
+          StatStack.Margin.Set(10, 8, 10, 0);
+          foreach (var Stat in Slot.Stats)
+          {
+            var Line = BuildPerLevelStatLine(Stat, CurrentLv, CanUpgrade ? CurrentLv + 1 : 0, Slot.MaxLevel);
+            if (Line != null)
+              StatStack.AddPanel(Line);
+          }
+          Body.AddPanel(StatStack);
+        }
 
-        return Frame;
+        // 可升级时图标上方已有金色「+」，不再重复说明；仅在无法升级时说明原因（需等级 / 已满级 / 无点数）
+        if (CanUpgrade)
+        {
+          var BottomPad = Surface.NewFrame();
+          BottomPad.Size.SetHeight(8);
+          Body.AddPanel(BottomPad);
+        }
+        else
+        {
+          Body.AddPanel(BuildTooltipFooter(
+            DescribeUpgradeStatus(State, RequiredHeroLv),
+            State == DotaSkillUpgradeState.Maxed ? GoldBrightColour : TextMutedColour));
+        }
+        return Card;
       }
+
+      private Inv.Panel BuildPerLevelStatLine(DotaSkillStat Stat, int CurrentLv, int NextLv, int MaxLevel)
+      {
+        var Values = new string[MaxLevel];
+        bool Any = false;
+        for (int Lv = 1; Lv <= MaxLevel; Lv++)
+        {
+          Values[Lv - 1] = Stat.Value(Lv);
+          Any |= Values[Lv - 1] != null;
+        }
+        if (!Any)
+          return null;
+
+        var Stack = Surface.NewVerticalStack();
+        Stack.Margin.Set(0, 0, 0, 4);
+
+        var Name = CreateLabel(TextMutedColour, FontSize: 12);
+        Name.Text = Stat.Label();
+        Stack.AddPanel(Name);
+
+        var Row = Surface.NewHorizontalStack();
+        for (int i = 0; i < MaxLevel; i++)
+        {
+          if (i > 0)
+          {
+            var Sep = CreateLabel(TextDisabledColour, FontSize: 13);
+            Sep.Text = " / ";
+            Row.AddPanel(Sep);
+          }
+
+          var ValColour = i + 1 == CurrentLv ? GoldBrightColour
+            : i + 1 == NextLv ? UpgradeGreenColour
+            : TextSecondaryColour;
+          var Val = CreateLabel(ValColour, FontSize: 13);
+          Val.Text = Values[i] ?? "—";
+          Row.AddPanel(Val);
+        }
+        Stack.AddPanel(Row);
+        return Stack;
+      }
+
+      private static string DescribeUpgradeStatus(DotaSkillUpgradeState State, int RequiredHeroLv) => State switch
+      {
+        DotaSkillUpgradeState.Available => DotaLocalization.T("ui.skill.status.available"),
+        DotaSkillUpgradeState.Maxed => DotaLocalization.T("ui.skill.status.maxed"),
+        DotaSkillUpgradeState.LevelLocked => DotaLocalization.Format("ui.skill.status.req_lv", RequiredHeroLv),
+        _ => DotaLocalization.T("ui.skill.status.no_points")
+      };
 
       private static string DescribeSlotLevel(Character Character, DotaSkillSlot Slot, int CurrentLv)
       {
@@ -1215,123 +1361,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
           DotaSkillSlotKind.Passive => DotaLocalization.Format("ui.skill.level_passive", CurrentLv, Slot.MaxLevel),
           _ => DotaLocalization.Format("ui.skill.level_plain", CurrentLv, Slot.MaxLevel)
         };
-      }
-
-      private Inv.Panel BuildUpgradePreview(DotaSkillSlot Slot, int CurrentLv, bool IsMaxed)
-      {
-        if (Slot.Stats == null || Slot.Stats.Count == 0)
-          return null;
-
-        int NextLv = IsMaxed ? CurrentLv : CurrentLv + 1;
-
-        var Rows = new System.Collections.Generic.List<(string Label, string Cur, string Next)>();
-        foreach (var Stat in Slot.Stats)
-        {
-          string Cur = CurrentLv > 0 ? Stat.Value(CurrentLv) : null;
-          string Next = IsMaxed ? null : Stat.Value(NextLv);
-          if (Cur == null && Next == null)
-            continue;
-          Rows.Add((Stat.Label(), Cur, Next));
-        }
-
-        if (Rows.Count == 0)
-          return null;
-
-        var Stack = Surface.NewVerticalStack();
-        Stack.Margin.Set(0, 8, 0, 0);
-
-        var Caption = CreateLabel(TextMutedColour, FontSize: 12);
-        Caption.Text = IsMaxed
-          ? DotaLocalization.Format("ui.skill.preview.maxed", CurrentLv)
-          : DotaLocalization.Format("ui.skill.preview.caption", CurrentLv, NextLv);
-        Caption.Margin.Set(0, 0, 0, 4);
-        Stack.AddPanel(Caption);
-
-        var Table = Surface.NewTable();
-        var ColLabel = Table.AddStarColumn(1);
-        var ColValue = Table.AddAutoColumn();
-
-        foreach (var (Label, Cur, Next) in Rows)
-        {
-          var Row = Table.AddAutoRow();
-
-          var NameLabel = CreateLabel(TextSecondaryColour, FontSize: 13);
-          NameLabel.Text = Label;
-          NameLabel.Alignment.CenterLeft();
-          NameLabel.Margin.Set(0, 2, 8, 2);
-          Table.GetCell(ColLabel, Row).Content = NameLabel;
-
-          Table.GetCell(ColValue, Row).Content = BuildPreviewValue(Cur, Next, IsMaxed);
-        }
-
-        Stack.AddPanel(Table);
-        return Stack;
-      }
-
-      private Inv.Panel BuildPreviewValue(string Cur, string Next, bool IsMaxed)
-      {
-        var Line = Surface.NewHorizontalStack();
-        Line.Alignment.CenterRight();
-
-        var CurLabel = CreateLabel(Cur != null ? TextPrimaryColour : TextMutedColour, FontSize: 13);
-        CurLabel.Text = Cur ?? "—";
-        Line.AddPanel(CurLabel);
-
-        if (!IsMaxed)
-        {
-          bool Changed = !string.Equals(Cur, Next, StringComparison.Ordinal);
-
-          var Arrow = CreateLabel(Changed ? GoldBrightColour : TextMutedColour, FontSize: 13);
-          Arrow.Text = "  →  ";
-          Line.AddPanel(Arrow);
-
-          var NextLabel = CreateLabel(Changed ? UpgradeGreenColour : TextMutedColour, FontSize: 13);
-          NextLabel.Text = Next ?? "—";
-          Line.AddPanel(NextLabel);
-        }
-
-        return Line;
-      }
-
-      private Inv.Panel BuildSkillActionControl(
-        DotaSkillSlot Slot,
-        int CurrentLv,
-        DotaSkillUpgradeState State,
-        int RequiredHeroLv)
-      {
-        if (State == DotaSkillUpgradeState.Available)
-        {
-          string BtnText = CurrentLv == 0 && Slot.Kind != DotaSkillSlotKind.AttributeBonus
-            ? DotaLocalization.T("ui.skill.btn.learn")
-            : (Slot.Kind == DotaSkillSlotKind.Active
-              ? DotaLocalization.T("ui.skill.btn.star_up")
-              : DotaLocalization.T("ui.skill.btn.upgrade"));
-
-          var Btn = Surface.NewFlatButton();
-          Btn.Background.Colour = GoldBgColour;
-          Btn.Border.Set(1);
-          Btn.Border.Colour = GoldBorderColour;
-          Btn.Padding.Set(12, 6);
-
-          var Label = CreateLabel(GoldTextColour, FontSize: 14);
-          Label.Text = BtnText;
-          Label.Justify.Center();
-          Btn.Content = Label;
-          Btn.SingleTapEvent += () => HandleUpgradeSkill(Slot);
-          return Btn;
-        }
-
-        string StatusText = State switch
-        {
-          DotaSkillUpgradeState.Maxed => DotaLocalization.T("ui.skill.status.maxed"),
-          DotaSkillUpgradeState.LevelLocked => DotaLocalization.Format("ui.skill.status.req_lv", RequiredHeroLv),
-          _ => DotaLocalization.T("ui.skill.status.no_points")
-        };
-
-        var StatusLabel = CreateLabel(State == DotaSkillUpgradeState.Maxed ? GoldBrightColour : TextMutedColour, FontSize: 13);
-        StatusLabel.Text = StatusText;
-        StatusLabel.Margin.Set(8, 0, 0, 0);
-        return StatusLabel;
       }
 
       private void HandleUpgradeSkill(DotaSkillSlot Slot)
