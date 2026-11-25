@@ -1,14 +1,14 @@
 ﻿BeamName,omnislash dash,הסתערות אומניסלאש
-BeamName,waveform dash,
-CharacterName,Axe,
+BeamName,waveform dash,זינוק צורת הגל
+CharacterName,Axe,אקס
 CharacterName,Juggernaut,ג'אגרנאוט
 CharacterName,Morphling,מורפלינג
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","גיבור DOTA2 זורם השולט בגלים גואים, מעביר בחופשיות בין כוח לזריזות, מתחזק באמצעות גאות ושפל ומשנה את צורתו לצורת אויביו."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","אמן חרב עוטה מסכה מ-DOTA2 הצובר תנופה בלתי ניתנת לעצירה דרך צורת הלהב, מבתר קסמים בזעם הלהב, תומך בבני ברית עם טוטם ריפוי וקוצר אויבים בריקוד הלהב ואומניסלאש."
-ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",
-ClassName,axe//female,
-ClassName,axe//male,
-ClassName,axe//non-binary,
+ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","ברסרקר ארגמן חסר רחמים מ-DOTA2 שמתחזק לבדו עם צבא של אדם אחד, מלעיג על חדרים שלמים בקריאת הברסרקר, קורע תוקפים בסיבובים הטהורים של סלילון הנגד ומוציא להורג חלשים בלהב התליין."
+ClassName,axe//female,אקס
+ClassName,axe//male,אקס
+ClassName,axe//non-binary,אקס
 ClassName,juggernaut//female,ג'אגרנאוט
 ClassName,juggernaut//male,ג'אגרנאוט
 ClassName,juggernaut//non-binary,ג'אגרנאוט
@@ -19,46 +19,46 @@ EntityDescription,A floating restorative totem summoned by Juggernaut that heals
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","יסודן תבוני שנוצר ממי גאות חיים, המסוגל לעצב מחדש את תכונותיו הגופניות כרצונו."
 EntityName,healing ward,טוטם ריפוי
 EntityName,waterkin,רוח מים
-ExplosionName,berserkers call wave,
+ExplosionName,berserkers call wave,גל הלם קריאת הברסרקר
 ExplosionName,blade fury spin,מערבולת זעם הלהב
-ExplosionName,counter helix spin,
-ExplosionName,waveform splash,
+ExplosionName,counter helix spin,סיבוב סלילון הנגד
+ExplosionName,waveform splash,פיצוץ מים של צורת הגל
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,כדור דחוס של מי גאות חיים הנורה מקלע כתחמושת טווח אינסופית.
 ItemName,tidal orb,כדור גאות
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,מולדת (צורת הלהב): קבל 1 צבירה בכל 4 תורות ללא ספיגת נזק (עד 12 צבירות). כל צבירה מעניקה +1% מהירות תנועה ו-+2.5% עוצמת מכת זריזות ומהירות התקפה; נותרת 4 תורות לאחר ספיגת נזק.
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,מולדת (גאות ושפל): זריזות מעניקה תוספת למהירות תנועה וטווח התקפה מרחוק; כוח מעניק תוספת לטווח לחשים ועמידות להאטה. נשמרת במהלך שינוי צורה.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
+PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","מולד (צבא של אדם אחד): כל עוד אין בעלי ברית חיים ברדיוס 4 משבצות (נמשך 6 תורים כשבעל ברית מתקרב), אקס מקבלת כוח בונוס השווה ל-50% מההגנה העודפת שלה (הגנה - 10), המגדיל את נזק הקרב הצמוד."
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,מזנק בין אויבים קרובים בסערת מכות חסינות: חסין לכל נזק והשפעות שליליות בעודו משסף אויב קרוב בכל תור.
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","פסיבית (ריקוד הלהב): התקפות קפא""פ, מכות אומניסלאש וסיבובי זעם הלהב זוכות לסיכוי של 35% (לפי רמה 1–4 של ריקוד הלהב) לפגיעה קריטית של פי 1.4/1.6/1.8/2.0 נזק."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
+PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","פסיבי (סלילון הנגד): כל 7 / 6 / 5 / 4 התקפות שהתקבלו (לפי רמת המיומנות 1-4, כולל החטאות) מפעילות סיבוב גרזן ארגמן 3x3 שגורם 100 / 120 / 140 / 160 נזק טהור (1d6+3 עד 3d6)."
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","מסתחרר בסופת להבים הרסנית: חסין להשפעות שליליות, 80% הפחתת נזק קסום וגרימת נזק קסום סביבך בכל תור."
 PropertyName,blade dance,ריקוד הלהב
 PropertyName,blade fury,זעם הלהב
 PropertyName,bladeform,צורת הלהב
-PropertyName,counter helix,
+PropertyName,counter helix,סלילון הנגד
 PropertyName,ebb and flow,גאות ושפל
 PropertyName,omnislash,אומניסלאש
-PropertyName,one man army,
+PropertyName,one man army,צבא של אדם אחד
 RaceName,waterkin//female,רוח מים
 RaceName,waterkin//male,רוח מים
 RaceName,waterkin//non-binary,רוח מים
-SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,
+SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,מענה אויב ממוקד במרחק 4 עד 7 משבצות במשך 24 תורים בנזק טהור לאורך זמן (12/16/20/24 DPS לפי K_dmg=15) והאטת תנועה של 16%/19%/22%/25%; מתפזר אם המטרה הורגת יחידה כלשהי.
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","עטה את צורתו של יצור נבחר, והעתק את גופו, תכונותיו, כישוריו ולחשיו תוך שמירה על גאות ושפל."
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","הסר השפעות שליליות והסתחרר למשך 10 עד 12 תורות: חסינות להשפעות שליליות, 80% הפחתת נזק קסום ו-1d4 עד 2d4+2 נזק קסום בסיסי לתור (85-205 DPS לפי K_dmg=15, מותאם ל-DEX ומהירות צורת הלהב) לאויבים סמוכים ב-3x3; יכול לפגוע קריטית עם ריקוד הלהב."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","התמוסס לגל גואה, הבלח קדימה, התז נזק מים סביבך וקבל לזמן קצר מעבר דרך קירות והסטה."
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","שגר גל מים הגורם נזק בסיסי, הודף ומהמם את המטרה. הנזק הנוסף גדל לפי יחס הזריזות לכוח ומשך ההמם גדל לפי יחס הכוח לזריזות."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","זנק אל אויב מטרה ושחרר 5 עד 12 שיסופי נשק מהירים ובלתי פגיעים (נשק + תכונה + 2 עד 3 נזק נוסף לשיסוף) בין אויבים קרובים, תוך הפעלת פגיעות קריטיות של ריקוד הלהב ותוספי צורת הלהב."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,שחרר את צורתך המשתנה וחזור מיד לגוף רוח המים האמיתי שלך.
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).","שואג ומלעיג על אויבים ברדיוס 2 משבצות (3 עם כישרון רמה 25) במשך 4 עד 6 תורים, משתיק את הלחשים שלהם ומאלץ אותם לצעוד אל אקס ולתקוף אותה, בעוד אקס מקבלת +5 עד +6 הגנה (+7 עד +8 עם כישרון רמה 15)."
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","המר זריזות לכוח ולחוסן (1 עד 5 נקודות לפי מיומנות), תוך שמירת סך התכונות והעלאת ה-HP המרבי והנוכחי כאחד."
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","המר כוח וחוסן לזריזות (1 עד 5 נקודות לפי מיומנות), תוך שמירת סך התכונות והורדת ה-HP המרבי מבלי לגרוע מה-HP הנוכחי."
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","מכה באויב קרוב (טווח 2) בכוח טהור: מוציא להורג מיידית מטרות עם 18/25/32 נק""ח או פחות (+שליטה/כישרון), מחזיר 100% מהמאנה, מעניק לבעלי ברית קרובים +25% מהירות תנועה ו-+4/+6/+7 הגנה ל-12 תורים וצובר שריון קבוע; אחרת גורם 5d6+1 עד 9d6 נזק טהור."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","זמן טוטם ריפוי נייד ושביר (1 HP, מקס' 1 פעיל) ל-36 עד 48 תורות שמרפא את כל בני הברית בטווח 2 משבצות ב-1% עד 3.25% מ-HP המרבי שלהם בכל תור."
 SpellName,adaptive strike,מכה מסתגלת
-SpellName,battle hunger,
-SpellName,berserkers call,
+SpellName,battle hunger,רעב הקרב
+SpellName,berserkers call,קריאת הברסרקר
 SpellName,blade fury,זעם הלהב
-SpellName,culling blade,
+SpellName,culling blade,להב התליין
 SpellName,healing ward,טוטם ריפוי
 SpellName,morph,שינוי צורה
 SpellName,morph agility,המרה לזריזות
@@ -66,13 +66,13 @@ SpellName,morph revert,ביטול שינוי צורה
 SpellName,morph strength,המרה לכוח
 SpellName,omnislash,אומניסלאש
 SpellName,waveform,צורת גל
-StrikeName,adaptive strike impact,
-StrikeName,battle hunger mark,
-StrikeName,berserkers call ring,
+StrikeName,adaptive strike impact,פגיעת המכה המסתגלת
+StrikeName,battle hunger mark,סימן רעב הקרב
+StrikeName,berserkers call ring,טבעת קריאת הברסרקר
 StrikeName,blade dance crit,קריטי ריקוד הלהב
-StrikeName,blade fury cut,
-StrikeName,blade fury whirl,
-StrikeName,counter helix whirl,
-StrikeName,culling blade strike,
+StrikeName,blade fury cut,חתך סופת הלהבים
+StrikeName,blade fury whirl,מערבולת סופת הלהבים
+StrikeName,counter helix whirl,סיבוב סלילון הנגד
+StrikeName,culling blade strike,מכת להב התליין
 StrikeName,healing ward pulse,פעימת טוטם ריפוי
 StrikeName,omnislash slash,שיסוף אומניסלאש

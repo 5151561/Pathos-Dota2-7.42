@@ -1,14 +1,14 @@
 ﻿BeamName,omnislash dash,omnislash roham
-BeamName,waveform dash,
-CharacterName,Axe,
+BeamName,waveform dash,Hullámforma-roham
+CharacterName,Axe,Axe
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Változékony DOTA2 hős, aki tajtékzó hullámokat ural, szabadon váltogat az Erő és az Ügyesség között, az Apály és dagály révén erősödik, és felveszi ellenségei alakját."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Álarcos DOTA2 kardmester, aki a Pengealakkal megállíthatatlan lendületet gyűjt, a Pengeharaggal kettészeli a mágiát, a Gyógyító totemmel támogatja szövetségeseit, a Pengetánccal és az Omnislashsal pedig lekaszálja ellenségeit."
-ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",
-ClassName,axe//female,
-ClassName,axe//male,
-ClassName,axe//non-binary,
+ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","Egy könyörtelen, vörös DOTA2-berserker, aki az Egyemberes hadsereggel egyedül erősödik, A berserker hívásával egész termeket provokál, az Ellenfúró tiszta forgásaival szétszabdalja a támadókat, és a Hóhérpengével kivégzi a gyengéket."
+ClassName,axe//female,Axe
+ClassName,axe//male,Axe
+ClassName,axe//non-binary,Axe
 ClassName,juggernaut//female,juggernaut
 ClassName,juggernaut//male,juggernaut
 ClassName,juggernaut//non-binary,juggernaut
@@ -19,46 +19,46 @@ EntityDescription,A floating restorative totem summoned by Juggernaut that heals
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Élő árapályvízből formált tudatos elementál, amely tetszése szerint képes átalakítani testi adottságait."
 EntityName,healing ward,gyógyító totem
 EntityName,waterkin,vízlény
-ExplosionName,berserkers call wave,
+ExplosionName,berserkers call wave,A berserker hívása lökéshullám
 ExplosionName,blade fury spin,pengeharag örvény
-ExplosionName,counter helix spin,
-ExplosionName,waveform splash,
+ExplosionName,counter helix spin,Ellenfúró forgás
+ExplosionName,waveform splash,Hullámforma vízrobbanás
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Élő árapályvízből sűrített gömb, amely végtelen távolsági lőszerként lőhető ki parittyából."
 ItemName,tidal orb,árapálygömb
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Veleszületett (Pengealak): Szerezz 1 jelzőt minden 4 sebzés nélkül töltött kör után (legfeljebb 12 jelző). Minden jelző +1% mozgási sebességet és +2,5% ügyességi csapáserőt valamint támadási sebességet ad; sebzés elszenvedése után még 4 körig megmarad."
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Veleszületett (Apály és dagály): Az Ügyesség bónusz mozgási sebességet és távolsági hatótávot ad; az Erő bónusz varázslási hatótávot és lassítás-ellenállást biztosít. Átváltozás közben is megmarad.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
+PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Veleszületett (Egyemberes hadsereg): amíg 4 mezőn belül nincs élő szövetséges (egy szövetséges közeledése után 6 körig megmarad), Axe a felesleges védelme (védelem - 10) 50%-ának megfelelő bónusz erőt kap, ami növeli a közelharci sebzést."
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,"Közeli ellenségek között szökell sebezhetetlen csapások viharában: minden sebzéssel és gyengítéssel szemben immunis, miközben minden körben megvág egy közeli ellenfelet."
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Passzív (Pengetánc): A közelharci támadások, az Omnislash csapások és a Pengeharag forgásai 35% eséllyel (a Pengetánc 1–4. szintje alapján) 1,4/1,6/1,8/2,0-szoros sebzésű kritikus csapást mérnek."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
+PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Passzív (Ellenfúró): minden 7 / 6 / 5 / 4 kapott támadás (a képességszint 1–4 szerint, a mellément is beleértve) 3x3-as vörös fejszeforgást indít, amely 100 / 120 / 140 / 160 tiszta sebzést okoz (1d6+3-tól 3d6-ig)."
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Pusztító pengeviharban pörög: immunis a gyengítésekre, 80% mágikus sebzéscsökkentést kap, és minden körben mágikus sebzést okoz a körülötte lévőknek."
 PropertyName,blade dance,pengetánc
 PropertyName,blade fury,pengeharag
 PropertyName,bladeform,pengealak
-PropertyName,counter helix,
+PropertyName,counter helix,Ellenfúró
 PropertyName,ebb and flow,apály és dagály
 PropertyName,omnislash,omnislash
-PropertyName,one man army,
+PropertyName,one man army,Egyemberes hadsereg
 RaceName,waterkin//female,vízlény
 RaceName,waterkin//male,vízlény
 RaceName,waterkin//non-binary,vízlény
-SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,
+SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,"24 körön át gyötör egy 4–7 mezőn belüli célpontot tiszta sebzéssel idővel (12/16/20/24 DPS K_dmg=15 szerint) és 16%/19%/22%/25% mozgáslassítással; eloszlik, ha a célpont bármilyen egységet megöl."
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Vedd fel egy célzott lény alakját, lemásolva testét, tulajdonságait, képességeit és varázslatait, miközben megtartod az Apály és dagály képességet."
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Űzd el a gyengítéseket és pörögj 10–12 körig: immunitás a gyengítésekre, 80% mágikus sebzéscsökkentés és körönként 1d4–2d4+2 alap mágikus sebzés (85–205 DPS K_dmg=15 alapon, a DEX és a Pengealak támadási sebessége alapján növelve) a szomszédos 3x3-as ellenfelekre; Pengetánccal kritikus lehet."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Olvadj tajtékzó hullámmá, előrevillanva vízi sebzést szórj szét magad körül, és rövid időre nyerj áthatolást és elmozdulást."
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Indíts egy vízhullámot, amely alapsebzést okoz, hátralöki és elkábítja a célpontot. A bónusz sebzés az Ügyesség/Erő aránnyal, a kábítás időtartama pedig az Erő/Ügyesség aránnyal nő."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Ugorj egy célzott ellenségre és zúdíts 5–12 gyors, sebezhetetlen fegyvercsapást (fegyver + tulajdonság + 2–3 bónusz sebzés csapásonként) a közeli ellenségekre, aktiválva a Pengetánc kritikust és a Pengealak bónuszait."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,"Engedd el az átváltozott alakodat, és azonnal térj vissza valódi vízlény testedbe."
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).","Üvöltéssel 4–6 körre provokálja a 2 mezőn belüli (a 25. szintű tehetséggel 3) ellenségeket, elnémítja a varázslataikat, és arra kényszeríti őket, hogy Axe felé meneteljenek és támadják, miközben Axe +5-től +6-ig védelmet kap (a 15. szintű tehetséggel +7-től +8-ig)."
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Alakíts át Ügyességet Erővé és Állóképességgé (1–5 pontot jártasság szerint), megőrizve az összpontszámot, miközben nő a maximális és a jelenlegi HP is."
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Alakíts át Erőt és Állóképességet Ügyességgé (1–5 pontot jártasság szerint), megőrizve az összpontszámot és csökkentve a maximális HP-t a jelenlegi HP elszívása nélkül."
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","Tiszta erővel lesújt egy közeli ellenségre (hatótáv 2): azonnal kivégzi a 18/25/32 vagy kevesebb HP-jú célpontokat (+jártasság/tehetség), visszaadja a mana 100%-át, a közeli szövetségeseknek 12 körre +25% mozgási sebességet és +4/+6/+7 védelmet ad, és állandó páncélt halmoz fel; egyébként 5d6+1-től 9d6-ig tiszta sebzést okoz."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Idézz meg egy törékeny, mozgatható Gyógyító totemet (1 HP, legfeljebb 1 aktív) 36–48 körre, amely minden körben 1%–3,25% maximális HP-val gyógyítja a 2 mezőn belüli szövetségeseket."
 SpellName,adaptive strike,alkalmazkodó csapás
-SpellName,battle hunger,
-SpellName,berserkers call,
+SpellName,battle hunger,Csatavágy
+SpellName,berserkers call,A berserker hívása
 SpellName,blade fury,pengeharag
-SpellName,culling blade,
+SpellName,culling blade,Hóhérpenge
 SpellName,healing ward,gyógyító totem
 SpellName,morph,átváltozás
 SpellName,morph agility,átváltás ügyességre
@@ -66,13 +66,13 @@ SpellName,morph revert,átváltozás feloldása
 SpellName,morph strength,átváltás erőre
 SpellName,omnislash,omnislash
 SpellName,waveform,hullámalak
-StrikeName,adaptive strike impact,
-StrikeName,battle hunger mark,
-StrikeName,berserkers call ring,
+StrikeName,adaptive strike impact,Alkalmazkodó csapás becsapódás
+StrikeName,battle hunger mark,Csatavágy jelölés
+StrikeName,berserkers call ring,A berserker hívása gyűrű
 StrikeName,blade dance crit,pengetánc kritikus
-StrikeName,blade fury cut,
-StrikeName,blade fury whirl,
-StrikeName,counter helix whirl,
-StrikeName,culling blade strike,
+StrikeName,blade fury cut,Pengevihar vágás
+StrikeName,blade fury whirl,Pengevihar örvény
+StrikeName,counter helix whirl,Ellenfúró forgás
+StrikeName,culling blade strike,Hóhérpenge csapás
 StrikeName,healing ward pulse,gyógyító totem pulzus
 StrikeName,omnislash slash,omnislash vágás

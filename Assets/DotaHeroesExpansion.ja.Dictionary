@@ -1,14 +1,14 @@
 ﻿BeamName,omnislash dash,オムニスラッシュ突進
-BeamName,waveform dash,
-CharacterName,Axe,
+BeamName,waveform dash,ウェーブフォーム突進
+CharacterName,Axe,アックス
 CharacterName,Juggernaut,ジャガーノート
 CharacterName,Morphling,モーフリング
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",DOTA2 の水元素ヒーロー。激浪となって突進し、筋力と敏捷を自在に変換し、天賦「干満の流転」で能力に応じて移動速度・射程・詠唱距離・減速耐性を高め、敵の姿へ変身することもできる。
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",DOTA2 の仮面の剣豪。天賦「剣の型」で無傷の勢いを蓄え、魔法を斬り裂く「ブレイドフューリー」や味方を癒やす「ヒーリングウォード」、会心の「ブレイドダンス」と必殺の「オムニスラッシュ」で敵陣を殲滅する。
-ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",
-ClassName,axe//female,
-ClassName,axe//male,
-ClassName,axe//non-binary,
+ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",DOTA2 の猩紅の狂戦士。「一人軍隊」で孤独に強くなり、「バーサーカーズ・コール」で敵群を挑発し、純粋ダメージの「カウンターヘリックス」で攻撃者を斬り刻み、「カリングブレード」で弱った敵を処刑する。
+ClassName,axe//female,アックス
+ClassName,axe//male,アックス
+ClassName,axe//non-binary,アックス
 ClassName,juggernaut//female,ジャガーノート
 ClassName,juggernaut//male,ジャガーノート
 ClassName,juggernaut//non-binary,ジャガーノート
@@ -19,46 +19,46 @@ EntityDescription,A floating restorative totem summoned by Juggernaut that heals
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",生きた潮汐の水から生まれ、物理的な能力値を意のままに再構築できる知性ある精霊。
 EntityName,healing ward,ヒーリングウォード
 EntityName,waterkin,水霊
-ExplosionName,berserkers call wave,
+ExplosionName,berserkers call wave,バーサーカーズ・コール衝撃波
 ExplosionName,blade fury spin,ブレイドフューリー回転斬り
-ExplosionName,counter helix spin,
-ExplosionName,waveform splash,
+ExplosionName,counter helix spin,カウンターヘリックス回転斬
+ExplosionName,waveform splash,ウェーブフォーム水爆
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,スリングの無限弾薬として放たれる、生きた潮汐水の凝縮弾。
 ItemName,tidal orb,潮汐の水弾
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,天賦（剣の型）：ダメージを受けずに 4 ターン経過するごとに 1 スタック獲得（最大 12 スタック）。1 スタックごとに移動速度 +1%、敏捷系斬撃威力・攻撃速度 +2.5% を付与し、被弾後も 4 ターン持続する。
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,天賦（干満の流転）：敏捷は移動速度と遠距離攻撃射程を、筋力は詠唱距離と減速耐性を強化する。変身中も効果は維持される。
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
+PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",先天スキル（一人軍隊）：4 マス以内に生存する味方がいない間（味方が接近しても 6 ターン持続）、アックスは超過防御（防御 - 10）の 50% に相当する筋力ボーナスを獲得し、近接攻撃ダメージが上昇する。
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,無敵の連撃で周囲の敵の間を高速で飛び回る状態：毎ターン近くの敵を斬りつけ、あらゆるダメージと弱体効果を無効化する。
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).",パッシブ（ブレイドダンス）：近接攻撃、オムニスラッシュの斬撃、ブレイドフューリーの回転攻撃が 35% の確率（ブレイドダンス Lv 1～4 に依存）で 1.4/1.6/1.8/2.0 倍のクリティカルヒットになる。
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
+PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",パッシブ（カウンターヘリックス）：被弾（外れ含む）7 / 6 / 5 / 4 回ごと（スキルレベル 1〜4）に、3x3 の猩紅の斧の回転が発動し、純粋ダメージ 100 / 120 / 140 / 160（1d6+3〜3d6）を与える。
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",破壊の刃嵐となって回転中：弱体効果を無効化し、魔法ダメージを 80% 軽減して、毎ターン周囲の敵に魔法ダメージを与える。
 PropertyName,blade dance,ブレイドダンス
 PropertyName,blade fury,ブレイドフューリー
 PropertyName,bladeform,剣の型
-PropertyName,counter helix,
+PropertyName,counter helix,カウンターヘリックス
 PropertyName,ebb and flow,干満の流転
 PropertyName,omnislash,オムニスラッシュ
-PropertyName,one man army,
+PropertyName,one man army,一人軍隊
 RaceName,waterkin//female,水霊
 RaceName,waterkin//male,水霊
 RaceName,waterkin//non-binary,水霊
-SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,
+SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,4〜7 マス以内の対象の敵を 24 ターンの間蝕み、純粋持続ダメージ（12/16/20/24 DPS、K_dmg=15 換算）と 16%/19%/22%/25% の移動速度低下を与える。対象が誰かを倒すと解除される。
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",対象の生物の姿に変身し、外見・能力値・スキル・呪文をコピーする。「干満の流転」は維持される。
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",弱体効果を解除し、10～12 ターン回転する：弱体無効と魔法ダメージ軽減 80% を得て、毎ターン周囲 3×3 の敵に 1d4～2d4+2 の基礎魔法ダメージ（K_dmg=15 で 85～205 DPS 相当、技巧（DEX）と剣の型の攻撃速度で増加）を与える。ブレイドダンスのクリティカルが発生する。
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",激流の波へと姿を変えて前方へ瞬間移動し、周囲に水ダメージを与えつつ短時間の壁抜けと幻影回避を得る。
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",水圧の波動を放ち、基本ダメージとともにノックバックとスタンを与える。敏捷／筋力比が高いほど追加ダメージが増し、筋力／敏捷比が高いほどスタン時間が延びる。
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",指定した敵へ跳躍し、周囲の敵に対して無敵の高速斬撃を 5～12 回放つ（1 撃あたり 武器 + 能力補正 + 2～3 追加ダメージ）。ブレイドダンスのクリティカルや剣の型のボーナスも適用される。
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,変身状態を解除し、即座に本来の水霊の肉体へ戻る。
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",周囲 2 マス（Lv 25 天賦で 3 マス）の敵を 4〜6 ターン挑発し、呪文を封じてアックスへ向かって攻撃するよう強制する。自身は防御 +5〜+6（Lv 15 天賦で +7〜+8）を獲得。
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",敏捷を筋力と耐久力へ変換する（熟練度に応じ 1～5 ポイント）。合計能力値を保ったまま最大 HP と現在 HP を同時に上昇させる。
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",筋力と耐久力を敏捷へ変換する（熟練度に応じ 1～5 ポイント）。合計能力値を保ったまま最大 HP を低下させるが、現在 HP は削らない。
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",2 マス以内の敵に純粋な力で斬りつける。HP が 18/25/32 以下（熟練度/天賦で上昇）の対象を即座に処刑し、マナを 100% 返還、周囲の味方に 12 ターンの移動速度 +25% と防御 +4/+6/+7 を与え、永久護甲を累積する。それ以外は 5d6+1〜9d6 の純粋ダメージ。
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",壊れやすい移動可能なヒーリングウォード（HP 1、同時存在上限 1 体）を 36～48 ターン召喚し、毎ターン周囲 2 マス以内の味方全員の最大 HP を 1%～3.25% 回復する。
 SpellName,adaptive strike,アダプティブストライク
-SpellName,battle hunger,
-SpellName,berserkers call,
+SpellName,battle hunger,バトルハンガー
+SpellName,berserkers call,バーサーカーズ・コール
 SpellName,blade fury,ブレイドフューリー
-SpellName,culling blade,
+SpellName,culling blade,カリングブレード
 SpellName,healing ward,ヒーリングウォード
 SpellName,morph,モーフ
 SpellName,morph agility,モーフ（敏捷）
@@ -66,13 +66,13 @@ SpellName,morph revert,モーフ解除
 SpellName,morph strength,モーフ（筋力）
 SpellName,omnislash,オムニスラッシュ
 SpellName,waveform,ウェーブフォーム
-StrikeName,adaptive strike impact,
-StrikeName,battle hunger mark,
-StrikeName,berserkers call ring,
+StrikeName,adaptive strike impact,アダプティブストライク水爆
+StrikeName,battle hunger mark,バトルハンガーの刻印
+StrikeName,berserkers call ring,バーサーカーズ・コール衝撃環
 StrikeName,blade dance crit,ブレイドダンス会心
-StrikeName,blade fury cut,
-StrikeName,blade fury whirl,
-StrikeName,counter helix whirl,
-StrikeName,culling blade strike,
+StrikeName,blade fury cut,ブレードフューリー斬痕
+StrikeName,blade fury whirl,ブレードフューリー旋風
+StrikeName,counter helix whirl,カウンターヘリックス回旋
+StrikeName,culling blade strike,カリングブレード処刑斬
 StrikeName,healing ward pulse,ヒーリングウォード波動
 StrikeName,omnislash slash,オムニスラッシュ斬撃

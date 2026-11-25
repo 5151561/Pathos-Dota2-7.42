@@ -1,14 +1,14 @@
 ﻿BeamName,omnislash dash,omnislash atılımı
-BeamName,waveform dash,
-CharacterName,Axe,
+BeamName,waveform dash,Dalga Formu atılışı
+CharacterName,Axe,Axe
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Coşkun dalgalara hükmeden, Güç ve Çeviklik arasında özgürce geçiş yapan, Gelgit Akışı ile güçlenen ve düşmanlarının biçimine bürünebilen akışkan bir DOTA2 kahramanı."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Kılıç Formu ile durdurulamaz bir ivme kazanan, Kılıç Öfkesi ile büyüyü yaran, Şifa Totemi ile müttefiklerini ayakta tutan ve Kılıç Dansı ile Omnislash kullanarak düşmanları biçen maskeli bir DOTA2 kılıç ustası."
-ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",
-ClassName,axe//female,
-ClassName,axe//male,
-ClassName,axe//non-binary,
+ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","Tek Kişilik Ordu ile yalnızken güçlenen, Çılgın Savaşçının Çağrısı ile koca odaları kışkırtan, saf Karşı Sarmal dönüşleriyle saldırganları doğrayan ve İnfaz Bıçağı ile zayıfları infaz eden amansız bir DOTA2 kızıl çılgın savaşçısı."
+ClassName,axe//female,Axe
+ClassName,axe//male,Axe
+ClassName,axe//non-binary,Axe
 ClassName,juggernaut//female,juggernaut
 ClassName,juggernaut//male,juggernaut
 ClassName,juggernaut//non-binary,juggernaut
@@ -19,46 +19,46 @@ EntityDescription,A floating restorative totem summoned by Juggernaut that heals
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Yaşayan gelgit sularından dövülmüş, fiziksel niteliklerini dilediği gibi yeniden şekillendirebilen bilinçli bir element."
 EntityName,healing ward,şifa totemi
 EntityName,waterkin,su ruhu
-ExplosionName,berserkers call wave,
+ExplosionName,berserkers call wave,Çılgın Savaşçının Çağrısı şok dalgası
 ExplosionName,blade fury spin,kılıç öfkesi girdabı
-ExplosionName,counter helix spin,
-ExplosionName,waveform splash,
+ExplosionName,counter helix spin,Karşı Sarmal dönüşü
+ExplosionName,waveform splash,Dalga Formu su patlaması
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Bir sapandan sonsuz menzilli cephane olarak fırlatılan, yoğunlaştırılmış yaşayan gelgit suyu küresi."
 ItemName,tidal orb,gelgit küresi
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Doğuştan (Kılıç Formu): Hasar almadan geçen her 4 turda 1 yük kazan (en fazla 12 yük). Her yük +%1 hareket hızı ile +%2,5 çeviklik darbe gücü ve saldırı hızı sağlar; hasar aldıktan sonra 4 tur daha kalır."
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Doğuştan (Gelgit Akışı): Çeviklik ek hareket hızı ve menzilli saldırı menzili sağlar; Güç ise ek büyü menzili ve yavaşlatma direnci kazandırır. Dönüşüm sırasında da sürer.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
+PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Doğuştan (Tek Kişilik Ordu): 4 kare içinde yaşayan müttefik olmadığı sürece (müttefik yaklaşınca 6 tur sürer) Axe, fazla savunmasının (savunma - 10) %50'si kadar bonus güç kazanır ve yakın dövüş hasarı artar."
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Dokunulmaz darbeler yağmuru içinde yakındaki düşmanlar arasında sıçrıyor: her tur yakındaki bir düşmanı keserken tüm hasarlara ve zayıflatmalara karşı bağışıklık.
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasif (Kılıç Dansı): Yakın dövüş saldırıları, Omnislash vuruşları ve Kılıç Öfkesi dönüşleri (Kılıç Dansı seviye 1-4'e göre) %35 ihtimalle 1,4/1,6/1,8/2,0 kat hasarlı kritik vuruş yapar."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
+PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Pasif (Karşı Sarmal): Alınan her 7 / 6 / 5 / 4 saldırıda (beceri seviyesi 1-4'e göre, ıskalananlar dahil) 3x3 kızıl balta dönüşü tetiklenir ve 100 / 120 / 140 / 160 saf hasar verir (1d6+3 ile 3d6)."
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Yıkıcı bir kılıç fırtınasında dönüyor: zayıflatmalara bağışık, %80 büyü hasarı azaltması ve her tur etrafındaki düşmanlara büyü hasarı verir."
 PropertyName,blade dance,kılıç dansı
 PropertyName,blade fury,kılıç öfkesi
 PropertyName,bladeform,kılıç formu
-PropertyName,counter helix,
+PropertyName,counter helix,Karşı Sarmal
 PropertyName,ebb and flow,gelgit akışı
 PropertyName,omnislash,omnislash
-PropertyName,one man army,
+PropertyName,one man army,Tek Kişilik Ordu
 RaceName,waterkin//female,su ruhu
 RaceName,waterkin//male,su ruhu
 RaceName,waterkin//non-binary,su ruhu
-SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,
+SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,4 ila 7 kare içindeki hedef düşmanı 24 tur boyunca zamanla saf hasar (K_dmg=15 ile 12/16/20/24 DPS) ve %16/%19/%22/%25 hareket yavaşlatma ile sıkıntıya sokar; hedef herhangi bir birimi öldürürse dağıtılır.
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Hedeflenen bir yaratığın biçimine bürün; Gelgit Akışı'nı koruyarak bedenini, niteliklerini, yeteneklerini ve büyülerini kopyala."
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Zayıflatmaları temizle ve 10 ila 12 tur dön: zayıflatma bağışıklığı, %80 büyü hasarı azaltması ve bitişik 3x3 düşmanlara tur başına 1d4 ila 2d4+2 temel büyü hasarı (K_dmg=15 üzerinden 85-205 DPS, DEX ve Kılıç Formu saldırı hızıyla ölçeklenir); Kılıç Dansı ile kritik vurabilir."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Coşkun bir dalgaya dönüşerek ileri atıl, etrafına su hasarı saç ve kısa süreliğine duvarlardan geçme ile yer değiştirme kazan."
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Temel hasar veren, hedefi geri savuran ve sersemleten bir su dalgası fırlat. Ek hasar Çeviklik/Güç oranıyla, sersemletme süresi ise Güç/Çeviklik oranıyla artar."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Hedeflenen düşmana sıçra ve yakındaki düşmanlara karşı 5 ila 12 hızlı, dokunulmaz silah darbesi (darbe başına silah + nitelik + 2 ila 3 ek hasar) savur; Kılıç Dansı kritiklerini ve Kılıç Formu bonuslarını tetikler."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Dönüştüğün biçimi bırak ve derhal gerçek su ruhu bedenine geri dön.
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).","Kükreyerek 2 kare içindeki (sv. 25 yeteneğiyle 3) düşmanları 4 ila 6 tur kışkırtır, büyülerini susturur ve Axe'e yürüyüp saldırmaya zorlar; Axe +5 ila +6 savunma kazanır (sv. 15 yeteneğiyle +7 ila +8)."
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",Çevikliği Güç ve Dayanıklılığa dönüştür (ustalığa göre 1 ila 5 puan); toplam nitelikleri korurken hem azami hem mevcut HP'yi artırır.
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",Güç ve Dayanıklılığı Çevikliğe dönüştür (ustalığa göre 1 ila 5 puan); toplam nitelikleri korur ve mevcut HP'yi tüketmeden azami HP'yi düşürür.
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","Yakındaki bir düşmana (menzil 2) saf güçle vurur: CP'si 18/25/32 veya altındaki (+ustalık/yetenek) hedefleri anında infaz eder, manayı %100 iade eder, yakındaki müttefiklere 12 tur +%25 hareket hızı ve +4/+6/+7 savunma verir ve kalıcı zırh biriktirir; aksi halde 5d6+1 ile 9d6 saf hasar verir."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","36 ila 48 tur boyunca 2 kare içindeki tüm müttefikleri her tur azami HP'lerinin %1 ila %3,25'i kadar iyileştiren kırılgan, hareketli bir Şifa Totemi (1 HP, en fazla 1 aktif) çağır."
 SpellName,adaptive strike,uyumlu darbe
-SpellName,battle hunger,
-SpellName,berserkers call,
+SpellName,battle hunger,Savaş Açlığı
+SpellName,berserkers call,Çılgın Savaşçının Çağrısı
 SpellName,blade fury,kılıç öfkesi
-SpellName,culling blade,
+SpellName,culling blade,İnfaz Bıçağı
 SpellName,healing ward,şifa totemi
 SpellName,morph,dönüşüm
 SpellName,morph agility,çevikliğe dönüştür
@@ -66,13 +66,13 @@ SpellName,morph revert,dönüşümü iptal et
 SpellName,morph strength,güce dönüştür
 SpellName,omnislash,omnislash
 SpellName,waveform,dalga formu
-StrikeName,adaptive strike impact,
-StrikeName,battle hunger mark,
-StrikeName,berserkers call ring,
+StrikeName,adaptive strike impact,Uyumlu Vuruş patlaması
+StrikeName,battle hunger mark,Savaş Açlığı işareti
+StrikeName,berserkers call ring,Çılgın Savaşçının Çağrısı halkası
 StrikeName,blade dance crit,kılıç dansı kritik
-StrikeName,blade fury cut,
-StrikeName,blade fury whirl,
-StrikeName,counter helix whirl,
-StrikeName,culling blade strike,
+StrikeName,blade fury cut,Kılıç Fırtınası kesiği
+StrikeName,blade fury whirl,Kılıç Fırtınası girdabı
+StrikeName,counter helix whirl,Karşı Sarmal dönüşü
+StrikeName,culling blade strike,İnfaz Bıçağı vuruşu
 StrikeName,healing ward pulse,şifa totemi nabzı
 StrikeName,omnislash slash,omnislash kesişi

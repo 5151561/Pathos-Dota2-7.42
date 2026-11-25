@@ -1,14 +1,14 @@
 ﻿BeamName,omnislash dash,sibat ng omnislash
-BeamName,waveform dash,
-CharacterName,Axe,
+BeamName,waveform dash,Dash ng Waveform
+CharacterName,Axe,Axe
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Isang maliksing bayani ng DOTA2 na nag-uutos ng malalakas na alon, malayang naglilipat sa pagitan ng Lakas at Liksi, nagpapalakas sa pamamagitan ng Taas at Baba ng Alon, at nagpapalit-anyo bilang mga kalaban."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Isang nakamaskarang dalubhasa sa talim mula sa DOTA2 na nag-iipon ng walang pigil na puwersa sa Anyo ng Talim, humihiwa ng mahika gamit ang Poot ng Talim, nagpapagaling ng kakampi sa Totem ng Paghilom, at pumapatay ng mga kaaway gamit ang Sayaw ng Talim at Omnislash."
-ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",
-ClassName,axe//female,
-ClassName,axe//male,
-ClassName,axe//non-binary,
+ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","Isang walang-awang pulang berserker ng DOTA2 na lumalakas kapag mag-isa gamit ang Hukbo ng Isang Tao, nang-aasar ng buong silid gamit ang Tawag ng Berserker, hinihiwa ang mga umaatake gamit ang Pure na ikot ng Counter Helix, at binibitay ang mahihina gamit ang Culling Blade."
+ClassName,axe//female,Axe
+ClassName,axe//male,Axe
+ClassName,axe//non-binary,Axe
 ClassName,juggernaut//female,juggernaut
 ClassName,juggernaut//male,juggernaut
 ClassName,juggernaut//non-binary,juggernaut
@@ -19,46 +19,46 @@ EntityDescription,A floating restorative totem summoned by Juggernaut that heals
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Isang may-isip na elemental na hinubog mula sa buhay na tubig-alon, na kayang baguhin ang kanyang mga pisikal na katangian anumang oras."
 EntityName,healing ward,totem ng paghilom
 EntityName,waterkin,nilalang ng tubig
-ExplosionName,berserkers call wave,
+ExplosionName,berserkers call wave,Shockwave ng Tawag ng Berserker
 ExplosionName,blade fury spin,ikot ng poot ng talim
-ExplosionName,counter helix spin,
-ExplosionName,waveform splash,
+ExplosionName,counter helix spin,Ikot ng Counter Helix
+ExplosionName,waveform splash,Pagsabog ng tubig ng Waveform
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Isang siksik na bola ng buhay na tubig-alon na ibinabala nang walang katapusan mula sa tirador.
 ItemName,tidal orb,bolang agos
 PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,Likas (Anyo ng Talim): Makakuha ng 1 patong bawat 4 na turnong hindi tinatamaan ng pinsala (hanggang 12 patong). Bawat patong ay nagbibigay ng +1% bilis ng pagkilos at +2.5% lakas ng hampas sa liksi at bilis ng atake; nananatili ng 4 na turno matapos matamaan.
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Likas (Taas at Baba ng Alon): Ang Liksi ay nagbibigay ng dagdag na bilis ng pagkilos at layo ng pag-atake sa malayo; ang Lakas ay nagbibigay ng dagdag na layo ng mahika at laban sa pagbagal. Nananatili habang nagpapalit-anyo.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
+PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Likas (Hukbo ng Isang Tao): Habang walang buhay na kakampi sa loob ng 4 na tile (tumatagal ng 6 na turn kapag lumapit ang kakampi), nakakakuha si Axe ng bonus na Lakas na katumbas ng 50% ng sobrang Depensa niya (Depensa - 10), na nagpapataas ng melee damage."
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Lumulundag sa pagitan ng mga kalapit na kalaban sa isang malabong ulan ng hindi matitinag na hampas: ligtas sa lahat ng pinsala at masamang epekto habang hinihiwa ang isang kalapit na kalaban bawat turno.
 PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasibo (Sayaw ng Talim): Ang mga malapitang atake, hampas ng Omnislash, at pag-ikot ng Poot ng Talim ay may 35% tsansa (ayon sa antas 1-4 ng Sayaw ng Talim) na magdulot ng kritikal na tama na 1.4/1.6/1.8/2.0x na pinsala."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
+PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Passive (Counter Helix): Tuwing 7 / 6 / 5 / 4 natanggap na atake (ayon sa antas ng kasanayan 1-4, kasama ang mga pumalya) ay magpapagana ng 3x3 pulang ikot ng palakol na nagbibigay ng 100 / 120 / 140 / 160 Pure damage (1d6+3 hanggang 3d6)."
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Umiikot sa isang mapanirang bagyo ng mga talim: ligtas sa mga masamang epekto, 80% bawas sa pinsalang mahika, at nagdudulot ng pinsalang mahika sa paligid mo bawat turno."
 PropertyName,blade dance,sayaw ng talim
 PropertyName,blade fury,poot ng talim
 PropertyName,bladeform,anyo ng talim
-PropertyName,counter helix,
+PropertyName,counter helix,Counter Helix
 PropertyName,ebb and flow,taas at baba ng alon
 PropertyName,omnislash,omnislash
-PropertyName,one man army,
+PropertyName,one man army,Hukbo ng Isang Tao
 RaceName,waterkin//female,nilalang ng tubig
 RaceName,waterkin//male,nilalang ng tubig
 RaceName,waterkin//non-binary,nilalang ng tubig
-SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,
+SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,Pinahihirapan ang napiling kaaway sa loob ng 4 hanggang 7 tile sa loob ng 24 na turn gamit ang Pure damage sa paglipas ng panahon (12/16/20/24 DPS sa pamamagitan ng K_dmg=15) at 16%/19%/22%/25% pagbagal ng galaw; nawawala kung makapatay ang target ng anumang unit.
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Gayahin ang anyo ng target na nilalang, kinokopya ang katawan, mga katangian, kasanayan, at mahika nito habang pinapanatili ang Taas at Baba ng Alon."
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Alisin ang masasamang epekto at umikot nang 10 hanggang 12 turno: kaligtasan sa masamang epekto, 80% bawas sa pinsalang mahika, at 1d4 hanggang 2d4+2 batayang pinsalang mahika bawat turno (85-205 DPS gamit ang K_dmg=15, nakabatay sa DEX at bilis ng Anyo ng Talim) sa mga katabing 3x3 kalaban; maaaring magkritikal gamit ang Sayaw ng Talim."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Matunaw sa isang malakas na alon, sumugod pasulong, magsaboy ng pinsalang tubig sa paligid, at panandaliang makakuha ng paglusot at paglipat."
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Magpakawala ng daluyong ng tubig na nagdudulot ng batayang pinsala, nagtutulak pabalik, at nagpapatigil sa target. Ang dagdag na pinsala ay umaayon sa rasyo ng Liksi-sa-Lakas habang ang tagal ng pagkatulala ay sa rasyo ng Lakas-sa-Liksi."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Lumundag sa isang target na kalaban at magpakawala ng 5 hanggang 12 mabilis at hindi matitinag na hiwa ng sandata (sandata + katangian + 2 hanggang 3 dagdag pinsala bawat hiwa) sa mga kalapit na kalaban, na nagpapagana ng kritikal ng Sayaw ng Talim at bonus ng Anyo ng Talim."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Pakawalan ang iyong binagong anyo at agad na bumalik sa iyong tunay na katawan ng nilalang ng tubig.
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).","Umaatungal para asarin ang mga kaaway sa loob ng 2 tile (3 sa Lv 25 na talento) sa loob ng 4 hanggang 6 na turn, pinatatahimik ang kanilang mga spell at pinipilit silang lumakad patungo kay Axe at atakihin siya, habang nakakakuha si Axe ng +5 hanggang +6 Depensa (+7 hanggang +8 sa Lv 15 na talento)."
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Ilipat ang Liksi patungong Lakas at Pangangatawan (1 hanggang 5 puntos ayon sa kahusayan), pinapanatili ang kabuuang katangian habang itinataas ang parehong pinakamataas at kasalukuyang HP."
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Ilipat ang Lakas at Pangangatawan patungong Liksi (1 hanggang 5 puntos ayon sa kahusayan), pinapanatili ang kabuuang katangian at binababa ang pinakamataas na HP nang hindi inuubos ang kasalukuyang HP."
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","Hinahampas ang kalapit na kaaway (saklaw 2) ng purong lakas: agad na binibitay ang mga target na may 18/25/32 HP o mas mababa (+kahusayan/talento), ibinabalik ang 100% ng mana, binibigyan ang mga kalapit na kakampi ng +25% bilis ng galaw at +4/+6/+7 Depensa sa loob ng 12 turn, at nag-iipon ng permanenteng armor; kung hindi, nagbibigay ng 5d6+1 hanggang 9d6 Pure damage."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Tumawag ng marupok at gumagalaw na Totem ng Paghilom (1 HP, max 1 aktibo) sa loob ng 36 hanggang 48 turno na nagpapagaling sa lahat ng kakampi sa loob ng 2 puwang ng 1% hanggang 3.25% ng kanilang pinakamataas na HP bawat turno."
 SpellName,adaptive strike,umaangkop na hampas
-SpellName,battle hunger,
-SpellName,berserkers call,
+SpellName,battle hunger,Battle Hunger
+SpellName,berserkers call,Tawag ng Berserker
 SpellName,blade fury,poot ng talim
-SpellName,culling blade,
+SpellName,culling blade,Culling Blade
 SpellName,healing ward,totem ng paghilom
 SpellName,morph,pagbabagong-anyo
 SpellName,morph agility,ilipat sa liksi
@@ -66,13 +66,13 @@ SpellName,morph revert,ibalik ang anyo
 SpellName,morph strength,ilipat sa lakas
 SpellName,omnislash,omnislash
 SpellName,waveform,anyong alon
-StrikeName,adaptive strike impact,
-StrikeName,battle hunger mark,
-StrikeName,berserkers call ring,
+StrikeName,adaptive strike impact,Epekto ng Adaptive Strike
+StrikeName,battle hunger mark,Marka ng Battle Hunger
+StrikeName,berserkers call ring,Singsing ng Tawag ng Berserker
 StrikeName,blade dance crit,kritikal ng sayaw ng talim
-StrikeName,blade fury cut,
-StrikeName,blade fury whirl,
-StrikeName,counter helix whirl,
-StrikeName,culling blade strike,
+StrikeName,blade fury cut,Hiwa ng Blade Fury
+StrikeName,blade fury whirl,Ipoipo ng Blade Fury
+StrikeName,counter helix whirl,Ikot ng Counter Helix
+StrikeName,culling blade strike,Hampas ng Culling Blade
 StrikeName,healing ward pulse,pintig ng totem ng paghilom
 StrikeName,omnislash slash,hiwa ng omnislash
