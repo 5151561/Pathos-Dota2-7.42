@@ -359,6 +359,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 0.3 技能帮助面板实时数值与 5 阶熟练度详情
       RegisterSpellHelpSpecs(Ctx);
+      RegisterPassiveHelpSpecs();
 
       // 2. 初始化通用嘲讽基建（禁魔拦截 + 强制转向/攻击 + 回合递减）
       DotaTauntService.EnsureInitialized();
@@ -809,9 +810,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       State.HelixHitCounter = 0;
 
-      float DotaDmg = GetHelixBaseDotaDamage(HelixLv)
-        + (TalentService.HasTalent(Axe, TalentT3HelixDamage) ? HelixTalentBonusDotaDamage : 0.0f);
-      Dice DmgDice = DotaMechanicsMapper.MapSkillDamageDice(DotaDmg, DieFaces: 6);
+      Dice DmgDice = GetHelixDamageDice(Axe, HelixLv);
 
       PathosEngineBridge.StoryExploding(Engine, Delay.FromTurns(18), Axe.Square, CounterHelixExplosion);
 
@@ -844,6 +843,107 @@ namespace Pathos.DotaHeroes.Heroes
           CounterHelixGlyph,
           DotaLocalization.Format("axe.log.helix_proc", TotalHits, LastRolled));
       }
+    }
+
+    /// <summary>先天「一人之军」与被动「反击螺旋」的 Property 帮助面板（实时数值 + 按等级明细）。</summary>
+    private static void RegisterPassiveHelpSpecs()
+    {
+      // E：反击螺旋（被动，技能等级 1~4）
+      DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
+      {
+        PropertyName = "counter helix",
+        ResolveCurrentLevel = Ch => IsAxe(Ch) ? HeroSkillService.GetSkillLevel(Ch, SkillHelixId) : 0,
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          if (!IsAxe(Ch))
+            return null;
+
+          int Level = HeroSkillService.GetSkillLevel(Ch, SkillHelixId);
+          var Rows = new List<(string, string)>
+          {
+            (DotaLocalization.T("ui.help.key_skill_level"), Level > 0
+              ? DotaHelpColor.Skill(DotaLocalization.Format("ui.help.val_skill_level", Level, 4))
+              : DotaLocalization.T("ui.help.not_learned"))
+          };
+          if (Level <= 0)
+            return Rows;
+
+          var State = GetAxeState(Ch);
+          var DmgDice = GetHelixDamageDice(Ch, Level);
+          bool HasDmgTalent = TalentService.HasTalent(Ch, TalentT3HelixDamage);
+          Rows.Add((DotaLocalization.T("axe.help.e.key_counter"), DotaLocalization.Format(
+            "axe.help.e.val_counter",
+            DotaHelpColor.Skill($"{State.HelixHitCounter}"),
+            DotaHelpColor.Skill($"{GetHelixThresholdByLevel(Level)}"))));
+          Rows.Add((DotaLocalization.T("axe.help.e.key_dmg"), DotaLocalization.Format(
+            "axe.help.e.val_dmg",
+            DotaHelpColor.Physical(DotaSpellHelpBridge.FormatDiceWithRange(DmgDice)),
+            DotaHelpColor.Physical($"{DmgDice.Average():0.#}"),
+            HasDmgTalent ? DotaLocalization.Format("ui.common.paren_item", DotaHelpColor.Talent(DotaLocalization.T("axe.help.e.t3_tag"))) : string.Empty)));
+          return Rows;
+        },
+        BuildMechanicsNotes = _ => new[]
+        {
+          DotaLocalization.T("axe.help.e.mech_1"),
+          DotaLocalization.T("axe.help.e.mech_2")
+        },
+        // 各等级伤害含当前天赋（百科无角色时为基础值）
+        BuildLevels = HelpCtx => DotaSpellHelpBridge.Levels(
+          4,
+          Lv => DotaLocalization.Format("axe.help.e.level_suffix", GetHelixThresholdByLevel(Lv)),
+          Lv => DotaLocalization.Format(
+            "axe.help.e.level_bullet",
+            DotaHelpColor.Physical(DotaSpellHelpBridge.FormatDiceWithRange(GetHelixDamageDice(HelpCtx.Character, Lv)))))
+      });
+
+      // 先天：一人之军（无等级）
+      DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
+      {
+        PropertyName = "one man army",
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          if (!IsAxe(Ch))
+            return null;
+
+          var State = GetAxeState(Ch);
+          int TotalDef = HelpCtx.Engine != null ? QueryDefenceSafe(HelpCtx.Engine, Ch) : 0;
+          int Bonus = State.OneManArmyActive ? State.CachedOneManArmyBonusStr : 0;
+
+          string StatusText = !State.OneManArmyActive
+            ? DotaLocalization.T("axe.help.oma.status_off")
+            : State.OneManArmyLingerTurns > 0
+              ? DotaLocalization.Format("axe.help.oma.status_linger", DotaHelpColor.Control(DotaHelpFormat.Turns(State.OneManArmyLingerTurns)))
+              : DotaLocalization.T("axe.help.oma.status_on");
+
+          return new List<(string, string)>
+          {
+            (DotaLocalization.T("axe.help.oma.key_status"), StatusText),
+            (DotaLocalization.T("axe.help.oma.key_def"), DotaLocalization.Format(
+              "axe.help.oma.val_def",
+              DotaHelpColor.Skill($"{TotalDef}"),
+              DotaHelpColor.Skill($"{Math.Max(0, TotalDef - 10)}"))),
+            (DotaLocalization.T("axe.help.oma.key_bonus"), Bonus > 0
+              ? DotaLocalization.Format(
+                  "axe.help.oma.val_bonus",
+                  DotaHelpColor.Stat($"+{Bonus}"),
+                  DotaHelpColor.Heal($"+{Bonus * DotaMechanicsMapper.HpPerStrengthPoint} HP"))
+              : DotaLocalization.T("axe.help.oma.val_none"))
+          };
+        },
+        BuildMechanicsNotes = _ => new[]
+        {
+          DotaLocalization.Format(
+            "axe.help.oma.mech_1",
+            DotaHelpColor.Control(DotaHelpFormat.Tiles(OneManArmyRadius)),
+            DotaHelpColor.Control(DotaHelpFormat.Turns(OneManArmyLingerTurns))),
+          DotaLocalization.Format(
+            "axe.help.oma.mech_2",
+            DotaHelpColor.Stat("50%"),
+            DotaHelpColor.Heal($"{DotaMechanicsMapper.HpPerStrengthPoint} HP"))
+        }
+      });
     }
 
     private void RegisterSpellHelpSpecs(DotaHeroContext Ctx)
@@ -1077,6 +1177,12 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static float GetHelixBaseDotaDamage(int SkillLevel)
       => HelixDotaDamage[Math.Clamp(SkillLevel - 1, 0, 3)];
+
+    /// <summary>反击螺旋纯伤骰（按技能等级 + T3 左天赋 +40），触发结算与帮助面板共用。</summary>
+    private static Dice GetHelixDamageDice(Character Axe, int SkillLevel)
+      => DotaMechanicsMapper.MapSkillDamageDice(
+        GetHelixBaseDotaDamage(SkillLevel) + (TalentService.HasTalent(Axe, TalentT3HelixDamage) ? HelixTalentBonusDotaDamage : 0.0f),
+        DieFaces: 6);
 
     private static float GetCullingBaseDotaThreshold(int SkillLevel)
       => CullingDotaThresholds[Math.Clamp(SkillLevel - 1, 0, 2)];

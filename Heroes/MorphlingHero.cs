@@ -361,6 +361,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 0.3 注册变体精灵主动技能的帮助面板数值与 5 阶熟练度详情（含游戏内实时面板预览）
       RegisterSpellHelpSpecs(Ctx);
+      RegisterPassiveHelpSpecs();
 
       // Q 波浪形态施法前置：记录起点格子，供施法后绘制起止点 4 方向水浪残影 Beam
       DotaHookBus.RegisterBeforeCastSpell("morphling.before_cast", Args =>
@@ -392,12 +393,11 @@ namespace Pathos.DotaHeroes.Heroes
         if (!IsMorphling(Args.Character))
           return;
 
-        int Dex = DotaStats.Dex(Args.Character);
-        if (Dex <= 10)
+        float Bonus = GetEbbSpeedBonus(DotaStats.Dex(Args.Character));
+        if (Bonus <= 0.0f)
           return;
 
-        float BonusMultiplier = 1.0f + Math.Min(0.50f, (Dex - 10) * 0.02f);
-        Args.Speed = Speed.FromRate(Args.Speed.GetRate() * BonusMultiplier);
+        Args.Speed = Speed.FromRate(Args.Speed.GetRate() * (1.0f + Bonus));
       });
 
       // 先天技能「潮涨潮落」— 敏捷提升远程攻击距离 + T2 左天赋（+75 攻击距离 -> +1 格，变形为远程生物同样保留）
@@ -406,10 +406,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (!IsMorphling(Args.Character))
           return;
 
-        int Dex = DotaStats.Dex(Args.Character);
-        int BonusRange = Math.Max(0, (Dex - 10) / 5);
-        if (TalentService.HasTalent(Args.Character, TalentT2AttackRange))
-          BonusRange += TalentAttackRangeBonus;
+        int BonusRange = GetEbbAttackRangeBonus(Args.Character);
 
         if (BonusRange > 0)
           Args.Range += BonusRange;
@@ -421,8 +418,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (!IsMorphling(Args.Character))
           return;
 
-        int Str = DotaStats.Str(Args.Character);
-        int BonusRange = Math.Max(0, (Str - 10) / 5);
+        int BonusRange = GetStrRangeBonus(Args.Character);
         if (BonusRange > 0)
           Args.BonusRange += BonusRange;
       });
@@ -432,16 +428,15 @@ namespace Pathos.DotaHeroes.Heroes
       {
         if (Args.Property == Ctx.Properties.slowness && IsMorphling(Args.Target))
         {
-          int Str = DotaStats.Str(Args.Target);
-          if (Str >= 24)
+          float Resist = GetEbbSlowResist(DotaStats.Str(Args.Target));
+          if (Resist >= 1.0f)
           {
             Args.Cancel = true;
             return;
           }
 
-          if (Str > 10)
+          if (Resist > 0.0f)
           {
-            float Resist = Math.Min(0.75f, (Str - 10) * 0.045f);
             int AvgTurns = (int)MathF.Round(Args.Duration.Average() * (1.0f - Resist));
             if (AvgTurns <= 0)
             {
@@ -784,6 +779,21 @@ namespace Pathos.DotaHeroes.Heroes
       int Str = DotaStats.Str(Character);
       return Math.Max(0, (Str - 10) / 5);
     }
+
+    // ---- 先天「潮涨潮落」公式（Hook 结算与帮助面板共用） ----
+
+    /// <summary>敏捷移速加成比例：每点超过 10 的敏捷 +2%，上限 +50%。</summary>
+    private static float GetEbbSpeedBonus(int Dex)
+      => Dex > 10 ? Math.Min(0.50f, (Dex - 10) * 0.02f) : 0.0f;
+
+    /// <summary>远程攻击距离加成：每 5 点超过 10 的敏捷 +1 格，T2 左天赋再 +1 格。</summary>
+    private static int GetEbbAttackRangeBonus(Character Character)
+      => Math.Max(0, (DotaStats.Dex(Character) - 10) / 5)
+        + (TalentService.HasTalent(Character, TalentT2AttackRange) ? TalentAttackRangeBonus : 0);
+
+    /// <summary>减速抗性：力量 ≥ 24 返回 1（免疫）；否则每点超过 10 的力量 +4.5%，上限 75%。</summary>
+    private static float GetEbbSlowResist(int Str)
+      => Str >= 24 ? 1.0f : Str > 10 ? Math.Min(0.75f, (Str - 10) * 0.045f) : 0.0f;
 
     private static float GetWaveformStarDamageMultiplier(Character Character)
       => WaveformAbility.StarMultiplier(Character);
@@ -1156,6 +1166,61 @@ namespace Pathos.DotaHeroes.Heroes
             "morph.help.r.tier_bullet_full",
             DotaHelpColor.Control(DotaHelpFormat.Tiles(MorphAbility.RangeAt(HelpCtx.Character, Tier))),
             DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name"))))
+      });
+    }
+
+    /// <summary>先天「潮涨潮落」Property 帮助面板：按当前力敏实算移速 / 攻击距离 / 施法距离 / 减速抗性。</summary>
+    private static void RegisterPassiveHelpSpecs()
+    {
+      DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
+      {
+        PropertyName = "ebb and flow",
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          if (!IsMorphling(Ch))
+            return null;
+
+          int Dex = DotaStats.Dex(Ch);
+          int Str = DotaStats.Str(Ch);
+          bool HasRangeTalent = TalentService.HasTalent(Ch, TalentT2AttackRange);
+          float SlowResist = GetEbbSlowResist(Str);
+          string SlowText = SlowResist >= 1.0f
+            ? DotaHelpColor.Control(DotaLocalization.T("morph.help.ebb.slow_immune"))
+            : DotaHelpColor.Control($"{SlowResist * 100:0.#}%");
+
+          return new List<(string, string)>
+          {
+            (DotaLocalization.T("morph.help.e.key_attrs"), DotaLocalization.Format(
+              "morph.help.ebb.val_attrs",
+              DotaHelpColor.Stat(DotaHelpFormat.Dex(Dex)),
+              DotaHelpColor.Stat(DotaLocalization.Format("morph.help.str_val", Str)))),
+            (DotaLocalization.T("morph.help.ebb.key_agi"), DotaLocalization.Format(
+              "morph.help.ebb.val_agi",
+              DotaHelpColor.Control($"+{GetEbbSpeedBonus(Dex) * 100:0}%"),
+              DotaHelpColor.Control(DotaHelpFormat.Tiles($"+{GetEbbAttackRangeBonus(Ch)}")),
+              HasRangeTalent ? DotaLocalization.Format("ui.common.paren_item", DotaHelpColor.Talent(DotaLocalization.T("morph.help.ebb.t2_tag"))) : string.Empty)),
+            (DotaLocalization.T("morph.help.ebb.key_str"), DotaLocalization.Format(
+              "morph.help.ebb.val_str",
+              DotaHelpColor.Control(DotaHelpFormat.Tiles($"+{GetStrRangeBonus(Ch)}")),
+              SlowText))
+          };
+        },
+        BuildMechanicsNotes = _ => new[]
+        {
+          DotaLocalization.Format(
+            "morph.help.ebb.mech_agi",
+            DotaHelpColor.Control("+2%"),
+            DotaHelpColor.Control("50%"),
+            DotaHelpColor.Control(DotaHelpFormat.Tiles("+1"))),
+          DotaLocalization.Format(
+            "morph.help.ebb.mech_str",
+            DotaHelpColor.Control(DotaHelpFormat.Tiles("+1")),
+            DotaHelpColor.Control("4.5%"),
+            DotaHelpColor.Control("75%"),
+            DotaHelpColor.Stat("24")),
+          DotaLocalization.T("morph.help.ebb.mech_morph")
+        }
       });
     }
 
