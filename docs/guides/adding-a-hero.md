@@ -76,7 +76,7 @@ Resources/Heroes/antimage/
 4. **召唤物 / 装备 / 职业 / 预设英雄**：
    - 预设英雄一键注册：`Ctx.RegisterPresetHero("HeroName", race, heroClass, gender, glyph)`。
 5. **4 层天赋树**：
-   - 使用 `HeroTalentTree.CreateStandard(...)` 定义 Lv 5/10/15/20（双修 Lv 22/23/24/25）共 8 个节点；减冷却天赋直接挂 `SpellManaReductionRule`，然后调用 `TalentRegistry.Register(Ctx, tree)`。
+   - 使用 `HeroTalentTree.CreateStandard(...)` 定义 Lv 10/15/20/25（双修 Lv 27/28/29/30）共 8 个节点；减冷却天赋直接挂 `SpellManaReductionRule`，然后调用 `TalentRegistry.Register(Ctx, tree)`。
    - 「+N 属性」天赋直接声明 `new TalentNode(...) { StatBonus = PathosStatLimits.Bonus(Str: 3, Con: 3) }`，上限拓宽、永久提升与 `+N × 6 HP` 由框架结算，不要手写 `OnLearn` 或 `RegisterHeroStatLimitBonus`（详见 [hook-system.md §9.3](../architecture/hook-system.md)）。
 6. **技能帮助面板**：`DotaSpellHelpBridge.RegisterSpell(...)` 中用 `DotaHelpFormat.Tiles/Turns/CastRangeSuffix/ActualMana` 与 `DotaSpellHelpBridge.Tiers(...)`；面板与施法共用的公式抽成英雄内 `ComputeXxx(ch, tier)`（详见 [hook-system.md §11](../architecture/hook-system.md)）。
 

@@ -104,11 +104,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
     /// 在 <see cref="OnLearn"/> 之前执行；无需再手写 OnLearn 或 RegisterHeroStatLimitBonus。
     /// </summary>
     public PathosStatLimits StatBonus { get; init; }
-
-    /// <summary>
-    /// 对应 Pathos 原生 Codex.Properties 的内部标记（用于随 Character.AcquiredTalentSet 自动存档与读档）。
-    /// </summary>
-    internal Property BackingProperty { get; set; }
   }
 
   /// <summary>

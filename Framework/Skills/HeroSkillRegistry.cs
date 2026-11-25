@@ -6,8 +6,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
   /// <summary>
   /// 全局英雄技能加点注册表：
   /// - 按职业名（Class.Name）索引各英雄的 Q/W/E/R/+ 技能加点配置。
-  /// - 技能等级进度统一通过 DotaCharacterStorage（Character.Dialogue.Tag）与原生 Knowledge.MasteryList 持久化，
-  ///   不占用 Codex.Properties 64 位位图名额，零百科/日志污染。
+  /// - 技能等级由 DotaCharacterStorage（Character.Dialogue.Tag）持久化，主动技能星级由原生 Knowledge.MasteryList 保存，
+  ///   不注册任何 Codex.Properties。
   /// </summary>
   public static class HeroSkillRegistry
   {

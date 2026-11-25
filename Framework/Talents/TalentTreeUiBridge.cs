@@ -16,7 +16,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
   /// - 入口按钮为原生 Pathos.MenuButton，放置在左下角「休息」按钮右侧（通过 StagePanel.EdgeWidth 动态对齐，避免被 LeftDock 裁切）。
   /// - 天赋树面板为左下角停靠的侧边面板（与角色/法术左侧面板同位互斥），统一 DOTA2 HUD 配色 + Pathos 标准字体；
   ///   技能详情与升级预览全部放在悬停卡片中（DOTA2 风格 Inv.Tooltip），面板本体只保留天赋树与技能栏，高度固定不跳动。
-  /// - 支持 F2 快捷开关、ESC 关闭；原生 TalentPanel.Refresh 中自动隐藏内部持久化标记（dota_talent_*）。
+  /// - 支持 F2 快捷开关、ESC 关闭；原生 TalentPanel.Refresh 与百科中自动隐藏主动技能短期状态 Property（DotaPropertyVisibility）。
   /// </summary>
   internal static class TalentTreeUiBridge
   {
@@ -146,7 +146,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
           HookBootstrap.WriteDebug("Patched Pathos.StagePanel.RouteKeystroke");
         }
 
-        // 5. TalentPanel.Refresh(Character)：在原生角色面板中隐藏内部 dota_talent_* 标记与主动技能短期状态
+        // 5. TalentPanel.Refresh(Character)：在原生角色面板中隐藏主动技能短期状态
         if (TalentPanelType != null)
         {
           PatchSafe(Harmony, TalentPanelType, "Refresh", new[] { typeof(Character) },

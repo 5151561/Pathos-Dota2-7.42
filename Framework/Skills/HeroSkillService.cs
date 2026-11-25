@@ -9,7 +9,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
   /// - 1 级自带 1 点技能点，每升 1 级获得 1 点（与天赋树完全独立）。
   /// - 主动技能 0→1 级学会法术，1→MaxLevel 每次加点调用 Pathos 原生 Engine.LearnSpell 升星（★~★★★）。
   /// - 被动技能 0→1 级授予原生可见专长，1→MaxLevel 由独立技能等级驱动数值（彻底脱离武器/学派熟练度）。
-  /// - 所有等级进度以 dota_skill_* 写入 Character.AcquiredTalentSet，100% 兼容原生存档。
+  /// - 技能等级写入 DotaCharacterStorage（Character.Dialogue.Tag），随原生存档持久化，不占用 Codex.Properties。
   /// </summary>
   public static class HeroSkillService
   {
@@ -212,7 +212,7 @@ namespace Pathos.DotaHeroes.Framework.Skills
 
     /// <summary>
     /// 执行一次技能升级加点（不可撤销）：
-    /// - 写入 dota_skill_* 持久化标记
+    /// - 写入 DotaCharacterStorage 技能等级
     /// - 主动技能同步调用 Engine.LearnSpell（0→1 学会，1→N 原生升星）
     /// - 被动技能 0→1 级授予原生可见专长
     /// - 触发自定义 OnUpgrade 回调并写入日志

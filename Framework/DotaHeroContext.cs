@@ -49,7 +49,7 @@ namespace Pathos.DotaHeroes.Framework
     private readonly Dictionary<string, Glyph> GlyphCache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 注册并缓存一个贴图（源文件位于 Resources/Heroes/&lt;hero&gt;/&lt;tileset&gt;/&lt;Name&gt;.png，构建期自动聚合到 Atlases/）。
+    /// 注册并缓存一个贴图（单份源文件位于 Resources/Heroes/&lt;hero_id&gt;/&lt;Name&gt;.png，构建期自动分发到四套 Atlases/）。
     /// </summary>
     public Glyph RegisterGlyph(string Name)
     {
@@ -100,6 +100,7 @@ namespace Pathos.DotaHeroes.Framework
     /// <summary>
     /// 注册「长效技能 / 先天技能 / 被动专长」Property：
     /// 会通过 Class.AddFeat 展示在角色原生「天赋」栏与游戏内百科「天赋/特性」栏目中。
+    /// 注意：每次调用占用 1 个全局 Property 名额（Pathos PropertySet 为单个 Int64，官方已用 57 个，硬上限 64）。
     /// </summary>
     public Property RegisterPassiveProperty(string Name, string Description, Glyph Icon)
     {
@@ -114,6 +115,7 @@ namespace Pathos.DotaHeroes.Framework
     /// <summary>
     /// 注册「短期主动技能状态（Transient-only）」Property（如剑刃风暴、无敌斩）：
     /// 自动向 DotaPropertyVisibility 登记，避免在原生 TalentPanel（含大师模式）与百科「天赋/特性」中被误展示为永久天赋。
+    /// 注意：同样占用 1 个全局 Property 名额；新的带回合数增益/减益优先用 DotaModifierService（零 Property）。
     /// </summary>
     public Property RegisterSkillStatusProperty(string Name, string Description, Glyph Icon)
     {
@@ -128,7 +130,7 @@ namespace Pathos.DotaHeroes.Framework
     }
 
     /// <summary>
-    /// 注册单格自定义像素打击/斩击特效（配合 PathosEngineBridge.StoryStriking 使用）。
+    /// 注册单格自定义像素打击/斩击特效；必须再用 DotaVfx.Style 注册样式，播放用 DotaVfx.Strike / StrikeOn。
     /// </summary>
     public Strike RegisterStrikeVfx(string Name, string GlyphName)
     {
@@ -141,7 +143,7 @@ namespace Pathos.DotaHeroes.Framework
     }
 
     /// <summary>
-    /// 注册 4 方向自定义光束/残影特效（配合 PathosEngineBridge.StoryBeaming / DotaCombatHelper.PlayBeamTrail 使用）。
+    /// 注册 4 方向自定义光束/残影特效；必须再用 DotaVfx.Style 注册样式，播放用 DotaVfx.Beam / BeamTrail。
     /// </summary>
     public Beam RegisterBeamVfx(
       string Name,
@@ -167,7 +169,7 @@ namespace Pathos.DotaHeroes.Framework
 
     /// <summary>
     /// 注册 3×3 九宫格自定义范围爆炸特效（贴图命名约定：&lt;GlyphPrefix&gt; tl/tc/tr/ml/mc/mr/bl/bc/br）。
-    /// 配合 PathosEngineBridge.StoryExploding 使用。
+    /// 必须再用 DotaVfx.Style 注册样式，播放用 DotaVfx.Explode。
     /// </summary>
     public Explosion RegisterExplosion3x3Vfx(string Name, string GlyphPrefix)
     {

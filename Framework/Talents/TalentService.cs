@@ -7,7 +7,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
   /// <summary>
   /// 天赋系统核心业务服务：
   /// - 查询角色已学天赋、节点状态、可用天赋点数（含满级后补点另一侧逻辑）。
-  /// - 执行学习（不可洗点），通过原生 Engine.GainTalent 持久化并触发 OnLearn 回调。
+  /// - 执行学习（不可洗点）：写入 DotaCharacterStorage（随存档持久化），结算 StatBonus 后触发 OnLearn 回调。
   /// - 自动订阅 SpellCostQuery（统一处理所有英雄的「减冷却 → 减蓝耗」规则）与 AfterLevelUp（升级解锁提示）。
   /// </summary>
   public static class TalentService
