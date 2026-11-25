@@ -1,8 +1,11 @@
-﻿BeamName,omnislash dash,рывок омнислэша
+﻿BeamName,meat hook chain,
+BeamName,omnislash dash,рывок омнислэша
 BeamName,waveform dash,Рывок Волны
 CharacterName,Axe,Акс
 CharacterName,Juggernaut,Джаггернаут
 CharacterName,Morphling,Морфлинг
+CharacterName,Pudge,
+ClassDescription,"A DOTA2 butcher who drags foes to his cleaver with Meat Hook, chokes everything nearby with Rot, shrugs off blows behind a Meat Shield, devours his prey with Dismember, and grows ever stronger with every hero-tier kill through Flesh Heap.",
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Текучий герой DOTA2, повелевающий бурными волнами: он свободно перераспределяет Силу и Ловкость, усиливается за счёт «Прилива и отлива» и способен принимать облик врагов."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Мастер клинка в маске из DOTA2: накапливает неудержимый темп через «Форму клинка», рассекает магию «Яростью клинка», поддерживает союзников «Тотемом исцеления» и сокрушает врагов «Танцем клинка» и «Омнислэшем»."
 ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","Багровый берсерк из DOTA2: в одиночку становится сильнее благодаря «Армии из одного», насмешкой «Зов берсерка» стягивает врагов, вращением «Контр-спираль» наносит чистый урон нападающим и «Лезвием палача» казнит слабых."
@@ -15,6 +18,9 @@ ClassName,juggernaut//non-binary,джаггернаут
 ClassName,morphling//female,морфлинг
 ClassName,morphling//male,морфлинг
 ClassName,morphling//non-binary,морфлинг
+ClassName,pudge//female,
+ClassName,pudge//male,
+ClassName,pudge//non-binary,
 EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,"Парящий исцеляющий тотем, призванный Джаггернаутом, который каждый ход восстанавливает ближайшим союзникам процент от их максимального ОЗ (HP)."
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Разумный элементаль, сотворённый из живых приливных вод, способный по воле изменять свои физические характеристики."
 EntityName,healing ward,тотем исцеления
@@ -22,6 +28,7 @@ EntityName,waterkin,водный дух
 ExplosionName,berserkers call wave,Ударная волна Зова берсерка
 ExplosionName,blade fury spin,вихрь ярости клинка
 ExplosionName,counter helix spin,Вращение Контр-спирали
+ExplosionName,pudge rot cloud,
 ExplosionName,waveform splash,Водный взрыв Волны
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Сгущённая сфера живой приливной воды, выпускаемая из пращи как бесконечный дальнобойный снаряд."
 ItemName,tidal orb,сфера прилива
@@ -30,8 +37,10 @@ RaceName,waterkin//male,водный дух
 RaceName,waterkin//non-binary,водный дух
 SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,"Терзает цель в радиусе 4–7 клеток 24 хода: чистый урон за время (12/16/20/24 ур./с по K_dmg=15) и замедление движения на 16%/19%/22%/25%; снимается, если цель убьёт любое существо."
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Примите облик выбранного существа, скопировав его тело, характеристики, навыки и заклинания с сохранением «Прилива и отлива»."
+SpellDescription,"Channel on an adjacent foe for 6 turns (7 with Lv 20 talent), stunning it. Each turn deals magical damage of (80/100/120 + 0.3/0.5/0.7 x Pudge's DOTA2-equivalent Strength) x 0.5 / 15 and heals Pudge by the same amount (x1.5 with Lv 25 talent). The channel breaks if Pudge is disabled or the target leaves.",
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Развейте негативные эффекты и вращайтесь 10–12 ходов: иммунитет к дебаффам, 80% снижение магического урона и 1d4–2d4+2 базового магического урона за ход (85–205 DPS через K_dmg=15, масштабируется от DEX и скорости атаки Формы клинка) по соседним врагам 3x3; может критовать от Танца клинка."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Растворитесь в бурной волне, совершив рывок вперёд, обрушив водный урон на врагов вокруг и ненадолго получив прохождение сквозь стены и смещение."
+SpellDescription,"Hurl a bloody hook up to 7 tiles in a direction. It latches onto the first unit in its path and drags it beside Pudge: ordinary monsters are slain outright, unique and guardian foes take 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 Pure damage (+10 with Lv 15 talent), and allies are pulled without harm.",
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Выпустите волну воды, наносящую базовый урон, отбрасывающую и оглушающую цель. Дополнительный урон зависит от отношения Ловкости к Силе, а длительность оглушения — от отношения Силы к Ловкости."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",Совершите прыжок к выбранному врагу и нанесите 5–12 стремительных неуязвимых ударов оружием (оружие + характеристика + 2–3 доп. урона за удар) по ближайшим противникам с критами Танца клинка и бонусами Формы клинка.
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Сбросьте облик метаморфозы и немедленно вернитесь в своё истинное тело водного духа.
@@ -40,17 +49,23 @@ SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Перераспределите Силу и Телосложение в Ловкость (1–5 очков по мастерству), сохраняя сумму характеристик и снижая максимальное HP без потери текущего HP."
 SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","Чистой силой бьёт врага в радиусе 2: мгновенно казнит цели с ЗДР не выше 18/25/32 (растёт от мастерства/таланта), возвращает 100% маны, даёт союзникам рядом +25% скорости и +4/+6/+7 защиты на 12 ходов и накапливает постоянную броню; иначе наносит от 5d6+1 до 9d6 чистого урона."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Призовите хрупкий подвижный Тотем исцеления (1 HP, макс. 1 активный) на 36–48 ходов, который каждый ход лечит всех союзников в радиусе 2 клеток на 1%–3,25% от их максимального HP."
+SpellDescription,"Toggle a cloud of toxic gas around Pudge (free). Each turn it deals 1/2/3/4 magical damage to adjacent foes and to Pudge himself, and slows foes by 14%/20%/26%/32%. Rot can never reduce Pudge below 1 HP, and Meat Shield blocks its self-damage per DOTA2 tick.",
+SpellDescription,Wrap Pudge in a layer of flesh for 8/10/12/14 turns. Every instance of damage of any type is reduced by 0.53/0.93/1.33/1.73 on average (the fraction rounds up by chance; x1.5 with Lv 25 talent). Cannot be dispelled.,
 SpellName,adaptive strike,адаптивный удар
 SpellName,battle hunger,Боевой голод
 SpellName,berserkers call,Зов берсерка
 SpellName,blade fury,ярость клинка
 SpellName,culling blade,Лезвие палача
+SpellName,dismember,
 SpellName,healing ward,тотем исцеления
+SpellName,meat hook,
+SpellName,meat shield,
 SpellName,morph,метаморфоза
 SpellName,morph agility,перелив в ловкость
 SpellName,morph revert,сброс метаморфозы
 SpellName,morph strength,перелив в силу
 SpellName,omnislash,омнислэш
+SpellName,pudge rot,
 SpellName,waveform,волна
 StrikeName,adaptive strike impact,Взрыв Адаптивного удара
 StrikeName,battle hunger mark,Метка Боевого голода
@@ -60,5 +75,9 @@ StrikeName,blade fury cut,Порез Вихря клинков
 StrikeName,blade fury whirl,Вихрь Вихря клинков
 StrikeName,counter helix whirl,Круговой удар Контр-спирали
 StrikeName,culling blade strike,Казнящий удар Лезвия палача
+StrikeName,dismember bite,
 StrikeName,healing ward pulse,импульс тотема исцеления
+StrikeName,meat hook blood,
+StrikeName,meat hook head,
+StrikeName,meat shield wrap,
 StrikeName,omnislash slash,удар омнислэша

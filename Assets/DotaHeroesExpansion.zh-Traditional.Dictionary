@@ -1,8 +1,11 @@
+BeamName,meat hook chain,肉鉤鐵鏈
 BeamName,omnislash dash,無敵斬突襲
 BeamName,waveform dash,波浪形態激流
 CharacterName,Axe,斧王
 CharacterName,Juggernaut,主宰
 CharacterName,Morphling,變體精靈
+CharacterName,Pudge,帕吉
+ClassDescription,"A DOTA2 butcher who drags foes to his cleaver with Meat Hook, chokes everything nearby with Rot, shrugs off blows behind a Meat Shield, devours his prey with Dismember, and grows ever stronger with every hero-tier kill through Flesh Heap.",來自 DOTA2 的屠夫：以「肉鉤」把敵人拖到屠刀前、以「腐爛」毒霧侵蝕四周、躲在「肉盾」後硬抗傷害、以「肢解」吞噬獵物回復生命，並憑先天「腐肉堆積」隨每次英雄級擊殺永久變強。
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",來自 DOTA2 的水元素英雄：能化作波浪突進、自由轉換力量與敏捷、憑先天技能「潮漲潮落」隨屬性動態強化移速/射程/施法距離/減速抗性，並可變形為敵人形態。
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",來自 DOTA2 的面具劍客：憑先天技能「劍心猶在」積攢無傷勢能強化移速與敏捷、以「劍刃風暴」破法清場、以「治療守衛」續航，並以「劍舞」暴擊與「無敵斬」收割敵陣。
 ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",來自 DOTA2 的猩紅狂戰士：獨行時憑先天「一人之軍」將護甲化為力量、以「狂戰士之吼」嘲諷敵群並獲高額防禦、受擊觸發純傷「反擊螺旋」，並以「淘汰之刃」斬殺收割並永久疊甲。
@@ -15,6 +18,9 @@ ClassName,juggernaut//non-binary,主宰
 ClassName,morphling//female,變體精靈
 ClassName,morphling//male,變體精靈
 ClassName,morphling//non-binary,變體精靈
+ClassName,pudge//female,帕吉
+ClassName,pudge//male,帕吉
+ClassName,pudge//non-binary,帕吉
 EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,主宰召喚的懸浮治療圖騰，每回合為周圍友方單位按最大生命值百分比回復生命。
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",由活水潮汐凝聚而成的智慧元素，能隨心重塑自身的力量與敏捷形態。
 EntityName,healing ward,治療守衛
@@ -22,6 +28,7 @@ EntityName,waterkin,變體水靈
 ExplosionName,berserkers call wave,狂戰士之吼衝擊波
 ExplosionName,blade fury spin,劍刃風暴旋斬
 ExplosionName,counter helix spin,反擊螺旋血刃旋斬
+ExplosionName,pudge rot cloud,腐爛毒霧
 ExplosionName,waveform splash,波浪形態水爆
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的遠程水彈，可作為彈弓無限彈藥發射。
 ItemName,tidal orb,潮汐水彈
@@ -30,8 +37,10 @@ RaceName,waterkin//male,變體水靈
 RaceName,waterkin//non-binary,變體水靈
 SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,對 4~7 格內一名敵方施加持續 24 回合的戰鬥飢渴：持續造成純粹傷害（12/16/20/24 DPS 按 K_dmg=15 折算）並降低 16%/19%/22%/25% 移速；目標擊殺任意單位時立即驅散。
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",指向一名生物並化身為對方形態，複製其外形、屬性、技能與法術，且先天技能「潮漲潮落」持續保留。
+SpellDescription,"Channel on an adjacent foe for 6 turns (7 with Lv 20 talent), stunning it. Each turn deals magical damage of (80/100/120 + 0.3/0.5/0.7 x Pudge's DOTA2-equivalent Strength) x 0.5 / 15 and heals Pudge by the same amount (x1.5 with Lv 25 talent). The channel breaks if Pudge is disabled or the target leaves.",對相鄰敵人持續施法 6 回合（Lv 20 天賦 7 回合）並使其眩暈。每回合造成魔法傷害（80/100/120 + 0.3/0.5/0.7 × 帕吉等效 DOTA2 力量）× 0.5 / 15，並為帕吉回復等量生命（Lv 25 天賦 ×1.5）。帕吉被控制或目標離開時中斷。
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",基礎驅散自身負面狀態並舞起持續 10~12 回合的劍刃風暴：獲得減益免疫與 80% 魔法減傷，每回合對周圍 3×3 敵人造成 1d4~2d4+2 基礎魔法傷害（85~205 DPS 按 K_dmg=15 折算，並受敏捷與劍心猶在攻速頻率縮放，可觸發劍舞）。
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",化作洶湧波浪向前閃爍突進，對周圍敵人造成水波範圍傷害，並短暫獲得穿牆與幻影閃避。
+SpellDescription,"Hurl a bloody hook up to 7 tiles in a direction. It latches onto the first unit in its path and drags it beside Pudge: ordinary monsters are slain outright, unique and guardian foes take 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 Pure damage (+10 with Lv 15 talent), and allies are pulled without harm.",向一個方向甩出最遠 7 格的血腥肉鉤，勾住路徑上第一個單位並拖到帕吉身邊：普通怪物直接秒殺，唯一與守衛敵人受到 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 純粹傷害（Lv 15 天賦 +10），友軍只拖不傷。
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",發射高壓水波造成基礎水傷並擊退眩暈目標：額外爆發傷害隨敏捷/力量比值動態提升，眩暈時長隨力量/敏捷比值動態延長。
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",躍向目標敵人並在周圍敵方單位間連續發動 5~12 次無敵武器斬擊（單斬傷害 = 武器骰 + 屬性修正 + 2~3 額外攻擊力），全程免疫一切傷害，每次斬擊均可觸發劍舞與劍心猶在加成。
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,解除當前變形狀態，立即切回變體水靈本體。
@@ -40,17 +49,23 @@ SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",將力量與體質轉化為敏捷（隨變化系熟練度每次 1~5 點），總量守恆並降低最大生命值，當前生命值僅在超過新上限時截斷。
 SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",以純粹之力劈向 2 格內敵方：目標生命 ≤ 18/25/32 HP（隨熟練度與天賦提高）時無視減傷瞬間處決、100% 返還法力、給予周圍友軍 12 回合 +25% 移速與 +4/+6/+7 防禦戰吼併疊加永久護甲；否則造成 5d6+1~9d6 純粹傷害。
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",召喚一個 1 點生命值的可移動治療守衛（同時上限 1 個，持續 36~48 回合），每回合為周圍 2 格友方回復 1%~3.25% 最大生命值。
+SpellDescription,"Toggle a cloud of toxic gas around Pudge (free). Each turn it deals 1/2/3/4 magical damage to adjacent foes and to Pudge himself, and slows foes by 14%/20%/26%/32%. Rot can never reduce Pudge below 1 HP, and Meat Shield blocks its self-damage per DOTA2 tick.",開關帕吉周圍的毒霧（0 藍耗）。每回合對相鄰敵人與帕吉自己造成 1/2/3/4 魔法傷害，並使敵人減速 14%/20%/26%/32%。腐爛最多把帕吉扣到 1 點生命，肉盾按 DOTA2 每跳格擋其自傷。
+SpellDescription,Wrap Pudge in a layer of flesh for 8/10/12/14 turns. Every instance of damage of any type is reduced by 0.53/0.93/1.33/1.73 on average (the fraction rounds up by chance; x1.5 with Lv 25 talent). Cannot be dispelled.,用一層血肉包裹帕吉 8/10/12/14 回合，每一次受到的任意類型傷害平均減免 0.53/0.93/1.33/1.73（小數部分按概率進位，Lv 25 天賦 ×1.5）。無法驅散。
 SpellName,adaptive strike,變體打擊
 SpellName,battle hunger,戰鬥飢渴
 SpellName,berserkers call,狂戰士之吼
 SpellName,blade fury,劍刃風暴
 SpellName,culling blade,淘汰之刃
+SpellName,dismember,肢解
 SpellName,healing ward,治療守衛
+SpellName,meat hook,肉鉤
+SpellName,meat shield,肉盾
 SpellName,morph,變形
 SpellName,morph agility,屬性轉換·敏捷
 SpellName,morph revert,解除變形
 SpellName,morph strength,屬性轉換·力量
 SpellName,omnislash,無敵斬
+SpellName,pudge rot,腐爛
 SpellName,waveform,波浪形態
 StrikeName,adaptive strike impact,變體打擊水爆
 StrikeName,battle hunger mark,戰鬥飢渴印記
@@ -60,5 +75,9 @@ StrikeName,blade fury cut,劍刃風暴切痕
 StrikeName,blade fury whirl,劍刃風暴旋風
 StrikeName,counter helix whirl,反擊螺旋迴旋
 StrikeName,culling blade strike,淘汰之刃處決斬
+StrikeName,dismember bite,肢解撕咬
 StrikeName,healing ward pulse,治療守衛脈衝
+StrikeName,meat hook blood,肉鉤血花
+StrikeName,meat hook head,肉鉤鉤頭
+StrikeName,meat shield wrap,肉盾血肉
 StrikeName,omnislash slash,無敵斬斬擊

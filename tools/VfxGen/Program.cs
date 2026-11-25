@@ -19,6 +19,8 @@ using System.Drawing.Imaging;
 //   - 斧王 反击螺旋：暗红回旋拖影 + 钢斧 + 甩出的血滴
 //   - 斧王 狂战士之吼：参差放射的红色冲击波
 //   - 水人 波浪形态：奔涌的青蓝水体 + 白色浪沫与飞沫；落点水花环；适应性打击为水团溅射
+//   - 帕吉 肉钩：深灰铁链 + 暗红血迹，钩头为粗铁倒钩，命中处暗红血花
+//   - 帕吉 腐烂：以帕吉为中心的黄绿色团状毒雾；肉盾：红褐色血肉外壳；肢解：亮粉白撕咬闪光 + 猩红血溅
 //
 // 用法：dotnet run --project tools/VfxGen -- <仓库根目录>
 // =====================================================================================
@@ -27,6 +29,7 @@ string Root = args.Length > 0 ? args[0] : ".";
 string Jugg = Path.Combine(Root, "Resources", "Heroes", "juggernaut");
 string Axe = Path.Combine(Root, "Resources", "Heroes", "axe");
 string Morph = Path.Combine(Root, "Resources", "Heroes", "morphling");
+string Pudge = Path.Combine(Root, "Resources", "Heroes", "pudge");
 
 // ---------------------------------------------------------------- 色阶（暗 → 亮）
 Color[] Omni = { H("6E1A10"), H("C2401A"), H("EE7C22"), H("FFC03A"), H("FFEB96"), H("FFFFF2") };
@@ -38,6 +41,11 @@ Color[] Chop = { H("7A1612"), H("D63A1E"), H("FFA44A"), H("FFEFC8"), H("FFFFFF")
 Color[] Helix = { H("3E070B"), H("6E0E14"), H("A21A20"), H("D2352A"), H("F07448") };
 Color[] Roar = { H("5C0A0C"), H("9C1418"), H("D22A22"), H("F2582C"), H("FF9A48"), H("FFDA94") };
 Color[] Water = { H("123878"), H("1E60B6"), H("2E8CDE"), H("50C4F0"), H("A6ECFF"), H("FFFFFF") };
+Color[] Chain = { H("1E1E24"), H("2E2E34"), H("5A5A62"), H("74747C"), H("8E8E96") };
+Color[] Gore = { H("3E0608"), H("5E0C0C"), H("9A1616"), H("C01828") };
+Color[] Rot = { H("3A3E10"), H("4E5418"), H("7F8A22"), H("B4B83A"), H("D8D468") };
+Color[] Flesh = { H("3E140E"), H("5A1E16"), H("8C3A2A"), H("B85A42"), H("E08A70") };
+Color[] Bite = { H("8A1E5A"), H("F070C0"), H("FFB8E6"), H("FFF0FA") };
 
 Color Gold = H("FFCF5A"), GoldDark = H("B87A22"), Ember = H("FFE48A"), White = H("FFFFFF");
 Color SteelOut = H("26232C"), SteelMid = H("7A8496"), SteelLight = H("BAC4D2"), SteelEdge = H("F2F6FF");
@@ -337,6 +345,142 @@ foreach (var Dir in new[] { "h", "v", "f", "b" })
   Dots(G, (4, 8, Water[4]), (27, 6, Water[3]), (8, 3, Water[3]), (24, 2, Water[4]), (2, 17, Water[2]),
     (30, 14, Water[4]), (12, 1, White), (20, 4, White), (6, 26, Water[2]), (27, 25, Water[3]));
   Save(G, 4, Water[3], 0.28f, 5, Morph, "adaptive strike fx strike");
+}
+
+// =====================================================================================
+// 帕吉
+// =====================================================================================
+
+// 肉钩铁链（四方向，可沿路径无缝拼接）：深灰铁环交替（正面椭圆环 / 侧面竖环）+ 零星暗红血滴
+foreach (var Dir in new[] { "h", "v", "f", "b" })
+{
+  var G = new Px(32);
+  Beam(G, Dir, Chain, (S, D) =>
+  {
+    float Local = Mod(S, 8) - 4; // 每 8 像素一节：交替正面环与侧面环
+    bool FaceOn = Mod(MathF.Floor(S / 8), 2) == 0;
+    float Ring = FaceOn
+      ? MathF.Abs(MathF.Sqrt(Local * Local / 16 + D * D / 6.25f) - 0.78f)
+      : MathF.Abs(D) < 1.3f && MathF.Abs(Local) < 3.8f ? 0 : 9;
+    if (Ring < 0.42f) return FaceOn ? 0.95f - 0.5f * MathF.Max(0, D) / 2.5f : 0.75f;
+    int Si = Wrap((int)MathF.Floor(S), 32), Di = (int)MathF.Floor(D);
+    return D > 1.5f && D < 5 && Hash(Si, Di, 111) > 0.94f ? -1 : 0;
+  }, 0.4f);
+  // 血滴（单独上色，避免被铁链色阶覆盖）
+  Beam(G, Dir, Gore, (S, D) =>
+  {
+    int Si = Wrap((int)MathF.Floor(S), 32), Di = (int)MathF.Floor(D);
+    return D > 1.5f && D < 5 && Hash(Si, Di, 111) > 0.94f ? 0.7f : 0;
+  }, 0.3f);
+  Save(G, 4, Chain[1], 0.18f, 3, Pudge, $"meat hook fx beam {Dir}");
+}
+
+// 肉钩钩头（水平基准，钩尖朝右；渲染时按出钩方向旋转）：粗铁钩身 + 弯回的倒钩 + 钩尖血迹
+{
+  var G = new Px(32);
+  // 钩身：左侧直柄 → 右侧向下弯回的大弧（中心 (19,17)，半径 7.5，从正上方顺时针绕到左侧）→ 向上翘起的倒钩尖
+  Field(G, Chain, (X, Y) =>
+  {
+    float Shaft = X < 19.5f ? 1 - MathF.Abs(Y - 9.5f) / 1.9f : 0;
+    var (R, A) = Polar(X, Y, 19, 17);
+    float Sweep = Mod(A + 90, 360); // 0 = 正上方，顺时针增大
+    float Arc = Sweep <= 250 ? 1 - MathF.Abs(R - 7.5f) / (1.9f - 0.7f * Sweep / 250f) : 0;
+    float Bx = X - 11.5f, By = Y - 13f;
+    float Barb = By < 3.5f && By > -3.5f && MathF.Abs(Bx + By * 0.25f) < 1.3f - (3.5f - By) * 0.25f ? 0.9f : 0;
+    float V = MathF.Max(Shaft, MathF.Max(Arc, Barb));
+    return V <= 0 ? 0 : 0.35f + 0.65f * V * (Y < 13 ? 1 : 0.75f);
+  }, 0.5f);
+  Field(G, Gore, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, 19, 17);
+    float Sweep = Mod(A + 90, 360);
+    return Sweep > 120 && Sweep < 250 && MathF.Abs(R - 7.5f) < 1.2f && Noise(Sweep / 12, 0, 115) > 0.45f ? 0.8f : 0;
+  }, 0.4f);
+  Dots(G, (11, 9, Gore[2]), (16, 27, Gore[1]), (21, 27, Gore[2]), (9, 20, Gore[3]), (13, 26, Gore[1]));
+  Save(G, 4, Chain[2], 0.2f, 4, Pudge, "meat hook fx hook");
+}
+
+// 肉钩命中血花：中心一摊暗红 + 四散的参差血线与血滴
+{
+  var G = new Px(32);
+  Field(G, Gore, (X, Y) =>
+  {
+    float Dx = X - 16, Dy = Y - 17;
+    var (R, A) = Polar(X, Y, 16, 17);
+    float Core = R / (4.5f + 1.5f * Noise(A / 30 + 4, 1, 121));
+    if (Core < 1) return 0.95f - 0.4f * Core;
+    float Ray = MathF.Pow(Noise(A / 360 * 14 + 14, 2, 122, 14), 2.2f);
+    float Len = 6 + 9 * Ray;
+    return Ray > 0.25f && R < Len ? 0.75f * (1 - (R - 4) / (Len - 4)) + 0.1f : 0;
+  }, 0.6f);
+  Dots(G, (3, 6, Gore[1]), (28, 4, Gore[2]), (30, 27, Gore[1]), (5, 28, Gore[2]), (16, 2, Gore[1]), (26, 14, Gore[3]), (8, 15, Gore[3]));
+  Save(G, 4, Gore[2], 0.25f, 4, Pudge, "meat hook fx strike");
+}
+
+// 腐烂毒雾（96 网格 3×3 九宫格）：黄绿色团状毒云，外缘噪声起伏、内部团块明暗、边缘抖动淡出
+{
+  var G = new Px(96);
+  const float C = 48;
+  Field(G, Rot, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, C, C);
+    float Edge = 36 + 9 * (Noise(A / 360 * 9 + 9, 1, 131, 9) - 0.5f) + 5 * (Noise(A / 360 * 23 + 23, 2, 132, 23) - 0.5f);
+    if (R > Edge) return 0;
+    float Puff = Noise(X / 9f, Y / 9f, 133) * 0.6f + Noise(X / 4.5f, Y / 4.5f, 134) * 0.4f;
+    float Fade = MathF.Min(1, (Edge - R) / 10f);
+    return (0.25f + 0.75f * Puff) * Fade * (R < 12 ? 0.6f + R / 30f : 1);
+  }, 0.9f);
+  SaveSlices(G, Rot[2], 0.22f, 6, Pudge, "pudge rot fx");
+}
+
+// 肉盾：包裹帕吉的红褐色血肉外壳（缝线 + 鼓起的肉块），中间留空露出角色
+{
+  var G = new Px(32);
+  Field(G, Flesh, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, 16, 17);
+    float Inner = 9.5f + 1.5f * Noise(A / 360 * 10 + 10, 1, 141, 10);
+    float Outer = 14 + 1.8f * Noise(A / 360 * 7 + 7, 2, 142, 7);
+    if (R < Inner || R > Outer) return 0;
+    float Lump = Noise(X / 3.5f, Y / 3.5f, 143);
+    float U = (R - Inner) / (Outer - Inner);
+    return 0.35f + 0.55f * Lump * (1 - MathF.Abs(U - 0.45f));
+  }, 0.7f);
+  // 粗缝线（深色短横线沿环分布）
+  for (int I = 0; I < 9; I++)
+  {
+    float A = I * 40 * MathF.PI / 180, R = 11.8f;
+    int Cx = (int)(16 + MathF.Cos(A) * R), Cy = (int)(17 + MathF.Sin(A) * R);
+    G.Put(Cx, Cy, Flesh[0], 3); G.Put(Cx + 1, Cy, Flesh[0], 3);
+  }
+  Save(G, 4, Flesh[2], 0.22f, 4, Pudge, "meat shield fx strike");
+}
+
+// 肢解：亮粉白撕咬闪光（上下两排「牙口」咬合）+ 四溅的猩红血花
+{
+  var G = new Px(32);
+  Field(G, Gore, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, 16, 16);
+    float Ray = MathF.Pow(Noise(A / 360 * 12 + 12, 1, 151, 12), 1.8f);
+    float Len = 7 + 9 * Ray;
+    return R < Len && Ray > 0.18f ? 0.85f * (1 - R / Len) + 0.12f : 0;
+  }, 0.6f);
+  Field(G, Bite, (X, Y) =>
+  {
+    float Dx = X - 16, Dy = Y - 16;
+    float R = MathF.Sqrt(Dx * Dx + Dy * Dy * 1.6f) / (8 + 2 * Noise(MathF.Atan2(Dy, Dx) * 2 + 6, 1, 152));
+    return R < 1 ? 1.05f - R : 0;
+  }, 0.8f);
+  // 牙口：上下两排白色三角齿
+  for (int I = 0; I < 5; I++)
+  {
+    int X0 = 9 + I * 3;
+    G.Put(X0, 11, White, 3); G.Put(X0 + 1, 11, White, 3); G.Put(X0, 12, White, 3);
+    G.Put(X0 + 1, 21, White, 3); G.Put(X0, 21, White, 3); G.Put(X0 + 1, 20, White, 3);
+  }
+  Dots(G, (2, 9, Gore[2]), (29, 6, Gore[1]), (30, 24, Gore[2]), (4, 27, Gore[1]), (15, 1, Gore[3]), (18, 30, Gore[2]));
+  Save(G, 4, Bite[2], 0.3f, 5, Pudge, "dismember fx strike");
 }
 
 Console.WriteLine("VFX generated.");

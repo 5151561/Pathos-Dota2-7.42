@@ -1,8 +1,11 @@
-﻿BeamName,omnislash dash,xung kích vô ảnh trảm
+﻿BeamName,meat hook chain,
+BeamName,omnislash dash,xung kích vô ảnh trảm
 BeamName,waveform dash,Lao Dạng Sóng
 CharacterName,Axe,Axe
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
+CharacterName,Pudge,
+ClassDescription,"A DOTA2 butcher who drags foes to his cleaver with Meat Hook, chokes everything nearby with Rot, shrugs off blows behind a Meat Shield, devours his prey with Dismember, and grows ever stronger with every hero-tier kill through Flesh Heap.",
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Một tướng DOTA2 uyển chuyển điều khiển những con sóng cuộn trào, tự do chuyển đổi giữa Sức mạnh và Nhanh nhẹn, cường hóa bản thân qua Triều lên triều xuống và biến hình thành kẻ địch."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Một kiếm sĩ đeo mặt nạ từ DOTA2 tích lũy đà tiến không thể cản qua Kiếm thế, chém xuyên phép thuật với Kiếm bão, hồi phục cho đồng minh bằng Cọc hồi máu và hạ gục kẻ địch với Kiếm vũ cùng Vô ảnh trảm."
 ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","Một chiến binh cuồng nộ đỏ thẫm không khoan nhượng của DOTA2, mạnh lên khi đơn độc nhờ Đội Quân Một Người, khiêu khích cả đám đông bằng Tiếng Gọi Chiến Binh, xé nát kẻ tấn công bằng các vòng xoáy thuần của Xoáy Phản Công và xử trảm kẻ yếu bằng Lưỡi Đao Xử Trảm."
@@ -15,6 +18,9 @@ ClassName,juggernaut//non-binary,juggernaut
 ClassName,morphling//female,morphling
 ClassName,morphling//male,morphling
 ClassName,morphling//non-binary,morphling
+ClassName,pudge//female,
+ClassName,pudge//male,
+ClassName,pudge//non-binary,
 EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,"Một vật tổ hồi phục bay lơ lửng do Juggernaut triệu hồi, mỗi lượt hồi cho đồng minh lân cận một tỷ lệ phần trăm HP tối đa của họ."
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Một tinh linh có tri giác được rèn từ dòng thủy triều sống, có thể tùy ý tái định hình các chỉ số thể chất của mình."
 EntityName,healing ward,cọc hồi máu
@@ -22,6 +28,7 @@ EntityName,waterkin,thủy linh
 ExplosionName,berserkers call wave,Sóng xung kích Tiếng Gọi Chiến Binh
 ExplosionName,blade fury spin,xoáy kiếm bão
 ExplosionName,counter helix spin,Vòng xoay Xoáy Phản Công
+ExplosionName,pudge rot cloud,
 ExplosionName,waveform splash,Vụ nổ nước Dạng Sóng
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Quả cầu nước thủy triều sống cô đặc được bắn ra từ ná như đạn tầm xa vô tận.
 ItemName,tidal orb,cầu thủy triều
@@ -30,8 +37,10 @@ RaceName,waterkin//male,thủy linh
 RaceName,waterkin//non-binary,thủy linh
 SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,Hành hạ một kẻ địch mục tiêu trong 4 đến 7 ô trong 24 lượt bằng sát thương thuần theo thời gian (12/16/20/24 DPS quy đổi qua K_dmg=15) và làm chậm di chuyển 16%/19%/22%/25%; bị xua tan nếu mục tiêu giết bất kỳ đơn vị nào.
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Biến thành hình dạng của một sinh vật mục tiêu, sao chép cơ thể, thuộc tính, kỹ năng và phép thuật của nó trong khi vẫn giữ Triều lên triều xuống."
+SpellDescription,"Channel on an adjacent foe for 6 turns (7 with Lv 20 talent), stunning it. Each turn deals magical damage of (80/100/120 + 0.3/0.5/0.7 x Pudge's DOTA2-equivalent Strength) x 0.5 / 15 and heals Pudge by the same amount (x1.5 with Lv 25 talent). The channel breaks if Pudge is disabled or the target leaves.",
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Giải trừ hiệu ứng bất lợi và xoay trong 10 đến 12 lượt: miễn nhiễm hiệu ứng bất lợi, giảm 80% sát thương phép và gây 1d4 đến 2d4+2 sát thương phép cơ bản mỗi lượt (85-205 DPS quy đổi qua K_dmg=15, tỷ lệ theo DEX và tốc độ đánh Kiếm thế) lên kẻ địch 3x3 lân cận; có thể chí mạng với Kiếm vũ."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Hòa tan thành con sóng cuộn trào, lướt biến về phía trước, tung sát thương nước quanh bạn và nhận hiệu ứng xuyên tường cùng dịch chuyển trong chốc lát."
+SpellDescription,"Hurl a bloody hook up to 7 tiles in a direction. It latches onto the first unit in its path and drags it beside Pudge: ordinary monsters are slain outright, unique and guardian foes take 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 Pure damage (+10 with Lv 15 talent), and allies are pulled without harm.",
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Phóng ra một đợt sóng nước gây sát thương cơ bản, đẩy lùi và làm choáng mục tiêu. Sát thương cộng thêm tăng theo tỷ lệ Nhanh nhẹn/Sức mạnh, còn thời gian choáng tăng theo tỷ lệ Sức mạnh/Nhanh nhẹn."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Nhảy tới một kẻ địch mục tiêu và tung ra 5 đến 12 nhát chém vũ khí bất tử liên hoàn (vũ khí + chỉ số + 2 đến 3 sát thương cộng thêm mỗi nhát) lên các kẻ địch gần đó, kích hoạt chí mạng Kiếm vũ và cộng thêm từ Kiếm thế."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Giải phóng hình dạng biến hình và lập tức quay về cơ thể thủy linh thực sự của bạn.
@@ -40,17 +49,23 @@ SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Chuyển Sức mạnh và Thể chất thành Nhanh nhẹn (1 đến 5 điểm tùy tinh thông), bảo toàn tổng chỉ số và giảm HP tối đa mà không làm hao hụt HP hiện tại."
 SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","Chém kẻ địch gần đó (tầm 2) bằng sức mạnh thuần: xử trảm ngay mục tiêu có HP từ 18/25/32 trở xuống (+thành thạo/thiên phú), hoàn 100% mana, cho đồng minh gần đó +25% tốc độ di chuyển và +4/+6/+7 phòng thủ trong 12 lượt và cộng dồn giáp vĩnh viễn; nếu không thì gây 5d6+1 đến 9d6 sát thương thuần."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Triệu hồi một Cọc hồi máu di động mong manh (1 HP, tối đa 1 cọc hoạt động) trong 36 đến 48 lượt, mỗi lượt hồi 1% đến 3,25% HP tối đa cho toàn bộ đồng minh trong phạm vi 2 ô."
+SpellDescription,"Toggle a cloud of toxic gas around Pudge (free). Each turn it deals 1/2/3/4 magical damage to adjacent foes and to Pudge himself, and slows foes by 14%/20%/26%/32%. Rot can never reduce Pudge below 1 HP, and Meat Shield blocks its self-damage per DOTA2 tick.",
+SpellDescription,Wrap Pudge in a layer of flesh for 8/10/12/14 turns. Every instance of damage of any type is reduced by 0.53/0.93/1.33/1.73 on average (the fraction rounds up by chance; x1.5 with Lv 25 talent). Cannot be dispelled.,
 SpellName,adaptive strike,đòn thích ứng
 SpellName,battle hunger,Cơn Đói Chiến Trận
 SpellName,berserkers call,Tiếng Gọi Chiến Binh
 SpellName,blade fury,kiếm bão
 SpellName,culling blade,Lưỡi Đao Xử Trảm
+SpellName,dismember,
 SpellName,healing ward,cọc hồi máu
+SpellName,meat hook,
+SpellName,meat shield,
 SpellName,morph,biến hình
 SpellName,morph agility,chuyển đổi nhanh nhẹn
 SpellName,morph revert,hủy biến hình
 SpellName,morph strength,chuyển đổi sức mạnh
 SpellName,omnislash,vô ảnh trảm
+SpellName,pudge rot,
 SpellName,waveform,dạng sóng
 StrikeName,adaptive strike impact,Vụ nổ Đòn Thích Ứng
 StrikeName,battle hunger mark,Dấu Cơn Đói Chiến Trận
@@ -60,5 +75,9 @@ StrikeName,blade fury cut,Vết chém Lưỡi Kiếm Xoáy
 StrikeName,blade fury whirl,Lốc xoáy Lưỡi Kiếm Xoáy
 StrikeName,counter helix whirl,Vòng xoay Xoáy Phản Công
 StrikeName,culling blade strike,Nhát chém Lưỡi Đao Xử Trảm
+StrikeName,dismember bite,
 StrikeName,healing ward pulse,nhịp cọc hồi máu
+StrikeName,meat hook blood,
+StrikeName,meat hook head,
+StrikeName,meat shield wrap,
 StrikeName,omnislash slash,nhát chém vô ảnh trảm

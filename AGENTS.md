@@ -44,7 +44,7 @@ Framework/
 ├── Targeting/                # DotaRangeTargetingBridge（全射程选格，DotaAbility 自动接入）
 ├── Localization/             # DotaLocalization（运行时 UI 文本，读 Resources/Localization/ui.<lang>.json）
 └── UI/                       # DotaSpellHelpBridge（帮助面板）、DotaStatusBarBridge（状态栏徽章）、DotaPropertyVisibility、PathosClientReflection
-Heroes/                       # AxeHero.cs / JuggernautHero.cs / MorphlingHero.cs
+Heroes/                       # AxeHero.cs / JuggernautHero.cs / MorphlingHero.cs / PudgeHero.cs
 Resources/Heroes/<hero_id>/   # 单份 128x128 透明 PNG
 Resources/Localization/       # ui.<lang>.json 运行时词表（嵌入 DLL）
 Assets/                       # PathosMaker 生成的 .Atlas 与 .Dictionary（Codex 名称/描述译文）
@@ -90,7 +90,7 @@ docs/                         # 架构、指南、英雄溯源文档
 3. **点地召唤**：法术外壳 `Plain(Range)` 会对射线每格执行 `Apply`，所以外壳保持 `Apply.Nothing()`（`DotaAbility` 默认如此），在 `OnCast` 里 `PathosEngineBridge.SummonAllyEntity`。
 4. **召唤物到期/替换**用 `PathosEngineBridge.DespawnSummon`，禁止 `DismissAlly`（会留下野生单位）。
 5. **贴图**：单份 `128x128` 透明 PNG 放 `Resources/Heroes/<hero_id>/`，不要动 `Atlases/`（构建期重建、已忽略）。文件名全局唯一且避开官方 Glyph（主宰用 `yurnero.png` 避开内置 `juggernaut`）。英雄形象、技能/天赋图标按官方 Wiki 原图制作。
-6. **标识符**：Hook Key 用 `<hero_id>.<feature>`（只在内存）。会写入存档或字典的标识**禁止改名**：技能槽 ID（`axe.q.*` / `jugg.q.*` / `morph.q.*`）、天赋 ID、`DotaCharacterStorage` 键、法术/实体/物品/职业/种族/贴图名、本地化 Key。
+6. **标识符**：Hook Key 用 `<hero_id>.<feature>`（只在内存）。会写入存档或字典的标识**禁止改名**：技能槽 ID（`axe.q.*` / `jugg.q.*` / `morph.q.*` / `pudge.q.*`）、天赋 ID、`DotaCharacterStorage` 键、法术/实体/物品/职业/种族/贴图名、本地化 Key。
 7. **Hook 结算伤害的技能**必须在法术 `Description` 写明伤害骰与倍率。
 
 ---

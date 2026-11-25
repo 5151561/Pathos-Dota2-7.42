@@ -1,8 +1,11 @@
-﻿BeamName,omnislash dash,năpustire omnislash
+﻿BeamName,meat hook chain,
+BeamName,omnislash dash,năpustire omnislash
 BeamName,waveform dash,Salt Formă de undă
 CharacterName,Axe,Axe
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
+CharacterName,Pudge,
+ClassDescription,"A DOTA2 butcher who drags foes to his cleaver with Meat Hook, chokes everything nearby with Rot, shrugs off blows behind a Meat Shield, devours his prey with Dismember, and grows ever stronger with every hero-tier kill through Flesh Heap.",
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Un erou fluid din DOTA2 care stăpânește valurile învolburate, își mută liber punctele între Forță și Agilitate, se întărește prin Flux și Reflux și ia forma inamicilor."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Un maestru al sabiei mascat din DOTA2 care acumulează avânt de neoprit prin Forma Lamei, taie prin magie cu Furia Lamei, își susține aliații cu Totemul Vindecător și doboară inamicii cu Dansul Lamei și Omnislash."
 ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","Un berserker stacojiu necruțător din DOTA2 care prosperă singur cu Armata unui singur om, provoacă încăperi întregi cu Chemarea berserkerului, își sfârtecă atacatorii cu rotirile pure ale Helixului de contraatac și îi execută pe cei slabi cu Lama călăului."
@@ -15,6 +18,9 @@ ClassName,juggernaut//non-binary,juggernaut
 ClassName,morphling//female,morphling
 ClassName,morphling//male,morphling
 ClassName,morphling//non-binary,morphling
+ClassName,pudge//female,
+ClassName,pudge//male,
+ClassName,pudge//non-binary,
 EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,Un totem plutitor regenerator invocat de Juggernaut care vindecă aliații apropiați cu un procent din PV-ul lor maxim la fiecare tură.
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Un elemental conștient făurit din apele vii ale mareei, capabil să își remodeleze atributele fizice după voie."
 EntityName,healing ward,totem vindecător
@@ -22,6 +28,7 @@ EntityName,waterkin,spirit al apei
 ExplosionName,berserkers call wave,Unda de șoc a Chemării berserkerului
 ExplosionName,blade fury spin,vârtej furia lamei
 ExplosionName,counter helix spin,Rotirea Helixului de contraatac
+ExplosionName,pudge rot cloud,
 ExplosionName,waveform splash,Explozia de apă a Formei de undă
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"O sferă condensată din apă vie a mareei, lansată ca muniție infinită la distanță dintr-o praștie."
 ItemName,tidal orb,sfera mareelor
@@ -30,8 +37,10 @@ RaceName,waterkin//male,spirit al apei
 RaceName,waterkin//non-binary,spirit al apei
 SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,Chinuie un dușman țintit aflat la 4–7 pătrate timp de 24 de ture cu daune pure în timp (12/16/20/24 DPS prin K_dmg=15) și încetinire a mișcării de 16%/19%/22%/25%; se risipește dacă ținta ucide orice unitate.
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Preia forma unei creaturi țintă, copiindu-i corpul, atributele, abilitățile și vrăjile, păstrând în același timp Flux și Reflux."
+SpellDescription,"Channel on an adjacent foe for 6 turns (7 with Lv 20 talent), stunning it. Each turn deals magical damage of (80/100/120 + 0.3/0.5/0.7 x Pudge's DOTA2-equivalent Strength) x 0.5 / 15 and heals Pudge by the same amount (x1.5 with Lv 25 talent). The channel breaks if Pudge is disabled or the target leaves.",
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Risipește efectele negative și rotește-te timp de 10 până la 12 ture: imunitate la efecte negative, reducere de 80% a daunelor magice și 1d4 până la 2d4+2 daune magice de bază pe tură (85-205 DPS convertit prin K_dmg=15, scalat cu DEX și viteza Formei Lamei) inamicilor adiacenți pe 3x3; poate da lovituri critice cu Dansul Lamei."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Dizolvă-te într-un val năvalnic, teleportându-te înainte, stropind cu daune de apă în jur și obținând pentru scurt timp trecere prin ziduri și deplasare fantomă."
+SpellDescription,"Hurl a bloody hook up to 7 tiles in a direction. It latches onto the first unit in its path and drags it beside Pudge: ordinary monsters are slain outright, unique and guardian foes take 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 Pure damage (+10 with Lv 15 talent), and allies are pulled without harm.",
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Lansează un val de apă care provoacă daune de bază, împinge și amețește ținta. Daunele bonus cresc odată cu raportul Agilitate/Forță, iar durata amețirii crește cu raportul Forță/Agilitate."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Sari la un inamic țintă și dezlănțuie 5 până la 12 tăieturi rapide invulnerabile (armă + atribut + 2 până la 3 daune bonus per lovitură) asupra inamicilor apropiați, declanșând criticele Dansului Lamei și bonusurile Formei Lamei."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Renunță la forma metamorfozată și revino imediat la adevăratul tău corp de spirit al apei.
@@ -40,17 +49,23 @@ SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Transformă Forța și Constituția în Agilitate (1 până la 5 puncte după măiestrie), păstrând totalul atributelor și scăzând PV-ul maxim fără a drena PV-ul curent."
 SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","Lovește un dușman din apropiere (rază 2) cu forță pură: execută instantaneu țintele cu 18/25/32 PV sau mai puțin (+măiestrie/talent), returnează 100% din mana, oferă aliaților din apropiere +25% viteză de mișcare și +4/+6/+7 apărare timp de 12 ture și acumulează armură permanentă; altfel provoacă 5d6+1 până la 9d6 daune pure."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Invocă un Totem Vindecător fragil și mobil (1 PV, max. 1 activ) pentru 36 până la 48 de ture, care vindecă toți aliații pe o rază de 2 pătrate cu 1% până la 3,25% din PV-ul lor maxim la fiecare tură."
+SpellDescription,"Toggle a cloud of toxic gas around Pudge (free). Each turn it deals 1/2/3/4 magical damage to adjacent foes and to Pudge himself, and slows foes by 14%/20%/26%/32%. Rot can never reduce Pudge below 1 HP, and Meat Shield blocks its self-damage per DOTA2 tick.",
+SpellDescription,Wrap Pudge in a layer of flesh for 8/10/12/14 turns. Every instance of damage of any type is reduced by 0.53/0.93/1.33/1.73 on average (the fraction rounds up by chance; x1.5 with Lv 25 talent). Cannot be dispelled.,
 SpellName,adaptive strike,lovitură adaptivă
 SpellName,battle hunger,Foamea de luptă
 SpellName,berserkers call,Chemarea berserkerului
 SpellName,blade fury,furia lamei
 SpellName,culling blade,Lama călăului
+SpellName,dismember,
 SpellName,healing ward,totem vindecător
+SpellName,meat hook,
+SpellName,meat shield,
 SpellName,morph,metamorfoză
 SpellName,morph agility,conversie agilitate
 SpellName,morph revert,anulare metamorfoză
 SpellName,morph strength,conversie forță
 SpellName,omnislash,omnislash
+SpellName,pudge rot,
 SpellName,waveform,formă de val
 StrikeName,adaptive strike impact,Impactul Loviturii adaptive
 StrikeName,battle hunger mark,Marca Foamei de luptă
@@ -60,5 +75,9 @@ StrikeName,blade fury cut,Tăietura Vârtejului de lame
 StrikeName,blade fury whirl,Vârtejul Vârtejului de lame
 StrikeName,counter helix whirl,Rotirea Helixului de contraatac
 StrikeName,culling blade strike,Lovitura Lamei călăului
+StrikeName,dismember bite,
 StrikeName,healing ward pulse,puls totem vindecător
+StrikeName,meat hook blood,
+StrikeName,meat hook head,
+StrikeName,meat shield wrap,
 StrikeName,omnislash slash,tăietură omnislash

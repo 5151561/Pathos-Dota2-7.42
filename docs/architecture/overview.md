@@ -88,12 +88,14 @@ pathos-mod/
 ├── Heroes/                                    # 各英雄独立实现（直接接入 Framework 基建）
 │   ├── AxeHero.cs
 │   ├── JuggernautHero.cs
-│   └── MorphlingHero.cs
+│   ├── MorphlingHero.cs
+│   └── PudgeHero.cs
 ├── Resources/                                 # 原始美术与本地化资源（入库）
 │   ├── Heroes/
 │   │   ├── axe/                               # 斧王专属贴图与自绘像素特效（单份 128x128 PNG）
 │   │   ├── juggernaut/                        # 主宰专属贴图与自绘像素特效（单份 128x128 PNG）
-│   │   └── morphling/                         # 变体精灵专属贴图与自绘像素特效（单份 128x128 PNG）
+│   │   ├── morphling/                         # 变体精灵专属贴图与自绘像素特效（单份 128x128 PNG）
+│   │   └── pudge/                             # 帕吉专属贴图与自绘像素特效（单份 128x128 PNG）
 │   └── Localization/                          # 25 种语言运行时 UI 词表（ui.<lang>.json，嵌入 DLL）
 ├── tools/VfxGen/                              # 像素 VFX 贴图生成器（不参与扩展编译）
 ├── Atlases/                                   # [构建期自动生成，已 .gitignore] PathosMaker 四套扁平贴图目录

@@ -1,8 +1,11 @@
-﻿BeamName,omnislash dash,연속 베기 돌진
+﻿BeamName,meat hook chain,
+BeamName,omnislash dash,연속 베기 돌진
 BeamName,waveform dash,파형 돌진
 CharacterName,Axe,액스
 CharacterName,Juggernaut,가면무사
 CharacterName,Morphling,모플링
+CharacterName,Pudge,
+ClassDescription,"A DOTA2 butcher who drags foes to his cleaver with Meat Hook, chokes everything nearby with Rot, shrugs off blows behind a Meat Shield, devours his prey with Dismember, and grows ever stronger with every hero-tier kill through Flesh Heap.",
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","DOTA2의 물 원소 영웅. 거친 파도로 변해 돌진하고, 힘과 민첩을 자유롭게 전환하며, 선천 능력 '밀물과 썰물'로 능력치에 따라 이동 속도/사거리/시전 거리/둔화 저항을 강화하고 적의 모습으로 변신한다."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","DOTA2의 가면 쓴 검객. 선천 능력 '검의 형상'으로 무피해 기세를 쌓고, '분노의 칼날'로 마법을 베어 가르며, '치유의 토템'으로 아군을 회복하고, '검무' 치명타와 '연속 베기'로 적진을 도륙한다."
 ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","DOTA2의 진홍빛 광전사. 「일인군단」으로 홀로 강해지고, 「광전사의 부름」으로 적 무리를 도발하며, 순수 피해 「반격 나선」으로 공격자를 베어내고, 「도살 칼날」로 약한 적을 처형합니다."
@@ -15,6 +18,9 @@ ClassName,juggernaut//non-binary,가면무사
 ClassName,morphling//female,모플링
 ClassName,morphling//male,모플링
 ClassName,morphling//non-binary,모플링
+ClassName,pudge//female,
+ClassName,pudge//male,
+ClassName,pudge//non-binary,
 EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,가면무사가 소환하는 부유형 회복 토템. 매 턴 주위 아군의 최대 HP 일정 비율만큼 생명력을 회복시킨다.
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","살아 있는 조류의 물로 빚어진 지성체 정령으로, 자신의 신체 능력치를 뜻대로 재구성할 수 있다."
 EntityName,healing ward,치유의 토템
@@ -22,6 +28,7 @@ EntityName,waterkin,물의 정령
 ExplosionName,berserkers call wave,광전사의 부름 충격파
 ExplosionName,blade fury spin,분노의 칼날 회전
 ExplosionName,counter helix spin,반격 나선 회전베기
+ExplosionName,pudge rot cloud,
 ExplosionName,waveform splash,파형 물폭발
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,새총의 무한 탄약으로 발사되는 응축된 조류 물 구슬.
 ItemName,tidal orb,조류의 구슬
@@ -30,8 +37,10 @@ RaceName,waterkin//male,물의 정령
 RaceName,waterkin//non-binary,물의 정령
 SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,"4~7칸 이내의 적에게 24턴 동안 순수 지속 피해(12/16/20/24 DPS, K_dmg=15 환산)와 16%/19%/22%/25% 이동 속도 감소를 겁니다. 대상이 누군가를 처치하면 해제됩니다."
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","대상 생물의 모습으로 변신하여 외형, 능력치, 기술, 주문을 복제한다. '밀물과 썰물'은 그대로 유지된다."
+SpellDescription,"Channel on an adjacent foe for 6 turns (7 with Lv 20 talent), stunning it. Each turn deals magical damage of (80/100/120 + 0.3/0.5/0.7 x Pudge's DOTA2-equivalent Strength) x 0.5 / 15 and heals Pudge by the same amount (x1.5 with Lv 25 talent). The channel breaks if Pudge is disabled or the target leaves.",
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","약화 효과를 정화하고 10~12턴 동안 회전한다: 약화 면역, 마법 피해 감소 80%, 매 턴 인접 3x3 적에게 1d4~2d4+2 기본 마법 피해(K_dmg=15 기준 85~205 DPS 환산, DEX 및 검의 형상 공격 속도에 비례)를 주며 검무 치명타가 적용된다."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","거센 파도로 녹아들어 전방으로 점멸 돌진하며, 주변에 물 피해를 입히고 잠시 벽 통과와 환영 회피를 얻는다."
+SpellDescription,"Hurl a bloody hook up to 7 tiles in a direction. It latches onto the first unit in its path and drags it beside Pudge: ordinary monsters are slain outright, unique and guardian foes take 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 Pure damage (+10 with Lv 15 talent), and allies are pulled without harm.",
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","물결을 발사해 기본 피해를 입히고 대상을 밀쳐내며 기절시킨다. 민첩/힘 비율에 따라 추가 피해가, 힘/민첩 비율에 따라 기절 지속시간이 증가한다."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",대상 적에게 도약해 주변 적들에게 5~12회의 무적 무기 참격(회당 무기 + 능력치 + 2~3 추가 피해)을 연달아 가한다. 검무 치명타와 검의 형상 보너스가 적용된다.
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,변신 상태를 해제하고 즉시 본래의 물의 정령 육체로 돌아온다.
@@ -40,17 +49,23 @@ SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",힘과 건강을 민첩으로 전환한다(숙련도에 따라 1~5포인트). 총 능력치 합을 보존하며 최대 HP를 낮추되 현재 HP는 깎지 않는다.
 SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","2칸 이내의 적을 순수한 힘으로 내리칩니다. 체력 18/25/32 이하(숙련도/재능으로 증가)인 대상을 즉시 처형하고 마나를 100% 돌려받으며, 주변 아군에게 12턴간 이동 속도 +25%와 방어력 +4/+6/+7을 주고 영구 방어를 누적합니다. 그렇지 않으면 5d6+1~9d6 순수 피해를 줍니다."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","이동 가능하지만 취약한 치유의 토템(HP 1, 최대 1기 유지)을 36~48턴 동안 소환하여, 매 턴 2칸 이내 모든 아군의 최대 HP를 1%~3.25% 회복시킨다."
+SpellDescription,"Toggle a cloud of toxic gas around Pudge (free). Each turn it deals 1/2/3/4 magical damage to adjacent foes and to Pudge himself, and slows foes by 14%/20%/26%/32%. Rot can never reduce Pudge below 1 HP, and Meat Shield blocks its self-damage per DOTA2 tick.",
+SpellDescription,Wrap Pudge in a layer of flesh for 8/10/12/14 turns. Every instance of damage of any type is reduced by 0.53/0.93/1.33/1.73 on average (the fraction rounds up by chance; x1.5 with Lv 25 talent). Cannot be dispelled.,
 SpellName,adaptive strike,적응의 일격
 SpellName,battle hunger,전투 갈망
 SpellName,berserkers call,광전사의 부름
 SpellName,blade fury,분노의 칼날
 SpellName,culling blade,도살 칼날
+SpellName,dismember,
 SpellName,healing ward,치유의 토템
+SpellName,meat hook,
+SpellName,meat shield,
 SpellName,morph,변신
 SpellName,morph agility,민첩 변환
 SpellName,morph revert,변신 해제
 SpellName,morph strength,힘 변환
 SpellName,omnislash,연속 베기
+SpellName,pudge rot,
 SpellName,waveform,파형
 StrikeName,adaptive strike impact,적응형 일격 물폭발
 StrikeName,battle hunger mark,전투 갈망 낙인
@@ -60,5 +75,9 @@ StrikeName,blade fury cut,칼날 폭풍 베기 자국
 StrikeName,blade fury whirl,칼날 폭풍 소용돌이
 StrikeName,counter helix whirl,반격 나선 회전
 StrikeName,culling blade strike,도살 칼날 처형 베기
+StrikeName,dismember bite,
 StrikeName,healing ward pulse,치유의 토템 파동
+StrikeName,meat hook blood,
+StrikeName,meat hook head,
+StrikeName,meat shield wrap,
 StrikeName,omnislash slash,연속 베기 참격

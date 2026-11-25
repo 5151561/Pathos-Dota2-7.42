@@ -23,3 +23,4 @@
 - [变体精灵（Morphling / 水人）](heroes/morphling.md)
 - [主宰（Juggernaut / 尤涅若）](heroes/juggernaut.md)
 - [斧王（Axe / 蒙哥可汗）](heroes/axe.md)
+- [帕吉（Pudge / 屠夫）](heroes/pudge.md)

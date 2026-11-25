@@ -1,8 +1,11 @@
-﻿BeamName,omnislash dash,omnislash roham
+﻿BeamName,meat hook chain,
+BeamName,omnislash dash,omnislash roham
 BeamName,waveform dash,Hullámforma-roham
 CharacterName,Axe,Axe
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
+CharacterName,Pudge,
+ClassDescription,"A DOTA2 butcher who drags foes to his cleaver with Meat Hook, chokes everything nearby with Rot, shrugs off blows behind a Meat Shield, devours his prey with Dismember, and grows ever stronger with every hero-tier kill through Flesh Heap.",
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Változékony DOTA2 hős, aki tajtékzó hullámokat ural, szabadon váltogat az Erő és az Ügyesség között, az Apály és dagály révén erősödik, és felveszi ellenségei alakját."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Álarcos DOTA2 kardmester, aki a Pengealakkal megállíthatatlan lendületet gyűjt, a Pengeharaggal kettészeli a mágiát, a Gyógyító totemmel támogatja szövetségeseit, a Pengetánccal és az Omnislashsal pedig lekaszálja ellenségeit."
 ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","Egy könyörtelen, vörös DOTA2-berserker, aki az Egyemberes hadsereggel egyedül erősödik, A berserker hívásával egész termeket provokál, az Ellenfúró tiszta forgásaival szétszabdalja a támadókat, és a Hóhérpengével kivégzi a gyengéket."
@@ -15,6 +18,9 @@ ClassName,juggernaut//non-binary,juggernaut
 ClassName,morphling//female,morphling
 ClassName,morphling//male,morphling
 ClassName,morphling//non-binary,morphling
+ClassName,pudge//female,
+ClassName,pudge//male,
+ClassName,pudge//non-binary,
 EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,"A Juggernaut által megidézett lebegő gyógyító totem, amely minden körben maximális HP-juk egy százalékával gyógyítja a közeli szövetségeseket."
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Élő árapályvízből formált tudatos elementál, amely tetszése szerint képes átalakítani testi adottságait."
 EntityName,healing ward,gyógyító totem
@@ -22,6 +28,7 @@ EntityName,waterkin,vízlény
 ExplosionName,berserkers call wave,A berserker hívása lökéshullám
 ExplosionName,blade fury spin,pengeharag örvény
 ExplosionName,counter helix spin,Ellenfúró forgás
+ExplosionName,pudge rot cloud,
 ExplosionName,waveform splash,Hullámforma vízrobbanás
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Élő árapályvízből sűrített gömb, amely végtelen távolsági lőszerként lőhető ki parittyából."
 ItemName,tidal orb,árapálygömb
@@ -30,8 +37,10 @@ RaceName,waterkin//male,vízlény
 RaceName,waterkin//non-binary,vízlény
 SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,"24 körön át gyötör egy 4–7 mezőn belüli célpontot tiszta sebzéssel idővel (12/16/20/24 DPS K_dmg=15 szerint) és 16%/19%/22%/25% mozgáslassítással; eloszlik, ha a célpont bármilyen egységet megöl."
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Vedd fel egy célzott lény alakját, lemásolva testét, tulajdonságait, képességeit és varázslatait, miközben megtartod az Apály és dagály képességet."
+SpellDescription,"Channel on an adjacent foe for 6 turns (7 with Lv 20 talent), stunning it. Each turn deals magical damage of (80/100/120 + 0.3/0.5/0.7 x Pudge's DOTA2-equivalent Strength) x 0.5 / 15 and heals Pudge by the same amount (x1.5 with Lv 25 talent). The channel breaks if Pudge is disabled or the target leaves.",
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Űzd el a gyengítéseket és pörögj 10–12 körig: immunitás a gyengítésekre, 80% mágikus sebzéscsökkentés és körönként 1d4–2d4+2 alap mágikus sebzés (85–205 DPS K_dmg=15 alapon, a DEX és a Pengealak támadási sebessége alapján növelve) a szomszédos 3x3-as ellenfelekre; Pengetánccal kritikus lehet."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Olvadj tajtékzó hullámmá, előrevillanva vízi sebzést szórj szét magad körül, és rövid időre nyerj áthatolást és elmozdulást."
+SpellDescription,"Hurl a bloody hook up to 7 tiles in a direction. It latches onto the first unit in its path and drags it beside Pudge: ordinary monsters are slain outright, unique and guardian foes take 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 Pure damage (+10 with Lv 15 talent), and allies are pulled without harm.",
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Indíts egy vízhullámot, amely alapsebzést okoz, hátralöki és elkábítja a célpontot. A bónusz sebzés az Ügyesség/Erő aránnyal, a kábítás időtartama pedig az Erő/Ügyesség aránnyal nő."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Ugorj egy célzott ellenségre és zúdíts 5–12 gyors, sebezhetetlen fegyvercsapást (fegyver + tulajdonság + 2–3 bónusz sebzés csapásonként) a közeli ellenségekre, aktiválva a Pengetánc kritikust és a Pengealak bónuszait."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,"Engedd el az átváltozott alakodat, és azonnal térj vissza valódi vízlény testedbe."
@@ -40,17 +49,23 @@ SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Alakíts át Erőt és Állóképességet Ügyességgé (1–5 pontot jártasság szerint), megőrizve az összpontszámot és csökkentve a maximális HP-t a jelenlegi HP elszívása nélkül."
 SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","Tiszta erővel lesújt egy közeli ellenségre (hatótáv 2): azonnal kivégzi a 18/25/32 vagy kevesebb HP-jú célpontokat (+jártasság/tehetség), visszaadja a mana 100%-át, a közeli szövetségeseknek 12 körre +25% mozgási sebességet és +4/+6/+7 védelmet ad, és állandó páncélt halmoz fel; egyébként 5d6+1-től 9d6-ig tiszta sebzést okoz."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Idézz meg egy törékeny, mozgatható Gyógyító totemet (1 HP, legfeljebb 1 aktív) 36–48 körre, amely minden körben 1%–3,25% maximális HP-val gyógyítja a 2 mezőn belüli szövetségeseket."
+SpellDescription,"Toggle a cloud of toxic gas around Pudge (free). Each turn it deals 1/2/3/4 magical damage to adjacent foes and to Pudge himself, and slows foes by 14%/20%/26%/32%. Rot can never reduce Pudge below 1 HP, and Meat Shield blocks its self-damage per DOTA2 tick.",
+SpellDescription,Wrap Pudge in a layer of flesh for 8/10/12/14 turns. Every instance of damage of any type is reduced by 0.53/0.93/1.33/1.73 on average (the fraction rounds up by chance; x1.5 with Lv 25 talent). Cannot be dispelled.,
 SpellName,adaptive strike,alkalmazkodó csapás
 SpellName,battle hunger,Csatavágy
 SpellName,berserkers call,A berserker hívása
 SpellName,blade fury,pengeharag
 SpellName,culling blade,Hóhérpenge
+SpellName,dismember,
 SpellName,healing ward,gyógyító totem
+SpellName,meat hook,
+SpellName,meat shield,
 SpellName,morph,átváltozás
 SpellName,morph agility,átváltás ügyességre
 SpellName,morph revert,átváltozás feloldása
 SpellName,morph strength,átváltás erőre
 SpellName,omnislash,omnislash
+SpellName,pudge rot,
 SpellName,waveform,hullámalak
 StrikeName,adaptive strike impact,Alkalmazkodó csapás becsapódás
 StrikeName,battle hunger mark,Csatavágy jelölés
@@ -60,5 +75,9 @@ StrikeName,blade fury cut,Pengevihar vágás
 StrikeName,blade fury whirl,Pengevihar örvény
 StrikeName,counter helix whirl,Ellenfúró forgás
 StrikeName,culling blade strike,Hóhérpenge csapás
+StrikeName,dismember bite,
 StrikeName,healing ward pulse,gyógyító totem pulzus
+StrikeName,meat hook blood,
+StrikeName,meat hook head,
+StrikeName,meat shield wrap,
 StrikeName,omnislash slash,omnislash vágás

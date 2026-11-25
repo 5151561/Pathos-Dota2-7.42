@@ -1,8 +1,11 @@
-﻿BeamName,omnislash dash,investida da onilâmina
+﻿BeamName,meat hook chain,
+BeamName,omnislash dash,investida da onilâmina
 BeamName,waveform dash,Investida de Onda
 CharacterName,Axe,Axe
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
+CharacterName,Pudge,
+ClassDescription,"A DOTA2 butcher who drags foes to his cleaver with Meat Hook, chokes everything nearby with Rot, shrugs off blows behind a Meat Shield, devours his prey with Dismember, and grows ever stronger with every hero-tier kill through Flesh Heap.",
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Um herói fluido de DOTA2 que comanda ondas crescentes, alterna livremente entre Força e Agilidade, fortalece-se com Fluxo e Refluxo e assume a forma dos inimigos."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Um espadachim mascarado de DOTA2 que acumula ímpeto imparável com Forma da Lâmina, corta a magia com Fúria da Lâmina, sustenta aliados com a Sentinela de Cura e abate inimigos com Dança da Lâmina e Onilâmina."
 ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","Um implacável berserker carmesim de DOTA2 que prospera sozinho com Exército de um homem só, provoca salas inteiras com Chamado do berserker, rasga atacantes com os giros puros de Hélice de contra-ataque e executa os fracos com Lâmina de execução."
@@ -15,6 +18,9 @@ ClassName,juggernaut//non-binary,juggernaut
 ClassName,morphling//female,morphling
 ClassName,morphling//male,morphling
 ClassName,morphling//non-binary,morphling
+ClassName,pudge//female,
+ClassName,pudge//male,
+ClassName,pudge//non-binary,
 EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,Um totem restaurador flutuante invocado por Juggernaut que cura aliados próximos em uma porcentagem da vida máxima a cada turno.
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Um elemental consciente forjado de marés vivas, capaz de remodelar seus atributos físicos à vontade."
 EntityName,healing ward,sentinela de cura
@@ -22,6 +28,7 @@ EntityName,waterkin,ser das águas
 ExplosionName,berserkers call wave,Onda de choque de Chamado do berserker
 ExplosionName,blade fury spin,giro de fúria da lâmina
 ExplosionName,counter helix spin,Giro de Hélice de contra-ataque
+ExplosionName,pudge rot cloud,
 ExplosionName,waveform splash,Explosão de água de Onda
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Uma esfera condensada de água das marés vivas lançada como munição infinita de longa distância por uma funda.
 ItemName,tidal orb,orbe das marés
@@ -30,8 +37,10 @@ RaceName,waterkin//male,ser das águas
 RaceName,waterkin//non-binary,ser das águas
 SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,Aflige um inimigo alvo a 4-7 casas por 24 turnos com dano puro ao longo do tempo (12/16/20/24 DPS via K_dmg=15) e 16%/19%/22%/25% de lentidão; dissipado se o alvo matar qualquer unidade.
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Assuma a forma de uma criatura-alvo, copiando seu corpo, atributos, perícias e magias enquanto mantém Fluxo e Refluxo."
+SpellDescription,"Channel on an adjacent foe for 6 turns (7 with Lv 20 talent), stunning it. Each turn deals magical damage of (80/100/120 + 0.3/0.5/0.7 x Pudge's DOTA2-equivalent Strength) x 0.5 / 15 and heals Pudge by the same amount (x1.5 with Lv 25 talent). The channel breaks if Pudge is disabled or the target leaves.",
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Dissipe penalidades e gire por 10 a 12 turnos: imunidade a penalidades, 80% de redução mágica e 1d4 a 2d4+2 de dano mágico base por turno (85-205 DPS convertidos via K_dmg=15, escalado por DEX e velocidade da Forma da Lâmina) em inimigos adjacentes em 3x3; pode causar crítico com Dança da Lâmina."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Dissolva-se em uma onda crescente, teleportando-se para a frente, espalhando dano de água ao redor e ganhando brevemente travessia e deslocamento."
+SpellDescription,"Hurl a bloody hook up to 7 tiles in a direction. It latches onto the first unit in its path and drags it beside Pudge: ordinary monsters are slain outright, unique and guardian foes take 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 Pure damage (+10 with Lv 15 talent), and allies are pulled without harm.",
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Dispare uma onda de água causando dano base, empurrando e atordoando o alvo. O dano bônus escala com a razão Agilidade/Força, enquanto a duração do atordoamento escala com a razão Força/Agilidade."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Salte até um inimigo-alvo e desfira de 5 a 12 cortes rápidos e invulneráveis de arma (arma + atributo + 2 a 3 de dano bônus por corte) entre inimigos próximos, ativando críticos de Dança da Lâmina e bônus de Forma da Lâmina."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Abandone sua forma metamorfoseada e retorne imediatamente ao seu verdadeiro corpo de ser das águas.
@@ -40,17 +49,23 @@ SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Converta Força e Constituição em Agilidade (1 a 5 pontos conforme a maestria), conservando o total de atributos e reduzindo a vida máxima sem drenar a vida atual."
 SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","Golpeia um inimigo próximo (alcance 2) com força pura: executa instantaneamente alvos com 18/25/32 PV ou menos (+maestria/talento), devolve 100% do mana, concede a aliados próximos +25% de velocidade de movimento e +4/+6/+7 de defesa por 12 turnos e acumula armadura permanente; caso contrário, causa 5d6+1 a 9d6 de dano puro."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Invoque uma frágil Sentinela de Cura móvel (1 de vida, máx. 1 ativa) por 36 a 48 turnos que cura todos os aliados em até 2 casas em 1% a 3,25% de sua vida máxima a cada turno."
+SpellDescription,"Toggle a cloud of toxic gas around Pudge (free). Each turn it deals 1/2/3/4 magical damage to adjacent foes and to Pudge himself, and slows foes by 14%/20%/26%/32%. Rot can never reduce Pudge below 1 HP, and Meat Shield blocks its self-damage per DOTA2 tick.",
+SpellDescription,Wrap Pudge in a layer of flesh for 8/10/12/14 turns. Every instance of damage of any type is reduced by 0.53/0.93/1.33/1.73 on average (the fraction rounds up by chance; x1.5 with Lv 25 talent). Cannot be dispelled.,
 SpellName,adaptive strike,golpe adaptativo
 SpellName,battle hunger,Fome de batalha
 SpellName,berserkers call,Chamado do berserker
 SpellName,blade fury,fúria da lâmina
 SpellName,culling blade,Lâmina de execução
+SpellName,dismember,
 SpellName,healing ward,sentinela de cura
+SpellName,meat hook,
+SpellName,meat shield,
 SpellName,morph,metamorfose
 SpellName,morph agility,converter agilidade
 SpellName,morph revert,reverter metamorfose
 SpellName,morph strength,converter força
 SpellName,omnislash,onilâmina
+SpellName,pudge rot,
 SpellName,waveform,forma de onda
 StrikeName,adaptive strike impact,Impacto de Golpe adaptativo
 StrikeName,battle hunger mark,Marca de Fome de batalha
@@ -60,5 +75,9 @@ StrikeName,blade fury cut,Corte de Redemoinho de lâminas
 StrikeName,blade fury whirl,Giro de Redemoinho de lâminas
 StrikeName,counter helix whirl,Giro de Hélice de contra-ataque
 StrikeName,culling blade strike,Golpe de Lâmina de execução
+StrikeName,dismember bite,
 StrikeName,healing ward pulse,pulso da sentinela de cura
+StrikeName,meat hook blood,
+StrikeName,meat hook head,
+StrikeName,meat shield wrap,
 StrikeName,omnislash slash,corte da onilâmina

@@ -1,8 +1,11 @@
-﻿BeamName,omnislash dash,sunek omnislasha
+﻿BeamName,meat hook chain,
+BeamName,omnislash dash,sunek omnislasha
 BeamName,waveform dash,Sunek Valovne oblike
 CharacterName,Axe,Axe
 CharacterName,Juggernaut,Juggernaut
 CharacterName,Morphling,Morphling
+CharacterName,Pudge,
+ClassDescription,"A DOTA2 butcher who drags foes to his cleaver with Meat Hook, chokes everything nearby with Rot, shrugs off blows behind a Meat Shield, devours his prey with Dismember, and grows ever stronger with every hero-tier kill through Flesh Heap.",
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.","Tekoči junak iz DOTA2, ki poveljuje deročim valovom, prosto pretaka Moč in Gibčnost, se krepi z Oseko in plimo ter prevzema podobo sovražnikov."
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.","Zamaskirani mojster meča iz DOTA2, ki z Obliko rezila kopiči neustavljiv zagon, z Besom rezila prebija magijo, z Zdravilnim totemom zdravi zaveznike ter s Plesom rezila in Omnislashem kosi sovražnike."
 ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.","Neizprosen škrlatni berserker iz DOTA2, ki sam cveti z Vojsko enega moža, provocira cele sobe s Klicem berserkerja, razseka napadalce s čistimi obrati Protispirale in usmrti šibke z Rezilom krvnika."
@@ -15,6 +18,9 @@ ClassName,juggernaut//non-binary,juggernaut
 ClassName,morphling//female,morphling
 ClassName,morphling//male,morphling
 ClassName,morphling//non-binary,morphling
+ClassName,pudge//female,
+ClassName,pudge//male,
+ClassName,pudge//non-binary,
 EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,"Lebdeči zdravilni totem, ki ga prikliče Juggernaut in vsako potezo zdravi bližnje zaveznike za odstotek njihovih največjih HP."
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.","Zavestni elemental, skovan iz žive plimske vode, ki zmore po mili volji preoblikovati svoje telesne lastnosti."
 EntityName,healing ward,zdravilni totem
@@ -22,6 +28,7 @@ EntityName,waterkin,vodni duh
 ExplosionName,berserkers call wave,Udarni val Klica berserkerja
 ExplosionName,blade fury spin,vrtinec besa rezila
 ExplosionName,counter helix spin,Obrat Protispirale
+ExplosionName,pudge rot cloud,
 ExplosionName,waveform splash,Vodna eksplozija Valovne oblike
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Zgoščena krogla žive plimske vode, ki se izstreli iz prače kot neskončno strelivo na daljavo."
 ItemName,tidal orb,krogla plime
@@ -30,8 +37,10 @@ RaceName,waterkin//male,vodni duh
 RaceName,waterkin//non-binary,vodni duh
 SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,"24 potez muči izbranega sovražnika v 4 do 7 poljih s čisto škodo skozi čas (12/16/20/24 DPS po K_dmg=15) in 16 %/19 %/22 %/25 % upočasnitve premikanja; razprši se, če tarča ubije katero koli enoto."
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.","Prevzemite podobo izbranega bitja ter posnemite njegovo telo, lastnosti, veščine in uroke, pri čemer ohranite Oseko in plimo."
+SpellDescription,"Channel on an adjacent foe for 6 turns (7 with Lv 20 talent), stunning it. Each turn deals magical damage of (80/100/120 + 0.3/0.5/0.7 x Pudge's DOTA2-equivalent Strength) x 0.5 / 15 and heals Pudge by the same amount (x1.5 with Lv 25 talent). The channel breaks if Pudge is disabled or the target leaves.",
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.","Razpršite oslabitve in se vrtite 10 do 12 potez: imunost na oslabitve, 80% zmanjšanje magične škode in 1d4 do 2d4+2 osnovne magične škode na potezo (85–205 DPS prek K_dmg=15, preračunano z DEX in hitrostjo Oblike rezila) sosednjim sovražnikom 3x3; lahko sproži kritični udarec s Plesom rezila."
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.","Raztopite se v deročem valu, švignete naprej, poškropite okolico z vodno škodo ter za kratek čas pridobite prehodnost in premik."
+SpellDescription,"Hurl a bloody hook up to 7 tiles in a direction. It latches onto the first unit in its path and drags it beside Pudge: ordinary monsters are slain outright, unique and guardian foes take 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 Pure damage (+10 with Lv 15 talent), and allies are pulled without harm.",
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Izstrelite vodni val, ki povzroči osnovno škodo, odbije in omami tarčo. Dodatna škoda je odvisna od razmerja Gibčnost/Moč, trajanje omame pa od razmerja Moč/Gibčnost."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Skočite na izbranega sovražnika in sprožite 5 do 12 hitrih neranljivih zamahov z orožjem (orožje + lastnost + 2 do 3 dodatne škode na zamah) čez bližnje sovražnike, kar sproža kritične udarce Plesa rezila in bonuse Oblike rezila."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Opustite svojo preobraženo obliko in se takoj vrnite v svoje pravo telo vodnega duha.
@@ -40,17 +49,23 @@ SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Prelijte Moč in Konstitucijo v Gibčnost (1 do 5 točk glede na mojstrstvo), pri čemer ohranite vsoto lastnosti in znižate največje HP brez odvzema trenutnih HP."
 SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.","S čisto silo udari bližnjega sovražnika (doseg 2): takoj usmrti tarče z 18/25/32 ZT ali manj (+mojstrstvo/talent), vrne 100 % mane, bližnjim zaveznikom da +25 % hitrosti premikanja in +4/+6/+7 obrambe za 12 potez ter kopiči trajni oklep; sicer povzroči 5d6+1 do 9d6 čiste škode."
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Prikličite krhek premični Zdravilni totem (1 HP, največ 1 dejaven) za 36 do 48 potez, ki vsako potezo pozdravi vse zaveznike v dosegu 2 polj za 1% do 3,25% njihovih največjih HP."
+SpellDescription,"Toggle a cloud of toxic gas around Pudge (free). Each turn it deals 1/2/3/4 magical damage to adjacent foes and to Pudge himself, and slows foes by 14%/20%/26%/32%. Rot can never reduce Pudge below 1 HP, and Meat Shield blocks its self-damage per DOTA2 tick.",
+SpellDescription,Wrap Pudge in a layer of flesh for 8/10/12/14 turns. Every instance of damage of any type is reduced by 0.53/0.93/1.33/1.73 on average (the fraction rounds up by chance; x1.5 with Lv 25 talent). Cannot be dispelled.,
 SpellName,adaptive strike,prilagodljivi udarec
 SpellName,battle hunger,Bojna lakota
 SpellName,berserkers call,Klic berserkerja
 SpellName,blade fury,bes rezila
 SpellName,culling blade,Rezilo krvnika
+SpellName,dismember,
 SpellName,healing ward,zdravilni totem
+SpellName,meat hook,
+SpellName,meat shield,
 SpellName,morph,preobrazba
 SpellName,morph agility,preliv v gibčnost
 SpellName,morph revert,razveljavi preobrazbo
 SpellName,morph strength,preliv v moč
 SpellName,omnislash,omnislash
+SpellName,pudge rot,
 SpellName,waveform,valovna oblika
 StrikeName,adaptive strike impact,Udarec Prilagodljivega udarca
 StrikeName,battle hunger mark,Znamenje Bojne lakote
@@ -60,5 +75,9 @@ StrikeName,blade fury cut,Vsek Vrtinca rezil
 StrikeName,blade fury whirl,Vrtinec Vrtinca rezil
 StrikeName,counter helix whirl,Obrat Protispirale
 StrikeName,culling blade strike,Udarec Rezila krvnika
+StrikeName,dismember bite,
 StrikeName,healing ward pulse,utrip zdravilnega totema
+StrikeName,meat hook blood,
+StrikeName,meat hook head,
+StrikeName,meat shield wrap,
 StrikeName,omnislash slash,rez omnislasha

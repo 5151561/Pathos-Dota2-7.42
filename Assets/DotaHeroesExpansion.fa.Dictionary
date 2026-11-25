@@ -1,8 +1,11 @@
-﻿BeamName,omnislash dash,یورش آمنی‌اسلش
+﻿BeamName,meat hook chain,
+BeamName,omnislash dash,یورش آمنی‌اسلش
 BeamName,waveform dash,خیز موج‌شکل
 CharacterName,Axe,اکس
 CharacterName,Juggernaut,جاگرنات
 CharacterName,Morphling,مورفلینگ
+CharacterName,Pudge,
+ClassDescription,"A DOTA2 butcher who drags foes to his cleaver with Meat Hook, chokes everything nearby with Rot, shrugs off blows behind a Meat Shield, devours his prey with Dismember, and grows ever stronger with every hero-tier kill through Flesh Heap.",
 ClassDescription,"A fluid DOTA2 hero who commands surging waves, shifts freely between Strength and Agility, empowers himself through Ebb & Flow, and morphs into foes.",قهرمانی سیال از DOTA2 که امواج خروشان را فرمان می‌دهد، آزادانه میان قدرت و چابکی جابه‌جا می‌شود، با جزر و مد تقویت می‌گردد و به شکل دشمنان درمی‌آید.
 ClassDescription,"A masked DOTA2 blademaster who builds unstoppable momentum through Bladeform, carves through magic with Blade Fury, sustains allies with Healing Ward, and cuts down foes with Blade Dance and Omnislash.",شمشیرزن نقاب‌دار DOTA2 که با شکل تیغه شتابی توقف‌ناپذیر می‌سازد، با خشم تیغه جادو را می‌شکافد، با توتم شفا یاران را پایدار نگه می‌دارد و با رقص تیغه و آمنی‌اسلش دشمنان را درو می‌کند.
 ClassDescription,"A relentless DOTA2 crimson berserker who thrives alone with One Man Army, taunts entire rooms with Berserker's Call, carves attackers with Pure Counter Helix spins, and executes the weak with Culling Blade.",جنگجوی خشمگین قرمز بی‌رحم از DOTA2 که تنها با ارتش یک‌نفره قوی‌تر می‌شود، با ندای جنگجوی خشمگین کل اتاق را تحریک می‌کند، با چرخش‌های ناب مارپیچ مقابله مهاجمان را می‌شکافد و با تیغ اعدام ضعیفان را اعدام می‌کند.
@@ -15,6 +18,9 @@ ClassName,juggernaut//non-binary,جاگرنات
 ClassName,morphling//female,مورفلینگ
 ClassName,morphling//male,مورفلینگ
 ClassName,morphling//non-binary,مورفلینگ
+ClassName,pudge//female,
+ClassName,pudge//male,
+ClassName,pudge//non-binary,
 EntityDescription,A floating restorative totem summoned by Juggernaut that heals nearby allies for a percentage of their maximum HP each turn.,توتم شفابخش شناور احضارشده توسط جاگرنات که در هر نوبت درصدی از حداکثر HP یاران نزدیک را بازیابی می‌کند.
 EntityDescription,"A sentient elemental forged from living tidewater, capable of reshaping its physical attributes at will.",عنصری هوشمند ساخته‌شده از آب‌های زنده جزرومد که می‌تواند ویژگی‌های جسمی خود را به دلخواه بازآرایی کند.
 EntityName,healing ward,توتم شفا
@@ -22,6 +28,7 @@ EntityName,waterkin,روح آب
 ExplosionName,berserkers call wave,موج ضربه ندای جنگجوی خشمگین
 ExplosionName,blade fury spin,گردباد خشم تیغه
 ExplosionName,counter helix spin,چرخش مارپیچ مقابله
+ExplosionName,pudge rot cloud,
 ExplosionName,waveform splash,انفجار آبی موج‌شکل
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,گوی فشرده‌ای از آب زنده جزرومد که به‌عنوان مهمات دوربرد بی‌پایان از قلاب‌سنگ شلیک می‌شود.
 ItemName,tidal orb,گوی جزرومد
@@ -30,8 +37,10 @@ RaceName,waterkin//male,روح آب
 RaceName,waterkin//non-binary,روح آب
 SpellDescription,Afflict a targeted enemy within 4 to 7 tiles for 24 turns with Pure damage over time (12/16/20/24 DPS mapped via K_dmg=15) and 16%/19%/22%/25% movement slow; dispelled if the target kills any unit.,دشمن هدف‌گرفته‌شده در ۴ تا ۷ خانه را به‌مدت ۲۴ نوبت با آسیب ناب در طول زمان (۱۲/۱۶/۲۰/۲۴ DPS بر اساس K_dmg=15) و ۱۶٪/۱۹٪/۲۲٪/۲۵٪ کاهش سرعت حرکت عذاب می‌دهد؛ اگر هدف هر واحدی را بکشد از بین می‌رود.
 SpellDescription,"Assume the form of a targeted creature, copying its body, attributes, skills, and spells while retaining Ebb & Flow.",شکل موجود هدف را به خود بگیرید و ضمن حفظ جزر و مد، بدن، ویژگی‌ها، مهارت‌ها و جادوهای آن را کپی کنید.
+SpellDescription,"Channel on an adjacent foe for 6 turns (7 with Lv 20 talent), stunning it. Each turn deals magical damage of (80/100/120 + 0.3/0.5/0.7 x Pudge's DOTA2-equivalent Strength) x 0.5 / 15 and heals Pudge by the same amount (x1.5 with Lv 25 talent). The channel breaks if Pudge is disabled or the target leaves.",
 SpellDescription,"Dispel debuffs and spin for 10 to 12 turns: debuff immunity, 80% magical DR, and 1d4 to 2d4+2 base magical damage per turn (85-205 DPS mapped via K_dmg=15, scaled by DEX & Bladeform attack speed) to adjacent 3x3 foes; can crit with Blade Dance.",اثرات منفی را بزداید و 10 تا 12 نوبت بچرخید: مصونیت از تضعیف‌ها، 80% کاهش آسیب جادویی و 1d4 تا 2d4+2 آسیب جادویی پایه در هر نوبت (معادل 85-205 DPS با K_dmg=15 و مقیاس‌شده با DEX و سرعت شکل تیغه) به دشمنان مجاور 3x3؛ با رقص تیغه امکان ضربه مرگبار دارد.
 SpellDescription,"Dissolve into a surging wave, blinking forward, splashing water damage around you, and briefly gaining phasing and displacement.",در موجی خروشان حل شوید، به جلو جهش کنید، آسیب آبی در اطراف بپاشید و برای مدتی کوتاه عبور از موانع و جابه‌جایی به‌دست آورید.
+SpellDescription,"Hurl a bloody hook up to 7 tiles in a direction. It latches onto the first unit in its path and drags it beside Pudge: ordinary monsters are slain outright, unique and guardian foes take 2d6+3 / 4d6+1 / 5d6+2 / 6d6+3 Pure damage (+10 with Lv 15 talent), and allies are pulled without harm.",
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",موجی از آب شلیک کنید که آسیب پایه وارد کرده و هدف را به عقب رانده و گیج می‌کند. آسیب افزوده با نسبت چابکی به قدرت و مدت گیجی با نسبت قدرت به چابکی افزایش می‌یابد.
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",به سوی دشمن هدف بجهید و 5 تا 12 ضربه سریع و آسیب‌ناپذیر سلاح (سلاح + ویژگی + 2 تا 3 آسیب افزوده در هر ضربه) به دشمنان نزدیک وارد کنید و ضربات مرگبار رقص تیغه و پاداش‌های شکل تیغه را فعال سازید.
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,شکل دگرگون‌شده خود را رها کنید و بی‌درنگ به بدن واقعی روح آب خود بازگردید.
@@ -40,17 +49,23 @@ SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",قدرت و بنیه را به چابکی تبدیل کنید (1 تا 5 امتیاز بر اساس مهارت)، با حفظ مجموع امتیازها و کاهش حداکثر HP بدون کم کردن HP کنونی.
 SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",با قدرت ناب به دشمن نزدیک (برد ۲) ضربه می‌زند: هدف‌هایی با ۱۸/۲۵/۳۲ جان یا کمتر (+تسلط/استعداد) را فوراً اعدام می‌کند، ۱۰۰٪ مانا را بازمی‌گرداند، به هم‌تیمی‌های نزدیک ۱۲ نوبت +۲۵٪ سرعت حرکت و +۴/+۶/+۷ دفاع می‌دهد و زره دائمی انباشته می‌کند؛ در غیر این صورت ۵d6+1 تا ۹d6 آسیب ناب وارد می‌کند.
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.",یک توتم شفای شکننده و متحرک (1 HP، حداکثر 1 فعال) برای 36 تا 48 نوبت احضار کنید که هر نوبت تمام یاران تا فاصله 2 خانه را به میزان 1% تا 3.25% حداکثر HP آن‌ها درمان می‌کند.
+SpellDescription,"Toggle a cloud of toxic gas around Pudge (free). Each turn it deals 1/2/3/4 magical damage to adjacent foes and to Pudge himself, and slows foes by 14%/20%/26%/32%. Rot can never reduce Pudge below 1 HP, and Meat Shield blocks its self-damage per DOTA2 tick.",
+SpellDescription,Wrap Pudge in a layer of flesh for 8/10/12/14 turns. Every instance of damage of any type is reduced by 0.53/0.93/1.33/1.73 on average (the fraction rounds up by chance; x1.5 with Lv 25 talent). Cannot be dispelled.,
 SpellName,adaptive strike,ضربه تطبیقی
 SpellName,battle hunger,گرسنگی نبرد
 SpellName,berserkers call,ندای جنگجوی خشمگین
 SpellName,blade fury,خشم تیغه
 SpellName,culling blade,تیغ اعدام
+SpellName,dismember,
 SpellName,healing ward,توتم شفا
+SpellName,meat hook,
+SpellName,meat shield,
 SpellName,morph,دگرگونی
 SpellName,morph agility,تبدیل به چابکی
 SpellName,morph revert,لغو دگرگونی
 SpellName,morph strength,تبدیل به قدرت
 SpellName,omnislash,آمنی‌اسلش
+SpellName,pudge rot,
 SpellName,waveform,شکل موج
 StrikeName,adaptive strike impact,ضربه تطبیقی انفجار
 StrikeName,battle hunger mark,نشان گرسنگی نبرد
@@ -60,5 +75,9 @@ StrikeName,blade fury cut,شکاف گردباد تیغ
 StrikeName,blade fury whirl,گرداب گردباد تیغ
 StrikeName,counter helix whirl,چرخش مارپیچ مقابله
 StrikeName,culling blade strike,ضربه تیغ اعدام
+StrikeName,dismember bite,
 StrikeName,healing ward pulse,تپش توتم شفا
+StrikeName,meat hook blood,
+StrikeName,meat hook head,
+StrikeName,meat shield wrap,
 StrikeName,omnislash slash,برش آمنی‌اسلش
