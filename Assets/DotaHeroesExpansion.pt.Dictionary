@@ -25,11 +25,11 @@ ExplosionName,counter helix spin,
 ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Uma esfera condensada de água das marés vivas lançada como munição infinita de longa distância por uma funda.
 ItemName,tidal orb,orbe das marés
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Inata (Forma da Lâmina): Ganhe 1 acúmulo a cada 4 turnos sem sofrer dano (até 10 acúmulos). Cada acúmulo concede +1% de velocidade de movimento e +2,5% de poder de golpe de agilidade e velocidade de ataque; persiste por 4 turnos após sofrer dano."
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Inata (Forma da Lâmina): Ganhe 1 acúmulo a cada 4 turnos sem sofrer dano (até 12 acúmulos). Cada acúmulo concede +1% de velocidade de movimento e +2,5% de poder de golpe de agilidade e velocidade de ataque; persiste por 4 turnos após sofrer dano."
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Inata (Fluxo e Refluxo): Agilidade concede bônus de velocidade de movimento e alcance à distância; Força concede bônus de alcance de magias e resistência a lentidão. Persiste durante a metamorfose.
 PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Saltando entre inimigos próximos em um borrão de golpes invulneráveis: imune a todo dano e penalidades enquanto corta um inimigo próximo a cada turno.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Passiva (Dança da Lâmina): Ataques corpo a corpo, golpes da Onilâmina e giros da Fúria da Lâmina têm 20% / 25% / 30% / 35% de chance (nos níveis 1-4 de Dança da Lâmina) de causar acerto crítico de 1,8x de dano."
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Passiva (Dança da Lâmina): Ataques corpo a corpo, golpes da Onilâmina e giros da Fúria da Lâmina têm 35% de chance (nos níveis 1-4 de Dança da Lâmina) de causar acerto crítico de 1,4/1,6/1,8/2,0x de dano."
 PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Girando em uma tempestade destrutiva de lâminas: imune a penalidades, 80% de redução de dano mágico e causando dano mágico ao seu redor a cada turno."
 PropertyName,blade dance,dança da lâmina
@@ -49,10 +49,10 @@ SpellDescription,"Dissolve into a surging wave, blinking forward, splashing wate
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Dispare uma onda de água causando dano base, empurrando e atordoando o alvo. O dano bônus escala com a razão Agilidade/Força, enquanto a duração do atordoamento escala com a razão Força/Agilidade."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Salte até um inimigo-alvo e desfira de 5 a 12 cortes rápidos e invulneráveis de arma (arma + atributo + 2 a 3 de dano bônus por corte) entre inimigos próximos, ativando críticos de Dança da Lâmina e bônus de Forma da Lâmina."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Abandone sua forma metamorfoseada e retorne imediatamente ao seu verdadeiro corpo de ser das águas.
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Converta Agilidade em Força e Constituição (1 a 5 pontos conforme a maestria), conservando o total de atributos enquanto aumenta tanto a vida máxima quanto a atual."
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Converta Força e Constituição em Agilidade (1 a 5 pontos conforme a maestria), conservando o total de atributos e reduzindo a vida máxima sem drenar a vida atual."
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Invoque uma frágil Sentinela de Cura móvel (1 de vida, máx. 1 ativa) por 36 a 48 turnos que cura todos os aliados em até 2 casas em 1% a 3,25% de sua vida máxima a cada turno."
 SpellName,adaptive strike,golpe adaptativo
 SpellName,battle hunger,
@@ -68,7 +68,11 @@ SpellName,omnislash,onilâmina
 SpellName,waveform,forma de onda
 StrikeName,adaptive strike impact,
 StrikeName,battle hunger mark,
+StrikeName,berserkers call ring,
 StrikeName,blade dance crit,crítico da dança da lâmina
+StrikeName,blade fury cut,
+StrikeName,blade fury whirl,
+StrikeName,counter helix whirl,
 StrikeName,culling blade strike,
 StrikeName,healing ward pulse,pulso da sentinela de cura
 StrikeName,omnislash slash,corte da onilâmina

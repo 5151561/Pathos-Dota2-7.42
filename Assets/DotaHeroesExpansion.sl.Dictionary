@@ -25,11 +25,11 @@ ExplosionName,counter helix spin,
 ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Zgoščena krogla žive plimske vode, ki se izstreli iz prače kot neskončno strelivo na daljavo."
 ItemName,tidal orb,krogla plime
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Prirojeno (Oblika rezila): Pridobite 1 naboj vsake 4 poteze brez prejete škode (do 10 nabojev). Vsak naboj podeli +1% hitrosti gibanja ter +2,5% moči udarcev iz gibčnosti in hitrosti napada; po prejeti škodi vztraja še 4 poteze."
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Prirojeno (Oblika rezila): Pridobite 1 naboj vsake 4 poteze brez prejete škode (do 12 nabojev). Vsak naboj podeli +1% hitrosti gibanja ter +2,5% moči udarcev iz gibčnosti in hitrosti napada; po prejeti škodi vztraja še 4 poteze."
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Prirojeno (Oseka in plima): Gibčnost podeljuje dodatno hitrost gibanja in doseg na daljavo; Moč podeljuje dodaten doseg urokov in odpornost proti upočasnitvi. Ohrani se med preobrazbo.
 PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,"Skakanje med bližnjimi sovražniki v vrtincu neranljivih udarcev: imunost na vso škodo in oslabitve, medtem ko vsako potezo zareže bližnjega sovražnika."
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Pasivno (Ples rezila): Napadi od blizu, udarci Omnislasha in vrtljaji Besa rezila imajo 20% / 25% / 30% / 35% možnosti (glede na stopnjo 1–4 Plesa rezila) za kritični udarec z 1,8-kratno škodo."
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasivno (Ples rezila): Napadi od blizu, udarci Omnislasha in vrtljaji Besa rezila imajo 35% možnosti (glede na stopnjo 1–4 Plesa rezila) za kritični udarec z 1,4/1,6/1,8/2,0-kratno škodo."
 PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Vrtenje v uničujočem viharju rezil: imunost na oslabitve, 80% zmanjšanje magične škode ter zadajanje magične škode okoli vas vsako potezo."
 PropertyName,blade dance,ples rezila
@@ -49,10 +49,10 @@ SpellDescription,"Dissolve into a surging wave, blinking forward, splashing wate
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Izstrelite vodni val, ki povzroči osnovno škodo, odbije in omami tarčo. Dodatna škoda je odvisna od razmerja Gibčnost/Moč, trajanje omame pa od razmerja Moč/Gibčnost."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Skočite na izbranega sovražnika in sprožite 5 do 12 hitrih neranljivih zamahov z orožjem (orožje + lastnost + 2 do 3 dodatne škode na zamah) čez bližnje sovražnike, kar sproža kritične udarce Plesa rezila in bonuse Oblike rezila."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Opustite svojo preobraženo obliko in se takoj vrnite v svoje pravo telo vodnega duha.
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Prelijte Gibčnost v Moč in Konstitucijo (1 do 5 točk glede na mojstrstvo), pri čemer ohranite vsoto lastnosti in povišate tako največje kot trenutne HP."
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Prelijte Moč in Konstitucijo v Gibčnost (1 do 5 točk glede na mojstrstvo), pri čemer ohranite vsoto lastnosti in znižate največje HP brez odvzema trenutnih HP."
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Prikličite krhek premični Zdravilni totem (1 HP, največ 1 dejaven) za 36 do 48 potez, ki vsako potezo pozdravi vse zaveznike v dosegu 2 polj za 1% do 3,25% njihovih največjih HP."
 SpellName,adaptive strike,prilagodljivi udarec
 SpellName,battle hunger,
@@ -68,7 +68,11 @@ SpellName,omnislash,omnislash
 SpellName,waveform,valovna oblika
 StrikeName,adaptive strike impact,
 StrikeName,battle hunger mark,
+StrikeName,berserkers call ring,
 StrikeName,blade dance crit,kritični ples rezila
+StrikeName,blade fury cut,
+StrikeName,blade fury whirl,
+StrikeName,counter helix whirl,
 StrikeName,culling blade strike,
 StrikeName,healing ward pulse,utrip zdravilnega totema
 StrikeName,omnislash slash,rez omnislasha

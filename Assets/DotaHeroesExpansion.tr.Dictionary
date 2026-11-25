@@ -25,11 +25,11 @@ ExplosionName,counter helix spin,
 ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Bir sapandan sonsuz menzilli cephane olarak fırlatılan, yoğunlaştırılmış yaşayan gelgit suyu küresi."
 ItemName,tidal orb,gelgit küresi
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Doğuştan (Kılıç Formu): Hasar almadan geçen her 4 turda 1 yük kazan (en fazla 10 yük). Her yük +%1 hareket hızı ile +%2,5 çeviklik darbe gücü ve saldırı hızı sağlar; hasar aldıktan sonra 4 tur daha kalır."
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Doğuştan (Kılıç Formu): Hasar almadan geçen her 4 turda 1 yük kazan (en fazla 12 yük). Her yük +%1 hareket hızı ile +%2,5 çeviklik darbe gücü ve saldırı hızı sağlar; hasar aldıktan sonra 4 tur daha kalır."
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Doğuştan (Gelgit Akışı): Çeviklik ek hareket hızı ve menzilli saldırı menzili sağlar; Güç ise ek büyü menzili ve yavaşlatma direnci kazandırır. Dönüşüm sırasında da sürer.
 PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Dokunulmaz darbeler yağmuru içinde yakındaki düşmanlar arasında sıçrıyor: her tur yakındaki bir düşmanı keserken tüm hasarlara ve zayıflatmalara karşı bağışıklık.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Pasif (Kılıç Dansı): Yakın dövüş saldırıları, Omnislash vuruşları ve Kılıç Öfkesi dönüşleri (Kılıç Dansı seviye 1-4'e göre) %20 / %25 / %30 / %35 ihtimalle 1,8 kat hasarlı kritik vuruş yapar."
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasif (Kılıç Dansı): Yakın dövüş saldırıları, Omnislash vuruşları ve Kılıç Öfkesi dönüşleri (Kılıç Dansı seviye 1-4'e göre) %35 ihtimalle 1,4/1,6/1,8/2,0 kat hasarlı kritik vuruş yapar."
 PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Yıkıcı bir kılıç fırtınasında dönüyor: zayıflatmalara bağışık, %80 büyü hasarı azaltması ve her tur etrafındaki düşmanlara büyü hasarı verir."
 PropertyName,blade dance,kılıç dansı
@@ -49,10 +49,10 @@ SpellDescription,"Dissolve into a surging wave, blinking forward, splashing wate
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Temel hasar veren, hedefi geri savuran ve sersemleten bir su dalgası fırlat. Ek hasar Çeviklik/Güç oranıyla, sersemletme süresi ise Güç/Çeviklik oranıyla artar."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Hedeflenen düşmana sıçra ve yakındaki düşmanlara karşı 5 ila 12 hızlı, dokunulmaz silah darbesi (darbe başına silah + nitelik + 2 ila 3 ek hasar) savur; Kılıç Dansı kritiklerini ve Kılıç Formu bonuslarını tetikler."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Dönüştüğün biçimi bırak ve derhal gerçek su ruhu bedenine geri dön.
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",Çevikliği Güç ve Dayanıklılığa dönüştür (ustalığa göre 1 ila 5 puan); toplam nitelikleri korurken hem azami hem mevcut HP'yi artırır.
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",Güç ve Dayanıklılığı Çevikliğe dönüştür (ustalığa göre 1 ila 5 puan); toplam nitelikleri korur ve mevcut HP'yi tüketmeden azami HP'yi düşürür.
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","36 ila 48 tur boyunca 2 kare içindeki tüm müttefikleri her tur azami HP'lerinin %1 ila %3,25'i kadar iyileştiren kırılgan, hareketli bir Şifa Totemi (1 HP, en fazla 1 aktif) çağır."
 SpellName,adaptive strike,uyumlu darbe
 SpellName,battle hunger,
@@ -68,7 +68,11 @@ SpellName,omnislash,omnislash
 SpellName,waveform,dalga formu
 StrikeName,adaptive strike impact,
 StrikeName,battle hunger mark,
+StrikeName,berserkers call ring,
 StrikeName,blade dance crit,kılıç dansı kritik
+StrikeName,blade fury cut,
+StrikeName,blade fury whirl,
+StrikeName,counter helix whirl,
 StrikeName,culling blade strike,
 StrikeName,healing ward pulse,şifa totemi nabzı
 StrikeName,omnislash slash,omnislash kesişi

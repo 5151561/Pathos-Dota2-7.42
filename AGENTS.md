@@ -34,6 +34,7 @@ Framework/
 │   └── PathosEngineBridge.cs  # 引擎内部成员反射缓存（伤害/治疗/召唤/销毁/学法升星/Story 特效/自动回合）
 ├── Skills/                    # DOTA2 升级技能加点系统（Q/W/E/R 原生升星 + 被动独立升级 + 7 级全属性黄点）
 ├── Talents/                   # 四层双修天赋树（Lv 10/15/20/25 + Lv 27~30 双修）与左下角 DOTA2 风格「技能与天赋」合并面板
+├── Presentation/              # DotaPresentation（技能演出时间轴 / 世界冻结 / 循环 / 顿帧）+ DotaVfx（VFX 渲染样式与播放）
 ├── Targeting/                 # DotaRangeTargetingBridge（全射程方格选框与点击捕获）
 └── UI/
     ├── PathosClientReflection.cs  # Pathos.dll 查找、PatchSafe 与 Theme.GetImage 共享封装
@@ -41,6 +42,7 @@ Framework/
     └── DotaStatusBarBridge.cs     # 左上角状态栏动态叠层徽章（原生 StatusIcon）
 Heroes/                        # 各英雄实现（MorphlingHero.cs、JuggernautHero.cs 等）
 Resources/Heroes/<hero_id>/    # 单份 128x128 透明 PNG（Git 跟踪，构建期自动分发至 Atlases/）
+tools/VfxGen/                  # 技能特效贴图程序化生成器（开发期工具，不参与扩展编译）
 Assets/                        # PathosMaker 生成的 .Atlas 与 .Dictionary（含 zh-Simplified 中文词条）
 docs/                          # 完整架构、基建、指南与英雄 7.42 溯源文档
 ```
@@ -62,7 +64,8 @@ docs/                          # 完整架构、基建、指南与英雄 7.42 �
 - **属性类天赋**：「+N 属性」天赋只声明 `TalentNode { StatBonus = PathosStatLimits.Bonus(...) }`，上限拓宽、永久提升与生命联动由天赋框架结算；不要手写 `OnLearn` 或 `RegisterHeroStatLimitBonus`。
 - **技能帮助面板**：数值文本用 `DotaHelpFormat.Tiles/Turns/CastRangeSuffix/Dex`，真实蓝耗用 `DotaHelpFormat.ActualMana(ch, ability)`（禁止手算 `MapCooldownReductionToManaCost`），5 阶明细用 `DotaSpellHelpBridge.Tiers(...)`，各阶数值必须用 `HelpCtx.Character` 调与施法相同的 `ComputeXxx(ch, tier)`（含升星/天赋/属性，射程用 `Ability.RangeAt(ch, tier)`），禁止只列静态基础值；被动/先天 Property 用 `DotaSpellHelpBridge.RegisterPassive` 显示实时数值与按等级明细；面板与施法共用的公式必须抽成英雄内单一 `ComputeXxx(ch, tier)`。日志目标名用 `DotaCombatHelper.GetDisplayName(ch[, fallbackKey])`。
 - **状态栏徽章**：职业专属徽章用 `DotaStatusBarBridge.RegisterProvider(key, className, ch => ...)`（自动过滤职业 + 存活），先天/被动 Property 徽章用 `DotaStatusBadge.ForPassive(...)`；带剩余回合的状态走 `DotaModifierSpec.Badge*`。
-- **自定义像素 VFX**：使用 `Ctx.RegisterStrikeVfx`、`Ctx.RegisterBeamVfx`、`Ctx.RegisterExplosion3x3Vfx`，配合 `PathosEngineBridge.Story*` 播放。
+- **自定义像素 VFX**：使用 `Ctx.RegisterStrikeVfx`、`Ctx.RegisterBeamVfx`、`Ctx.RegisterExplosion3x3Vfx` 注册，**每个都必须用 `DotaVfx.Style(...)` 注册淡入淡出/缩放/旋转样式**（原生渲染全程满亮度、无衰减，不加样式会满屏高亮交错），用 `DotaVfx.Strike/StrikeOn/Beam/BeamTrail/Explode` 按「秒」播放。贴图优先在 `tools/VfxGen` 中程序化生成，保证可复现。
+- **技能演出节奏（`DotaPresentation`）**：Pathos 一回合只有 5 帧（≈0.08 秒），多段技能（连斩、突进飞行、逐格弹道）**禁止**用「每步 Wait 一回合」推进，必须用 `DotaPresentation.Sequence(...).FreezeWorld(...).At(秒, ...)` 按 DOTA2 原版时长（持续时间 / 弹道速度）排步骤，位移用 `PathosEngineBridge.StoryFlinging` 平滑飞行；持续视觉用 `DotaPresentation.Loop`，重击顿帧用 `HitStop`。节奏数值同样要在英雄文档溯源表中列出 7.42 来源。详见 [hook-system.md §13](docs/architecture/hook-system.md)。
 - **客户端补丁**：若需新增 `Pathos.dll` 反射或补丁，复用 `PathosClientReflection`。
 
 ### 3.2 统一数值标尺（`DotaMechanicsMapper`）与 DOTA2 7.42 Wiki 强约束

@@ -25,11 +25,11 @@ ExplosionName,counter helix spin,
 ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"O sferă condensată din apă vie a mareei, lansată ca muniție infinită la distanță dintr-o praștie."
 ItemName,tidal orb,sfera mareelor
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Înnăscut (Forma Lamei): Primești 1 cumul la fiecare 4 ture fără a suferi daune (până la 10 cumuluri). Fiecare cumul oferă +1% viteză de mișcare și +2,5% putere de lovire pe Agilitate și viteză de atac; persistă 4 ture după primirea daunelor."
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Înnăscut (Forma Lamei): Primești 1 cumul la fiecare 4 ture fără a suferi daune (până la 12 cumuluri). Fiecare cumul oferă +1% viteză de mișcare și +2,5% putere de lovire pe Agilitate și viteză de atac; persistă 4 ture după primirea daunelor."
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Înnăscut (Flux și Reflux): Agilitatea oferă bonus la viteza de mișcare și raza de atac la distanță; Forța oferă bonus la raza vrăjilor și rezistență la încetinire. Persistă în timpul metamorfozei.
 PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Sărind între inamicii apropiați într-un vârtej de lovituri invulnerabile: imun la orice daune și efecte negative în timp ce taie un inamic apropiat la fiecare tură.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.","Pasivă (Dansul Lamei): Atacurile corp la corp, loviturile Omnislash și rotațiile Furia Lamei au 20% / 25% / 30% / 35% șansă (în funcție de nivelul 1-4 al Dansului Lamei) să aplice o lovitură critică de 1,8x daune."
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasivă (Dansul Lamei): Atacurile corp la corp, loviturile Omnislash și rotațiile Furia Lamei au 35% șansă (în funcție de nivelul 1-4 al Dansului Lamei) să aplice o lovitură critică de 1,4/1,6/1,8/2,0x daune."
 PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Învârtindu-te într-o furtună distructivă de lame: imun la efecte negative, reducere de 80% a daunelor magice și provocând daune magice în jurul tău la fiecare tură."
 PropertyName,blade dance,dansul lamei
@@ -49,10 +49,10 @@ SpellDescription,"Dissolve into a surging wave, blinking forward, splashing wate
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.","Lansează un val de apă care provoacă daune de bază, împinge și amețește ținta. Daunele bonus cresc odată cu raportul Agilitate/Forță, iar durata amețirii crește cu raportul Forță/Agilitate."
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.","Sari la un inamic țintă și dezlănțuie 5 până la 12 tăieturi rapide invulnerabile (armă + atribut + 2 până la 3 daune bonus per lovitură) asupra inamicilor apropiați, declanșând criticele Dansului Lamei și bonusurile Formei Lamei."
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,Renunță la forma metamorfozată și revino imediat la adevăratul tău corp de spirit al apei.
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.","Transformă Agilitatea în Forță și Constituție (1 până la 5 puncte după măiestrie), păstrând totalul atributelor și crescând atât PV-ul maxim, cât și pe cel curent."
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.","Transformă Forța și Constituția în Agilitate (1 până la 5 puncte după măiestrie), păstrând totalul atributelor și scăzând PV-ul maxim fără a drena PV-ul curent."
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","Invocă un Totem Vindecător fragil și mobil (1 PV, max. 1 activ) pentru 36 până la 48 de ture, care vindecă toți aliații pe o rază de 2 pătrate cu 1% până la 3,25% din PV-ul lor maxim la fiecare tură."
 SpellName,adaptive strike,lovitură adaptivă
 SpellName,battle hunger,
@@ -68,7 +68,11 @@ SpellName,omnislash,omnislash
 SpellName,waveform,formă de val
 StrikeName,adaptive strike impact,
 StrikeName,battle hunger mark,
+StrikeName,berserkers call ring,
 StrikeName,blade dance crit,lovitură critică dansul lamei
+StrikeName,blade fury cut,
+StrikeName,blade fury whirl,
+StrikeName,counter helix whirl,
 StrikeName,culling blade strike,
 StrikeName,healing ward pulse,puls totem vindecător
 StrikeName,omnislash slash,tăietură omnislash

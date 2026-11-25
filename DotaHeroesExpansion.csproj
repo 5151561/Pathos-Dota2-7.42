@@ -24,6 +24,12 @@
     <PathosHero></PathosHero>
   </PropertyGroup>
 
+  <!-- tools/ 下是独立的开发期工具工程（如 VFX 贴图生成器），不参与扩展 DLL 编译 -->
+  <ItemGroup>
+    <Compile Remove="tools\**" />
+    <None Remove="tools\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Lib.Harmony" Version="2.4.3" PrivateAssets="all" GeneratePathProperty="true" />
     <!-- 将 0Harmony.dll 内嵌为资源，使最终仍保持单 DLL 部署（兼容 Windows/macOS/Linux 与 PathosMaker） -->

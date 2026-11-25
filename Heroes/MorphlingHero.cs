@@ -5,6 +5,7 @@ using Inv;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Localization;
+using Pathos.DotaHeroes.Framework.Presentation;
 using Pathos.DotaHeroes.Framework.Skills;
 using Pathos.DotaHeroes.Framework.Talents;
 using Pathos.DotaHeroes.Framework.Targeting;
@@ -67,7 +68,7 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static readonly int WaveformManaCost = DotaMechanicsMapper.MapSkillManaCost(115);      // 6
     private static readonly int AdaptiveStrikeManaCost = DotaMechanicsMapper.MapSkillManaCost(70); // 7.42 满级 70 蓝 -> 4
-    private static readonly int AttributeShiftManaCost = DotaMechanicsMapper.MapSkillManaCost(0);  // 0（忠实还原 7.42）
+    private static readonly int AttributeShiftManaCost = DotaMechanicsMapper.MapToggleManaPerTurn(10.0f); // 7.42a：转换期间每秒 10 蓝 -> 每次（1 回合）1 蓝
     private static readonly int MorphManaCost = DotaMechanicsMapper.MapSkillManaCost(120);         // 原 50 蓝，Pathos Impersonate 强度修正 -> 6
     private static readonly int MorphRevertManaCost = DotaMechanicsMapper.MapSkillManaCost(0);     // 0
 
@@ -118,6 +119,11 @@ namespace Pathos.DotaHeroes.Heroes
         "waveform fx beam b");
       WaveformSplashExplosion = Ctx.RegisterExplosion3x3Vfx("waveform splash", "waveform fx");
       AdaptiveStrikeImpactStrike = Ctx.RegisterStrikeVfx("adaptive strike impact", "adaptive strike fx strike");
+
+      // 1.6 VFX 渲染样式：水流残影半透明淡出，水爆由内向外溅开
+      DotaVfx.Style(WaveformDashBeam, new DotaVfxStyle { FadeIn = 0.1f, FadeOutStart = 0.3f, PeakOpacity = 0.8f });
+      DotaVfx.Style(WaveformSplashExplosion, new DotaVfxStyle { FadeIn = 0.05f, FadeOutStart = 0.4f, ScaleFrom = 0.55f, ScaleTo = 1.1f });
+      DotaVfx.Style(AdaptiveStrikeImpactStrike, new DotaVfxStyle { FadeIn = 0.05f, FadeOutStart = 0.4f, ScaleFrom = 0.8f, ScaleTo = 1.2f });
 
       // 2. 注册水人先天技能天赋：潮涨潮落（显示在角色天赋栏与左上角状态栏，实际动态效果由 Hook 实时驱动）
       EbbAndFlowTalentProperty = RegisterEbbAndFlowTalent(Ctx, EbbAndFlowGlyph);
@@ -544,73 +550,108 @@ namespace Pathos.DotaHeroes.Heroes
         }
       }
 
-      if (DestSquare != null && DestSquare != Caster.Square)
-        PathosEngineBridge.DashCharacter(Args.Engine, Caster, DestSquare);
-      else
+      if (DestSquare == null)
         DestSquare = Caster.Square;
 
+      var Engine = Args.Engine;
       int Tier = Cast.Tier;
       int Radius = GetWaveformRadius(Tier);
       int EvasionTurns = GetWaveformEvasionTurns(Tier);
       Dice BaseDice = GetWaveformDice(Tier);
       float StarMult = GetWaveformStarDamageMultiplier(Caster);
 
-      // 施加短暂穿墙与幻影闪避
-      PathosEngineBridge.ApplyTransient(Args.Engine, Caster, Caster, Ctx.Properties.phasing, Dice.Fixed(EvasionTurns));
-      PathosEngineBridge.ApplyTransient(Args.Engine, Caster, Caster, Ctx.Properties.displacement, Dice.Fixed(EvasionTurns));
+      // 冲锋路径（含首尾格）：沿途 1 格波宽刮怪，落点 Radius 格水爆
+      var Path = OriginSquare.Map == DestSquare.Map
+        ? DotaVfx.LinePath(OriginSquare, DestSquare, MaxRange + 4)
+        : new List<Square> { DestSquare };
+      if (Path.Count == 0)
+        Path.Add(DestSquare);
+      int LandStep = Path.Count - 1;
 
-      // 收集「冲锋路径（含 1 格波宽） + 落点 Radius 格范围」内的全部存活敌方单位（去重、不伤自己与友军）
-      var HitTargets = new HashSet<Character>();
+      // 收集命中目标及其「被浪头扫到」的路径步序（去重、不伤自己与友军）
+      var HitStep = new Dictionary<Character, int>();
 
-      void CollectAround(Square Center, int R)
+      void CollectAround(Square Center, int R, int Step)
       {
         if (Center == null)
           return;
         if (DotaCombatHelper.IsHostile(Caster, Center.Character))
-          HitTargets.Add(Center.Character);
+          HitStep.TryAdd(Center.Character, Step);
         foreach (var Sq in Center.GetAroundSquares(R))
         {
           if (Sq?.Character != null && DotaCombatHelper.IsHostile(Caster, Sq.Character))
-            HitTargets.Add(Sq.Character);
+            HitStep.TryAdd(Sq.Character, Step);
         }
       }
 
-      // 1) 沿途路径步进扫描（还原 DOTA2 波浪形态直线冲锋刮怪）
-      var Walk = OriginSquare;
-      int Guard = 0;
-      while (Walk != null && Walk != DestSquare && Guard++ < MaxRange + 4)
-      {
-        CollectAround(Walk, 1);
-        var StepDir = Walk.AsDirection(DestSquare);
-        var Next = Walk.Adjacent(StepDir, 1);
-        if (Next == null || Next == Walk)
-          break;
-        Walk = Next;
-      }
-
-      // 2) 落点大范围水波 AOE（2~3 格半径）+ 若点在敌人身上确保目标格也纳入命中
-      CollectAround(DestSquare, Radius);
+      for (int Step = 0; Step < LandStep; Step++)
+        CollectAround(Path[Step], 1, Step);
+      CollectAround(DestSquare, Radius, LandStep);
       if (ClickedSquare != null && ClickedSquare != DestSquare)
-        CollectAround(ClickedSquare, 1);
+        CollectAround(ClickedSquare, 1, LandStep);
 
-      // 播放水浪残影 Beam 与落点 3×3 潮汐水爆 VFX
-      if (WaveformDashBeam != null && OriginSquare != DestSquare && OriginSquare.Map == DestSquare.Map)
-        DotaCombatHelper.PlayBeamTrail(Args.Engine, OriginSquare, DestSquare, WaveformDashBeam);
+      // 逻辑位置立即落到终点（路径中的单位不会阻挡），贴图由 Flinging 按 DOTA2 弹道速度化作水流飞过去
+      if (DestSquare != Caster.Square)
+        PathosEngineBridge.DashCharacter(Engine, Caster, DestSquare);
 
-      PathosEngineBridge.StoryEmitting(Args.Engine, DestSquare, Ctx.Sonics.water_splash, Audibility: 8);
-      PathosEngineBridge.StoryExploding(Args.Engine, Delay.HalfSecond, DestSquare, WaveformSplashExplosion ?? Ctx.Explosions.watery);
+      // 施加短暂穿墙与幻影闪避
+      PathosEngineBridge.ApplyTransient(Engine, Caster, Caster, Ctx.Properties.phasing, Dice.Fixed(EvasionTurns));
+      PathosEngineBridge.ApplyTransient(Engine, Caster, Caster, Ctx.Properties.displacement, Dice.Fixed(EvasionTurns));
 
-      // 对全部命中敌人结算水波 AOE 伤害
-      foreach (var Enemy in HitTargets)
+      // 演出：DOTA2 7.42a 波浪形态速度 1250，按「DOTA 射程 / 本阶基础格数」折算每格飞行时间（约 0.08~0.11 秒/格），
+      // 播放期间冻结世界，浪头经过哪里、哪里的敌人才吃到伤害；落地时水爆 + 落点 AOE
+      float PerTile = GetWaveformSecondsPerTile(Tier);
+      float Travel = PerTile * LandStep;
+      var Dir = OriginSquare.AsDirection(DestSquare);
+
+      void HitTargetsAt(int Step, Square From)
       {
-        if (Enemy == null || Enemy.Deceased || Enemy.Square == null)
-          continue;
+        foreach (var (Enemy, EnemyStep) in HitStep)
+        {
+          if (EnemyStep != Step || Enemy == null || Enemy.Deceased || Enemy.Square == null)
+            continue;
 
-        int Rolled = DotaCombatHelper.RollDice(BaseDice);
-        int FinalDmg = ScaleWaveformRoll(Rolled, StarMult);
-        var HitDir = DestSquare.AsDirection(Enemy.Square);
-        DotaDamage.Harm(Args.Engine, Caster, Enemy, HitDir, Ctx.Elements.water, Dice.Fixed(FinalDmg), DotaDamageInfo.Magical(WaveformSpellName));
+          int Rolled = DotaCombatHelper.RollDice(BaseDice);
+          int FinalDmg = ScaleWaveformRoll(Rolled, StarMult);
+          var HitDir = From.AsDirection(Enemy.Square);
+          DotaDamage.Harm(Engine, Caster, Enemy, HitDir, Ctx.Elements.water, Dice.Fixed(FinalDmg), DotaDamageInfo.Magical(WaveformSpellName));
+          DotaVfx.Strike(Engine, Enemy.Square, AdaptiveStrikeImpactStrike, 0.3f);
+        }
       }
+
+      if (LandStep > 0)
+        PathosEngineBridge.StoryFlinging(Engine, DotaPresentation.Seconds(Travel), OriginSquare, DestSquare, Caster);
+
+      var Sequence = DotaPresentation.Sequence(Engine, Caster, WaveformSequenceKey).FreezeWorld();
+      for (int Step = 0; Step < LandStep; Step++)
+      {
+        var Sq = Path[Step];
+        int Captured = Step;
+        Sequence.At(Step * PerTile, _ =>
+        {
+          // 浪头经过的格子留下一段水流残影（0.5 秒淡出），并结算这一格扫到的敌人
+          DotaVfx.Beam(Engine, Sq, Dir, WaveformDashBeam, 0.5f);
+          HitTargetsAt(Captured, Sq);
+        });
+      }
+
+      Sequence.At(Travel, _ =>
+      {
+        PathosEngineBridge.StoryEmitting(Engine, DestSquare, Ctx.Sonics.water_splash, Audibility: 8);
+        DotaVfx.Explode(Engine, DestSquare, WaveformSplashExplosion ?? Ctx.Explosions.watery, 0.55f);
+        HitTargetsAt(LandStep, DestSquare);
+      });
+
+      Sequence.Play();
+    }
+
+    /// <summary>
+    /// 波浪形态每格飞行时间（秒）：DOTA2 7.42a 施法距离 700/775/850/925 ÷ 速度 1250，再按本阶基础射程格数平均。
+    /// </summary>
+    private static float GetWaveformSecondsPerTile(int Tier)
+    {
+      float DotaSeconds = WaveformDotaCastRange[WaveformIndex(Tier)] / WaveformDotaSpeed;
+      return DotaSeconds / Math.Max(1, WaveformAbility.BaseRange(Tier));
     }
 
     private static Square FindNearestOpenSquare(Square Center, int MaxSearchRadius)
@@ -837,15 +878,20 @@ namespace Pathos.DotaHeroes.Heroes
     private static bool IsMorphling(Character Character)
       => DotaCombatHelper.IsClass(Character, MorphlingClassName);
 
+    // DOTA2 7.42a 官方数据：Waveform speed 1250，cast range 700/775/850/925（Champion 阶沿用 925）
+    private const float WaveformDotaSpeed = 1250.0f;
+    private static readonly float[] WaveformDotaCastRange = { 700.0f, 775.0f, 850.0f, 925.0f, 925.0f };
+    private const string WaveformSequenceKey = "morphling.waveform";
+
     private static readonly float[] WaveformDotaDamages = { 75.0f, 150.0f, 225.0f, 300.0f, 360.0f };
     private static readonly int[] WaveformRadii = { 2, 2, 2, 3, 3 };
     private static readonly int[] WaveformEvasionTurns = { 3, 4, 4, 5, 6 };
 
-    // DOTA2 7.42 变体打击核实数值：基础 50/70/90/110（Champion 130）；敏捷倍率底限 0.35×、上限随熟练度 0.90/1.10/1.30/1.50/1.70×；最长眩晕 1.2/1.6/2.0/2.4s（Champion 2.8s）
+    // DOTA2 7.42 变体打击核实数值：基础 50/70/90/110（Champion 130）；敏捷倍率底限 0.35×、上限随熟练度 0.90/1.10/1.30/1.50/1.70×；最长眩晕 1.4/1.8/2.2/2.6s（7.42a，Champion 外推 3.0s）
     private static readonly float[] AdaptiveStrikeDotaDamages = { 50.0f, 70.0f, 90.0f, 110.0f, 130.0f };
     private const float AdaptiveStrikeMinAgiMult = 0.35f;
     private static readonly float[] AdaptiveStrikeMaxAgiMults = { 0.90f, 1.10f, 1.30f, 1.50f, 1.70f };
-    private static readonly float[] AdaptiveStrikeMaxStunSeconds = { 1.2f, 1.6f, 2.0f, 2.4f, 2.8f };
+    private static readonly float[] AdaptiveStrikeMaxStunSeconds = { 1.4f, 1.8f, 2.2f, 2.6f, 3.0f }; // DOTA2 7.42a stun_max（Champion 阶按 +0.4s 外推）
 
     private static float GetAdaptiveStrikeMaxAgiMultiplier(int Tier)
       => AdaptiveStrikeMaxAgiMults[Math.Clamp(Tier - 1, 0, AdaptiveStrikeMaxAgiMults.Length - 1)];
@@ -1374,7 +1420,7 @@ namespace Pathos.DotaHeroes.Heroes
         OnCast = Cast => ExecuteAdaptiveStrike(Ctx, Cast)
       });
 
-      // E1 / E2：属性转换（自身施放，0 蓝耗；两个法术共享同一技能槽）
+      // E1 / E2：属性转换（自身施放，7.42a 每秒 10 蓝 -> 每次 1 蓝；两个法术共享同一技能槽）
       MorphAgilityAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
         SpellName = MorphAgilitySpellName,

@@ -25,11 +25,11 @@ ExplosionName,counter helix spin,
 ExplosionName,waveform splash,
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,ลูกแก้วกระแสน้ำมีชีวิตที่ควบแน่นขึ้นเพื่อใช้ยิงจากหนังสติ๊กเป็นกระสุนระยะไกลแบบไม่จำกัด
 ItemName,tidal orb,ลูกแก้วกระแสน้ำ
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,ติดตัวกำเนิด (ท่วงท่าดาบ): ได้รับ 1 สแตกทุกๆ 4 เทิร์นที่ไม่ได้รับความเสียหาย (สูงสุด 10 สแตก) แต่ละสแตกเพิ่มความเร็วเคลื่อนที่ +1% และพลังโจมตีกับความเร็วโจมตีสายความว่องไว +2.5%; คงอยู่ต่ออีก 4 เทิร์นหลังถูกโจมตี
+PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,ติดตัวกำเนิด (ท่วงท่าดาบ): ได้รับ 1 สแตกทุกๆ 4 เทิร์นที่ไม่ได้รับความเสียหาย (สูงสุด 12 สแตก) แต่ละสแตกเพิ่มความเร็วเคลื่อนที่ +1% และพลังโจมตีกับความเร็วโจมตีสายความว่องไว +2.5%; คงอยู่ต่ออีก 4 เทิร์นหลังถูกโจมตี
 PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,ติดตัวกำเนิด (น้ำขึ้นน้ำลง): ความว่องไวเพิ่มความเร็วเคลื่อนที่และระยะโจมตีไกล พละกำลังเพิ่มระยะร่ายเวทและต้านทานการชะลอตัว คงอยู่ตลอดระหว่างการแปลงร่าง
 PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
 PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,พุ่งกระโจนระหว่างศัตรูใกล้เคียงด้วยคมดาบที่ไร้เทียมทาน: ป้องกันความเสียหายและดีบัฟทั้งหมดขณะฟาดฟันศัตรูใกล้ตัวในทุกเทิร์น
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",สกิลติดตัว (ระบำดาบ): การโจมตีระยะประชิด การฟันของออมนิสแลช และการหมุนของพายุดาบพิโรธมีโอกาส 20% / 25% / 30% / 35% (ตามเลเวลระบำดาบ 1-4) ที่จะโจมตีคริติคอล 1.8 เท่า
+PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).",สกิลติดตัว (ระบำดาบ): การโจมตีระยะประชิด การฟันของออมนิสแลช และการหมุนของพายุดาบพิโรธมีโอกาส 35% (ตามเลเวลระบำดาบ 1-4) ที่จะโจมตีคริติคอล 1.4/1.6/1.8/2.0 เท่า
 PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
 PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",หมุนตัวในพายุดาบทำลายล้าง: ต้านทานดีบัฟทั้งหมด ลดความเสียหายเวทลง 80% และสร้างความเสียหายเวทมนตร์รอบตัวในทุกเทิร์น
 PropertyName,blade dance,ระบำดาบ
@@ -49,10 +49,10 @@ SpellDescription,"Dissolve into a surging wave, blinking forward, splashing wate
 SpellDescription,"Launch a surge of water dealing base damage, knocking back, and stunning the target. Bonus damage scales with Agility-to-Strength ratio while stun duration scales with Strength-to-Agility ratio.",ปล่อยคลื่นน้ำสร้างความเสียหายพื้นฐาน ผลักถอยหลัง และทำให้เป้าหมายมึนงง ความเสียหายโบนัสเพิ่มขึ้นตามอัตราส่วนความว่องไวต่อพละกำลัง ส่วนระยะเวลามึนงงเพิ่มขึ้นตามอัตราส่วนพละกำลังต่อความว่องไว
 SpellDescription,"Leap to a targeted enemy and unleash 5 to 12 rapid invulnerable weapon slashes (weapon + stat + 2 to 3 bonus damage per slash) across nearby foes, triggering Blade Dance crits and Bladeform bonuses.",กระโจนเข้าใส่ศัตรูเป้าหมายและปลดปล่อยการฟาดฟันอาวุธที่ไร้เทียมทานอย่างรวดเร็ว 5 ถึง 12 ครั้ง (อาวุธ + ค่าสถานะ + โบนัสความเสียหาย 2 ถึง 3 ต่อครั้ง) ใส่ศัตรูใกล้เคียง พร้อมเปิดใช้คริติคอลระบำดาบและโบนัสท่วงท่าดาบ
 SpellDescription,Release your morphed form and immediately return to your true waterkin body.,ปลดปล่อยร่างที่แปลงกายไว้และกลับคืนสู่ร่างวิญญาณวารีที่แท้จริงทันที
-SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",
+SpellDescription,"Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
 SpellDescription,"Shift Agility into Strength and Constitution (1 to 5 points by mastery), conserving total stats while raising both maximum and current HP.",แปรเปลี่ยนความว่องไวเป็นพละกำลังและความอึด (1 ถึง 5 แต้มตามความชำนาญ) โดยรักษาผลรวมค่าสถานะไว้และเพิ่มทั้ง HP สูงสุดและ HP ปัจจุบัน
 SpellDescription,"Shift Strength and Constitution into Agility (1 to 5 points by mastery), conserving total stats and lowering maximum HP without draining current HP.",แปรเปลี่ยนพละกำลังและความอึดเป็นความว่องไว (1 ถึง 5 แต้มตามความชำนาญ) โดยรักษาผลรวมค่าสถานะไว้และลด HP สูงสุดลงโดยไม่หัก HP ปัจจุบัน
-SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+SpellDescription,"Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
 SpellDescription,"Summon a fragile movable Healing Ward (1 HP, max 1 active) for 36 to 48 turns that heals all allies within 2 tiles for 1% to 3.25% of their maximum HP each turn.","อัญเชิญเสาฟื้นฟูพลังที่เคลื่อนที่ได้แต่เปราะบาง (1 HP, สูงสุด 1 ต้น) เป็นเวลา 36 ถึง 48 เทิร์น ซึ่งจะฟื้นฟู HP 1% ถึง 3.25% ของ HP สูงสุดให้พันธมิตรทั้งหมดในระยะ 2 ช่องทุกเทิร์น"
 SpellName,adaptive strike,โจมตีปรับสภาพ
 SpellName,battle hunger,
@@ -68,7 +68,11 @@ SpellName,omnislash,ออมนิสแลช
 SpellName,waveform,ร่างคลื่นน้ำ
 StrikeName,adaptive strike impact,
 StrikeName,battle hunger mark,
+StrikeName,berserkers call ring,
 StrikeName,blade dance crit,คริติคอลระบำดาบ
+StrikeName,blade fury cut,
+StrikeName,blade fury whirl,
+StrikeName,counter helix whirl,
 StrikeName,culling blade strike,
 StrikeName,healing ward pulse,คลื่นเสาฟื้นฟู
 StrikeName,omnislash slash,ฟาดฟันออมนิสแลช

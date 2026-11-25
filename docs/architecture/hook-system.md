@@ -72,8 +72,9 @@
 | **召唤物生命周期** | `SummonAllyEntity` | 通过原生 `Reactor.SummonEntity` 在指定格**精确召唤 1 个友方随从**，彻底规避 `Plain(Range)` 射线每格重复召唤多个的问题。 |
 | | `DespawnSummon` | 以 `Attacker = null` 结算死亡并移出地图，彻底销毁到期/被替换的召唤物（无尸体、无运程惩罚；**禁止改用 `DismissAlly`**）。 |
 | **天赋持久化** | `GainTalent` / `HasAcquiredTalent` | 读写原生 `AcquiredTalentSet`，随 Pathos 存档自动保存与读档。 |
-| **多回合自动行动** | `QueueWaitDecision` | 为角色排入下一回合的自动 `Wait` 指令，驱动多回合自动连斩（如无敌斩）逐帧播完动画，无需玩家手动点等待。 |
-| **原生 Story 像素特效** | `StoryExploding` / `StoryBeaming` / `StoryStriking` / `StoryDetecting` / `StorySigning` / `StoryTeleporting` / `StoryAttacking` / `StoryCaption` | 直接调用 Pathos 原生渲染管线播放 3×3 爆炸、方向光束、单格斩击、范围脉冲、符文、瞬移、挥砍动作与飘字（如 `暴击!`）。 |
+| **多回合自动行动** | `QueueWaitDecision` | 为角色排入下一回合的自动 `Wait` 指令（旧模式；多步演出技能请改用 §13 `DotaPresentation` 时间轴）。 |
+| **忙碌与节奏** | `GetMoveDelay` / `SetBusy` | 读取角色「一回合」的逻辑帧数、设置忙碌时长（演出期间锁定玩家输入、收尾后恢复正常行动节奏）。 |
+| **原生 Story 像素特效** | `StoryExploding` / `StoryBeaming` / `StoryStriking` / `StoryDetecting` / `StorySigning` / `StoryTeleporting` / `StoryAttacking` / `StoryCaption` / `StoryFlinging` / `StoryCancelCharacter` | 直接调用 Pathos 原生渲染管线播放 3×3 爆炸、方向光束、单格斩击、范围脉冲、符文、瞬移、挥砍动作与飘字（如 `暴击!`）。 `StoryFlinging` 让角色贴图在指定时长内从 A 格平滑飞到 B 格（突进/波浪），`StoryCancelCharacter` 防止连续角色动画重影。英雄代码播放自定义贴图请走 `DotaVfx`（§13）。 |
 | **阵营、日志与本地化** | `IsAllied` / `WriteInternalLog` / `GetLocalizedName(Property/Entity)` | 友军判定、写入带图标的游戏内战斗日志、获取当前语言本地化名称。 |
 
 ---
@@ -357,3 +358,29 @@ DotaStatusBarBridge.RegisterProvider("juggernaut.bladeform", JuggernautClassName
 - `DotaStatusBadge.TitleFrom(property, fallbackKey)` / `DotaStatusBadge.Title(key)`：只需标题时使用（如 `HelpSpell` 类徽章）。
 - 会施加给友军的徽章（如斧王淘汰战吼）不要用职业过滤重载。
 - 带剩余回合的增益/减益优先用 `DotaModifierSpec.Badge*` 自动生成徽章（见 §6）。
+
+---
+
+## 13. 技能演出节奏与 VFX：`DotaPresentation` / `DotaVfx`
+
+### 13.1 为什么需要
+Pathos 有两条时钟：**`Story.Clock`**（动画时钟，客户端每帧 +1，60 帧 ≈ 1 秒，等待玩家输入时也在走）和 **`Adventure.Clock`**（游戏逻辑时钟，只在 `Engine.Process()` 中推进，正常速度一回合仅 5 帧 ≈ 0.08 秒）。
+因此「每步自动 Wait 一回合」的多段技能在不到 1 秒内就会全部结算完；同时原生 `Striking/Beaming/Exploding` 渲染**全程 100% 不透明、没有衰减**，多段刀光/拖尾会叠成满屏高亮。
+
+### 13.2 `DotaPresentation`（[Framework/Presentation/DotaPresentation.cs](../../Framework/Presentation/DotaPresentation.cs)）
+| API | 说明 |
+| :--- | :--- |
+| `Sequence(engine, owner, key)...At(秒, step)...Play()` | 把技能拆成挂在真实时间上的步骤；同 owner + key 重复播放会先结束旧序列。步骤上下文 `Stop()` 提前收尾（已 `After` 排入的收尾动作仍会播完），`After(秒, step)` 插入跟随动作。 |
+| `.FreezeWorld(worldTicksPerStep)` | 播放期间跳过 `Engine.Process()`（怪物不行动、回合不流逝、玩家不能输入），动画照常播放；每执行一步放行 N 逻辑帧，用来保留技能原有的回合消耗。 |
+| `.OnFinish((ctx, completed) => ...)` | 正常走完 / Stop / 被替换 / 超时（12 秒安全阀）都会回调，用于清理 Session 与恢复忙碌时长。 |
+| `Loop(engine, owner, key, 间隔秒, while, tick)` | 纯视觉循环（不冻结世界），如剑刃风暴每 0.2 秒刷新一次跟随旋风。 |
+| `HitStop(engine, owner, 秒)` | 重击顿帧（冻结世界零点几秒），如淘汰之刃斩杀。 |
+| `Ticks(秒)` / `Seconds(秒)` | 秒 → Story 帧数 / 动画 `Delay`。 |
+
+实现：`Story.NextTurn` 后置补丁每帧按 Story 时钟推进序列与循环；`Engine.Process` 前置补丁在有冻结序列时跳过逻辑推进。读档/新开局时旧引擎的序列自动作废。
+
+### 13.3 `DotaVfx`（[Framework/Presentation/DotaVfx.cs](../../Framework/Presentation/DotaVfx.cs)）
+- `DotaVfx.Style(strike|beam|explosion, new DotaVfxStyle { ... })`：注册渲染样式（淡入淡出、缩放、旋转、跨格尺寸、峰值透明度），客户端补丁 `Animator.Execute` 接管其绘制；未注册样式的特效仍走原生渲染。
+- 播放（时长单位为秒）：`Strike(engine, sq, strike, 秒, 角度?, Span?)`、`StrikeOn(engine, character, strike, 秒)`（整个生命周期跟随角色）、`Beam`、`BeamTrail`、`Explode`。
+- 工具：`LinePath(from, to)`（Bresenham 路径）、`AngleOf(from, to)`（攻击方向 → 贴图旋转角）。
+- 样式字段说明与贴图生成工具见 [talents-and-skills.md §4.3](talents-and-skills.md)。

@@ -57,7 +57,7 @@ $$\text{Limit} = \max\Big(\text{Starting} + 3,\ \text{Clamp}\big(\text{Round}(25
    - 中智成长（$1.9 \sim 2.8$）：`1d3`
    - 高智成长（$\ge 2.9$）：`1d4+1` 或 `1d6`
 3. **主动技能蓝耗**：
-   - 常规主动：`DotaMechanicsMapper.MapSkillManaCost(dotaMana)` → $\max(1, \text{Round}(\text{DotaMana} / 20))$；**0 蓝耗技能忠实返回 `0`**（如 7.42 水人属性转换）。
+   - 常规主动：`DotaMechanicsMapper.MapSkillManaCost(dotaMana)` → $\max(1, \text{Round}(\text{DotaMana} / 20))$；**0 蓝耗技能忠实返回 `0`**（如水人解除变形）；按秒持续耗蓝的技能（如 7.42a 水人属性转换每秒 10 蓝）用 `MapToggleManaPerTurn`。
    - 多等级变蓝耗技能：取中位等级或 1 级蓝耗作为基准。
    - 持续每秒耗蓝（Toggle）：`DotaMechanicsMapper.MapToggleManaPerTurn(manaPerSec)`（按 **1 秒 = 2 回合** 即每回合 0.5 秒折算）。
    - Pathos 超模机制技能（如 `ImpersonateEntity` / 永久召唤）：可在等效蓝耗上乘以强度修正系数。

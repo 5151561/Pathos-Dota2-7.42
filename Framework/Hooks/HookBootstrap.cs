@@ -399,6 +399,12 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
         // 18. DOTA2 技能帮助面板数值与阶梯详情补丁（仅在游戏客户端存在 Pathos.dll 时挂载）
         UI.DotaSpellHelpBridge.ApplyPatches(Harmony);
+
+        // 19. 技能演出时间轴（Story.NextTurn 真实时间节拍 + Engine.Process 世界冻结）
+        Presentation.DotaPresentation.ApplyPatches(Harmony);
+
+        // 20. 自定义 VFX 渲染样式（淡入淡出/缩放/旋转/跟随角色，仅在游戏客户端存在 Pathos.dll 时挂载）
+        Presentation.DotaVfx.ApplyPatches(Harmony);
       }
 
       private static void PatchMethod(

@@ -56,6 +56,10 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       EngineType?.GetMethod("GetAttackDelay", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character) }, null);
 
+    private static readonly MethodInfo EngineGetMoveDelayMethod =
+      EngineType?.GetMethod("GetMoveDelay", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character) }, null);
+
     private static readonly MethodInfo EngineSetBusyMethod =
       EngineType?.GetMethod("SetBusy", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character), typeof(Delay) }, null);
@@ -113,6 +117,14 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly MethodInfo StoryAttackingMethod =
       StoryType?.GetMethod("Attacking", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Delay), typeof(Character), typeof(Direction) }, null);
+
+    private static readonly MethodInfo StoryFlingingMethod =
+      StoryType?.GetMethod("Flinging", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Delay), typeof(Square), typeof(Square), typeof(Character), typeof(Colour) }, null);
+
+    private static readonly MethodInfo StoryCancelMethod =
+      StoryType?.GetMethod("Cancel", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character) }, null);
 
     private static readonly MethodInfo StoryCaptionMethod =
       StoryType?.GetMethod("Caption", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
@@ -1202,6 +1214,37 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     }
 
     /// <summary>
+    /// 调用 Pathos 原生 Story.Flinging：角色贴图在 Delay 帧内从 From 平滑飞到 To（逻辑位置应已在 To）。
+    /// 用于突进/波浪形态等「有过程」的位移演出；会先取消该角色正在播放的其他角色动画，避免重影。
+    /// </summary>
+    public static void StoryFlinging(object Engine, Delay Delay, Square From, Square To, Character Character, Colour Colour = null)
+    {
+      if (Engine == null || Character == null || From == null || To == null || From == To ||
+          EngineStoryProp == null || StoryFlingingMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story == null)
+        return;
+
+      StoryCancelMethod?.Invoke(Story, new object[] { Character });
+      StoryFlingingMethod.Invoke(Story, new object[] { Delay, From, To, Character, Colour });
+    }
+
+    /// <summary>
+    /// 取消某角色正在播放的全部角色动画（移动/挥砍/飞行），用于连续动作之间避免同一角色被画两次。
+    /// </summary>
+    public static void StoryCancelCharacter(object Engine, Character Character)
+    {
+      if (Engine == null || Character == null || EngineStoryProp == null || StoryCancelMethod == null)
+        return;
+
+      var Story = EngineStoryProp.GetValue(Engine);
+      if (Story != null)
+        StoryCancelMethod.Invoke(Story, new object[] { Character });
+    }
+
+    /// <summary>
     /// 调用 Pathos 原生 Story.Caption 在格子上方弹出原生飘字（如 CRIT!）。
     /// </summary>
     public static void StoryCaption(object Engine, Square Square, Colour Colour, string Text, bool Delayed = false)
@@ -1262,6 +1305,15 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         return Delay.FromTurns(12);
 
       return EngineGetAttackDelayMethod.Invoke(Engine, new object[] { Character }) is Delay D ? D : Delay.FromTurns(12);
+    }
+
+    /// <summary>角色「一回合」的逻辑帧数（原生 Wait / 移动的忙碌时长，正常速度 5 帧）。</summary>
+    public static Delay GetMoveDelay(object Engine, Character Character)
+    {
+      if (Engine == null || Character == null || EngineGetMoveDelayMethod == null)
+        return Delay.FromTurns(5);
+
+      return EngineGetMoveDelayMethod.Invoke(Engine, new object[] { Character }) is Delay D ? D : Delay.FromTurns(5);
     }
 
     public static void SetBusy(object Engine, Character Character, Delay Delay)

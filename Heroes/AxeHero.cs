@@ -5,6 +5,7 @@ using Inv;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Localization;
+using Pathos.DotaHeroes.Framework.Presentation;
 using Pathos.DotaHeroes.Framework.Skills;
 using Pathos.DotaHeroes.Framework.Talents;
 using Pathos.DotaHeroes.Framework.Targeting;
@@ -18,10 +19,10 @@ namespace Pathos.DotaHeroes.Heroes
   /// - 先天技能「孤军奋战（One Man Army）」：
   ///   - 周围 4 格（700 码）内无存活友军时生效，友军靠近后粘滞 6 回合（3 秒）
   ///   - 获得超额防御（Defence - 10）50% 的等效力量加成，转化为近战额外伤害
-  /// - Q：狂战士之吼（berserkers call）— 嘲讽周围 2 格（T4 右 3 格）敌方强制向斧王靠近并近战普攻、禁止施法，同时获得 +16/19/22/25 护甲（+6/+7/+7/+8 防御，T2 左封顶 +10），持续 4~6 回合
+  /// - Q：狂战士之吼（berserkers call）— 嘲讽周围 2 格（T4 右 3 格）敌方强制向斧王靠近并近战普攻、禁止施法，同时获得 +12/13/14/15 护甲（+5/+5/+5/+6 防御，T2 左 +10 甲且封顶 +10），持续 4~6 回合
   /// - W：战斗饥渴（battle hunger）— 远程指向敌方（4~7 格，空放返蓝），24 回合（12s）纯粹持续伤害（12/16/20/24 DPS）与 16%/19%/22%/25% 减速；目标击杀任意单位即驱散
   /// - E：反击螺旋（counter helix）— 独立被动（Lv 1~4）：每受到 7/6/5/4 次敌方攻击（7.42：包含被高防/闪避 Miss 的攻击）触发 3×3 纯粹伤害旋斩（100/120/140/160 纯伤）
-  /// - R：淘汰之刃（culling blade）— 近战指向（2 格，空放返蓝）：目标生命 ≤ 斩杀线（275/375/475 → 18/25/32 HP + 熟练度/天赋）直接无视减伤瞬间处决、100% 返还本次法力、给予周围 4 格友军 12 回合（T1 右 18 回合）+25% 移速与 +20/25/30 护甲战吼，并叠加永久护甲（DotaCharacterStorage 存档持久化）
+  /// - R：淘汰之刃（culling blade）— 近战指向（2 格，空放返蓝）：目标生命 ≤ 斩杀线（275/375/475 → 18/25/32 HP + 熟练度/天赋）直接无视减伤瞬间处决、100% 返还本次法力、给予周围 4 格友军 12 回合（T1 右 18 回合）+25% 移速与 +10/15/20 护甲（+4/+6/+7 防御）战吼，并叠加永久护甲（DotaCharacterStorage 存档持久化）
   /// </summary>
   public sealed class AxeHero : IDotaHeroDefinition
   {
@@ -67,9 +68,9 @@ namespace Pathos.DotaHeroes.Heroes
     private const int OneManArmyRadius = 4; // 700 码 ≈ 4 格
     private static readonly int OneManArmyLingerTurns = DotaMechanicsMapper.MapDurationTurns(3.0f); // 3s = 6 回合
 
-    // Q：狂战士之吼（7.42：持续 2.1/2.4/2.7/3.0s，护甲 +16/19/22/25，T2 左 +10 护甲，T4 右 +70 范围）
+    // Q：狂战士之吼（7.42a：持续 2.1/2.4/2.7/3.0s，护甲 +12/13/14/15，T2 左 +10 护甲，T4 右 +70 范围）
     private static readonly float[] CallDotaDurations = { 2.1f, 2.4f, 2.7f, 3.0f };
-    private static readonly float[] CallDotaArmor = { 16.0f, 19.0f, 22.0f, 25.0f };
+    private static readonly float[] CallDotaArmor = { 12.0f, 13.0f, 14.0f, 15.0f }; // DOTA2 7.42a bonus_armor
     private const float CallTalentBonusArmor = 10.0f;
 
     // W：战斗饥渴（7.42：12s，12/16/20/24 纯伤 DPS，16%/19%/22%/25% 减速，T2 右 +8 DPS，T1 左每目标 +8% 移速）
@@ -84,13 +85,13 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly float[] HelixDotaDamage = { 100.0f, 120.0f, 140.0f, 160.0f };
     private const float HelixTalentBonusDotaDamage = 40.0f;
 
-    // R：淘汰之刃（7.42：275/375/475 斩杀线与纯伤，T4 左 +150，战吼 6s +25% 移速 +20/25/30 护甲，T1 右 +3s）
+    // R：淘汰之刃（7.42：275/375/475 斩杀线与纯伤，T4 左 +150，战吼 6s +25% 移速 +10/15/20 护甲（7.42a），T1 右 +3s）
     private static readonly float[] CullingDotaThresholds = { 275.0f, 375.0f, 475.0f };
     private const float CullingTalentBonusDotaDamage = 150.0f;
     private static readonly int CullingBuffBaseTurns = DotaMechanicsMapper.MapDurationTurns(6.0f);    // 12 回合
     private static readonly int CullingBuffTalentExtraTurns = DotaMechanicsMapper.MapDurationTurns(3.0f); // +6 回合
     private const float CullingBuffMoveSpeedRatio = 0.25f;
-    private static readonly float[] CullingBuffDotaArmor = { 20.0f, 25.0f, 30.0f };
+    private static readonly float[] CullingBuffDotaArmor = { 10.0f, 15.0f, 20.0f }; // DOTA2 7.42a armor_bonus
     private static readonly int[] CullingEliteArmorTenths = { 10, 15, 20 }; // +1.0 / +1.5 / +2.0 DOTA2 护甲
     private static readonly int[] CullingCreepArmorTenths = { 2, 3, 4 };    // +0.2 / +0.3 / +0.4 DOTA2 护甲
 
@@ -135,6 +136,8 @@ namespace Pathos.DotaHeroes.Heroes
     private Explosion CounterHelixExplosion;
     private Strike BattleHungerStrike;
     private Strike CullingBladeStrike;
+    private Strike CounterHelixWhirlStrike;
+    private Strike BerserkersCallRingStrike;
 
     public string Id => "axe";
 
@@ -153,6 +156,19 @@ namespace Pathos.DotaHeroes.Heroes
       CounterHelixExplosion = Ctx.RegisterExplosion3x3Vfx("counter helix spin", "counter helix fx");
       BattleHungerStrike = Ctx.RegisterStrikeVfx("battle hunger mark", "battle hunger fx strike");
       CullingBladeStrike = Ctx.RegisterStrikeVfx("culling blade strike", "culling blade fx strike");
+      CounterHelixWhirlStrike = Ctx.RegisterStrikeVfx("counter helix whirl", "counter helix whirl");
+      BerserkersCallRingStrike = Ctx.RegisterStrikeVfx("berserkers call ring", "berserkers call ring");
+
+      // 1.6 VFX 渲染样式（淡入淡出 / 缩放 / 旋转）：斧刃回旋、怒吼冲击环与重劈的力度感
+      DotaVfx.Style(CounterHelixWhirlStrike, new DotaVfxStyle
+      {
+        Span = 3, FadeIn = 0.1f, FadeOutStart = 0.45f, ScaleFrom = 0.85f, ScaleTo = 1.05f, SpinDegreesPerSecond = 1440.0f
+      });
+      DotaVfx.Style(BerserkersCallRingStrike, new DotaVfxStyle { Span = 3, FadeIn = 0.05f, FadeOutStart = 0.35f, ScaleFrom = 0.3f, ScaleTo = 1.05f });
+      DotaVfx.Style(CullingBladeStrike, new DotaVfxStyle { FadeIn = 0.04f, FadeOutStart = 0.5f, ScaleFrom = 1.45f, ScaleTo = 1.0f });
+      DotaVfx.Style(BattleHungerStrike, new DotaVfxStyle { FadeIn = 0.15f, FadeOutStart = 0.5f, PeakOpacity = 0.9f, ScaleFrom = 0.8f, ScaleTo = 1.05f });
+      DotaVfx.Style(BerserkersCallExplosion, new DotaVfxStyle { FadeIn = 0.05f, FadeOutStart = 0.4f, ScaleFrom = 0.5f, ScaleTo = 1.0f });
+      DotaVfx.Style(CounterHelixExplosion, new DotaVfxStyle { FadeIn = 0.1f, FadeOutStart = 0.45f });
 
       // 2. 注册长效先天「一人之军」与被动「反击螺旋」Property（在原生天赋栏与百科可见，且支持点击状态栏查看说明）
       OneManArmyTalentProperty = Ctx.RegisterPassiveProperty(
@@ -591,8 +607,9 @@ namespace Pathos.DotaHeroes.Heroes
 
       DotaModifierService.Apply(CallArmorModifier, Caster, Caster, DurationTurns, M => M.Defence = BonusDef);
 
-      // 播放 3×3 猩红怒吼冲击波特效
-      PathosEngineBridge.StoryExploding(Args.Engine, Delay.HalfSecond, Caster.Square, BerserkersCallExplosion);
+      // 怒吼冲击环：0.5 秒内从斧王脚下扩散到嘲讽半径边缘（Span = 2R+1 正好覆盖作用范围），随后淡出
+      DotaVfx.Strike(Args.Engine, Caster.Square, BerserkersCallRingStrike, 0.5f, Span: Radius * 2 + 1);
+      DotaPresentation.HitStop(Args.Engine, Caster, 0.12f);
 
       var Hostiles = DotaCombatHelper.FindHostilesInRadius(Caster, Caster.Square, Radius);
       foreach (var Enemy in Hostiles)
@@ -673,7 +690,12 @@ namespace Pathos.DotaHeroes.Heroes
       var TargetSq = Target.Square;
       string TargetName = DotaCombatHelper.GetDisplayName(Target);
       if (TargetSq != null)
-        PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, TargetSq, CullingBladeStrike);
+      {
+        // 前扑挥斧 + 自上而下的重劈斧光（由大到小「砸」下去，0.45 秒衰减）
+        PathosEngineBridge.StoryCancelCharacter(Args.Engine, Caster);
+        PathosEngineBridge.StoryAttacking(Args.Engine, DotaPresentation.Seconds(0.22f), Caster, Caster.Square.AsDirection(TargetSq));
+        DotaVfx.Strike(Args.Engine, TargetSq, CullingBladeStrike, 0.45f);
+      }
 
       int CurrentHp = Target.Life?.Points ?? 0;
       if (CurrentHp <= Threshold)
@@ -716,6 +738,9 @@ namespace Pathos.DotaHeroes.Heroes
 
         if (TargetSq != null)
           PathosEngineBridge.StoryCaption(Args.Engine, TargetSq, Colour.Crimson, DotaLocalization.T("axe.caption.culled"), Delayed: false);
+
+        // 斩杀成功：短暂顿帧，让「斩」字与斧光有落地的分量感
+        DotaPresentation.HitStop(Args.Engine, Caster, 0.22f);
 
         RefreshOneManArmy(Args.Engine, Caster);
 
@@ -832,7 +857,8 @@ namespace Pathos.DotaHeroes.Heroes
 
       Dice DmgDice = GetHelixDamageDice(Axe, HelixLv);
 
-      PathosEngineBridge.StoryExploding(Engine, Delay.FromTurns(18), Axe.Square, CounterHelixExplosion);
+      // 猩红斧刃回旋：0.3 秒高速自转并跟随斧王（3×3 覆盖反击范围）
+      DotaVfx.StrikeOn(Engine, Axe, CounterHelixWhirlStrike, 0.3f);
 
       var Hostiles = DotaCombatHelper.FindHostilesInRadius(Axe, Axe.Square, 1);
       if (Hostiles.Count == 0)
@@ -1081,7 +1107,7 @@ namespace Pathos.DotaHeroes.Heroes
       CallAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
         SpellName = BerserkersCallSpellName,
-        Description = "Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +6 to +8 Defence (+10 with Lv 15 talent).",
+        Description = "Roar to taunt enemies within 2 tiles (3 with Lv 25 talent) for 4 to 6 turns, silencing their spells and forcing them to march and attack Axe while granting +5 to +6 Defence (+7 to +8 with Lv 15 talent).",
         Icon = BerserkersCallGlyph,
         School = Ctx.Schools.abjuration,
         Skill = Ctx.Skills.abjuration,
@@ -1116,7 +1142,7 @@ namespace Pathos.DotaHeroes.Heroes
         SpellName = CullingBladeSpellName,
         DisplayTitle = "Culling Blade",
         TitleResolver = () => DotaLocalization.T("axe.skill.r.title"),
-        Description = "Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +7/+8/+8 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
+        Description = "Strike a nearby foe (range 2) with Pure force: instantly executes targets at or below 18/25/32 HP (+mastery/talent), refunding 100% mana, granting nearby allies +25% move speed and +4/+6/+7 Defence for 12 turns, and stacking permanent armor; otherwise deals 5d6+1 to 9d6 Pure damage.",
         Icon = CullingBladeGlyph,
         School = Ctx.Schools.evocation,
         Skill = Ctx.Skills.evocation,

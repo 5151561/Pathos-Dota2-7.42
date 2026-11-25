@@ -5,6 +5,7 @@ using Inv;
 using Pathos.DotaHeroes.Framework;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Localization;
+using Pathos.DotaHeroes.Framework.Presentation;
 using Pathos.DotaHeroes.Framework.Skills;
 using Pathos.DotaHeroes.Framework.Talents;
 using Pathos.DotaHeroes.Framework.Targeting;
@@ -16,12 +17,12 @@ namespace Pathos.DotaHeroes.Heroes
   /// DOTA2 7.42 英雄：主宰（Juggernaut / 尤涅若）
   /// 基于「声明式外壳 + Harmony Hook 核心逻辑」忠实还原 DOTA2 7.42 机制：
   /// - 先天技能「剑心犹在（Bladeform）」：
-  ///   - 每连续 2 回合未受到伤害叠加 1 层（最高 10 层）
+  ///   - 每连续 4 回合未受到伤害叠加 1 层（最高 12 层，7.42a）
   ///   - 每层提供 +1% 移动速度（满层 +10%）与 +2.5% 等效基础敏捷加成（攻速 + 近战/无敌斩额外伤害）
   ///   - 受到任意伤害后保留 2 回合粘滞期，期满后消散；无敌斩期间全程无敌，稳定保持层数
   /// - Q：剑刃风暴（blade fury）— 基础驱散 + 减益免疫 + 80% 魔法/元素减伤 + 每回合周围 3x3 魔法旋转伤害（可暴击），期间普通物理普攻不造成常规伤害
   /// - W：治疗守卫（healing ward）— 召唤 1 HP 可移动友方随从，每回合为周围 2 格友方回复 4%~8% 最大生命值（同时上限 1 个）
-  /// - E：剑舞（blade dance）— 被动天赋：近战攻击、无敌斩与剑刃风暴有 20%~35% 概率触发 1.8x 致命一击
+  /// - E：剑舞（blade dance）— 被动天赋：近战攻击、无敌斩与剑刃风暴有 35% 概率触发 1.4x~2.0x 致命一击
   /// - R：无敌斩（omnislash）— 突进并在周围 3 格敌方目标间连续瞬移斩击 5~12 次，全程无敌，每次斩击均可触发剑舞暴击与剑心犹在加成
   /// </summary>
   public sealed class JuggernautHero : IDotaHeroDefinition
@@ -51,7 +52,7 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly float HealingWardTalentCdr = DotaMechanicsMapper.ComputeCooldownReductionRatio(12.0f, 60.0f); // -12s / 60s = 20%
     private static readonly float OmnislashTalentCdr = DotaMechanicsMapper.ComputeCooldownReductionRatio(15.0f, 120.0f);  // -15s / 120s = 12.5%
 
-    private const int BladeformMaxStacks = 10;
+    private const int BladeformMaxStacks = 12; // DOTA2 7.42a max_stacks
     private static readonly int BladeformIntervalTurns = DotaMechanicsMapper.MapDurationTurns(2.0f); // 2 秒 = 4 回合
     private static readonly int BladeformLingerTurns = DotaMechanicsMapper.MapDurationTurns(2.0f);   // 2 秒 = 4 回合
 
@@ -63,8 +64,8 @@ namespace Pathos.DotaHeroes.Heroes
       BaseInt: 14, IntGain: 1.4f);
 
     private static readonly int BladeFuryManaCost = DotaMechanicsMapper.MapSkillManaCost(110);
-    private static readonly int HealingWardManaCost = DotaMechanicsMapper.MapSkillManaCost(140);
-    private static readonly int OmnislashManaCost = DotaMechanicsMapper.MapSkillManaCost(250); // 200/250/300 取中值
+    private static readonly int HealingWardManaCost = DotaMechanicsMapper.MapSkillManaCost(110); // DOTA2 7.42a：110
+    private static readonly int OmnislashManaCost = DotaMechanicsMapper.MapSkillManaCost(275); // DOTA2 7.42a：200/275/350 取中值
 
     // DOTA2 7.42 技能伤害基准（统一经 DotaMechanicsMapper K_dmg = 15 与 1s = 2 回合折算）
     // 剑刃风暴 7.41b/7.42 每秒伤害：85 / 115 / 145 / 175（Champion 延展至 205），每回合合并结算 1 次并受敏捷/剑心犹在攻速频率缩放
@@ -107,7 +108,6 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static readonly DotaCharacterFlagSet ActiveOmnislashCasters = new();
     private static readonly DotaCharacterFlagSet SkipNextBladeFuryTick = new();
-    private static readonly DotaCharacterFlagSet SkipNextOmnislashTick = new();
 
     private static DotaAbility BladeFuryAbility;
     private static DotaAbility HealingWardAbility;
@@ -127,7 +127,21 @@ namespace Pathos.DotaHeroes.Heroes
     private Strike BladeDanceCritStrike;
     private Strike HealingWardPulseStrike;
     private Beam OmnislashDashBeam;
+    private Strike BladeFuryWhirlStrike;
+    private Strike BladeFuryCutStrike;
     private bool LastOmnislashStrikeCritted;
+
+    // ---- 演出节奏（DOTA2 7.42a 官方数据：Omnislash duration 3/3.25/3.5s；Blade Fury damage tick 0.2s） ----
+    private const string OmnislashSequenceKey = "juggernaut.omnislash";
+    private const string BladeFuryLoopKey = "juggernaut.blade_fury_whirl";
+    private static readonly float[] OmnislashDotaDurationSeconds = { 3.0f, 3.25f, 3.5f };
+    private const float OmnislashMinSlashInterval = 0.2f;   // 再快就看不清单刀
+    private const float OmnislashMaxSlashInterval = 0.42f;  // 斩数少时也不拖沓
+    private const float OmnislashDashSeconds = 0.08f;       // 两刀之间的瞬步飞行
+    private const float OmnislashSlashSeconds = 0.32f;      // 单刀刀光寿命
+    private const float BladeFuryTickSeconds = 0.2f;        // 旋风贴图刷新节拍 = DOTA2 伤害间隔
+    private const float BladeFuryWhirlSeconds = 0.42f;      // 单张旋风寿命（> 2 个节拍，前后无缝交叠）
+    private const float BladeFurySpinDegreesPerSecond = 900.0f;
 
     public string Id => "juggernaut";
 
@@ -153,15 +167,35 @@ namespace Pathos.DotaHeroes.Heroes
         "omnislash fx beam v",
         "omnislash fx beam f",
         "omnislash fx beam b");
+      BladeFuryWhirlStrike = Ctx.RegisterStrikeVfx("blade fury whirl", "blade fury whirl");
+      BladeFuryCutStrike = Ctx.RegisterStrikeVfx("blade fury cut", "blade fury cut");
+
+      // 1.6 VFX 渲染样式（淡入淡出 / 缩放 / 旋转），避免原生管线全程满亮度导致刀光叠成一片
+      DotaVfx.Style(OmnislashStrike, new DotaVfxStyle
+      {
+        FadeIn = 0.06f, FadeOutStart = 0.35f, ScaleFrom = 0.85f, ScaleTo = 1.2f, AngleJitter = 30.0f
+      });
+      DotaVfx.Style(OmnislashDashBeam, new DotaVfxStyle { FadeIn = 0.0f, FadeOutStart = 0.1f, PeakOpacity = 0.55f });
+      DotaVfx.Style(BladeDanceCritStrike, new DotaVfxStyle
+      {
+        FadeIn = 0.05f, FadeOutStart = 0.4f, ScaleFrom = 0.7f, ScaleTo = 1.3f, AngleJitter = 25.0f, RandomAngle = true
+      });
+      DotaVfx.Style(BladeFuryWhirlStrike, new DotaVfxStyle
+      {
+        Span = 3, FadeIn = 0.25f, FadeOutStart = 0.6f, PeakOpacity = 0.85f, SpinDegreesPerSecond = BladeFurySpinDegreesPerSecond
+      });
+      DotaVfx.Style(BladeFuryCutStrike, new DotaVfxStyle { FadeIn = 0.0f, FadeOutStart = 0.3f, ScaleFrom = 0.8f, ScaleTo = 1.1f, RandomAngle = true });
+      DotaVfx.Style(BladeFuryExplosion, new DotaVfxStyle { FadeIn = 0.2f, FadeOutStart = 0.5f, PeakOpacity = 0.8f });
+      DotaVfx.Style(HealingWardPulseStrike, new DotaVfxStyle { FadeIn = 0.15f, FadeOutStart = 0.45f, PeakOpacity = 0.85f, ScaleFrom = 0.8f, ScaleTo = 1.05f });
 
       // 2. 注册长效天赋（先天「剑心犹在」/ 被动「剑舞」）与短期主动技能状态（剑刃风暴 / 无敌斩，自动在原生天赋面板与百科隐藏）
       BladeformTalentProperty = Ctx.RegisterPassiveProperty(
         Name: "bladeform",
-        Description: "Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 10 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.",
+        Description: "Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.",
         Icon: BladeformGlyph);
       var BladeDanceTalent = Ctx.RegisterPassiveProperty(
         Name: "blade dance",
-        Description: "Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 20% / 25% / 30% / 35% chance (by Blade Dance skill level 1-4) to critically strike for 1.8x damage.",
+        Description: "Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).",
         Icon: BladeDanceGlyph);
       BladeFuryStatusProperty = Ctx.RegisterSkillStatusProperty(
         Name: "blade fury",
@@ -277,8 +311,9 @@ namespace Pathos.DotaHeroes.Heroes
                 "jugg.skill.e.desc_lv",
                 $"{GetBladeDanceCritChanceByLevel(Lv) * 100:0}",
                 Lv < 4
-                  ? DotaLocalization.Format("jugg.skill.e.desc_next_suffix", $"{GetBladeDanceCritChanceByLevel(Lv + 1) * 100:0}")
-                  : DotaLocalization.T("jugg.skill.e.desc_max_suffix")),
+                  ? DotaLocalization.Format("jugg.skill.e.desc_next_suffix", $"{GetBladeDanceCritMultByLevel(Lv + 1):0.0#}×")
+                  : DotaLocalization.T("jugg.skill.e.desc_max_suffix"),
+                $"{GetBladeDanceCritMultByLevel(Lv):0.0#}×"),
           TitleResolver: () => DotaLocalization.T("jugg.skill.e.title"),
           Stats: new[]
           {
@@ -414,18 +449,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (IsHealingWard(Actor))
           TickHealingWard(Ctx, Args.Engine, Actor);
 
-        // 方案 A：无敌斩每回合自动跳斩下一名 3 格内敌人，呈现一刀一跳、刀光交错的连斩节奏
-        if (ActiveOmnislashSessions.TryGetValue(Actor, out var OmniSession) && OmniSession.RemainingSlashes > 0)
-        {
-          if (SkipNextOmnislashTick.Remove(Actor))
-          {
-            // 施法当回合已斩出第 1 刀，跳过同一指令的重复结算
-          }
-          else
-          {
-            TickOmnislash(Ctx, Args.Engine, Actor, OmniSession);
-          }
-        }
+        // 无敌斩连斩由 DotaPresentation 演出时间轴按真实时间逐斩推进（见 HandleOmnislashCast），不再依赖每回合 Wait
       });
 
       // 3. 状态免疫与满级剑刃风暴持续时间加成钩子
@@ -508,7 +532,7 @@ namespace Pathos.DotaHeroes.Heroes
       DotaDamage.RegisterMagicResist("juggernaut.blade_fury", Args =>
         BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Args.Defender, BladeFuryStatusProperty) ? 0.80f : 0.0f);
 
-      // 5.2 被动「剑舞」：由独立技能等级（1~4 级：20%/25%/30%/35%）驱动，可暴击伤害（普攻、无敌斩、剑刃风暴旋风）触发 1.8x（T3 右天赋 1.95x）致命一击
+      // 5.2 被动「剑舞」：由独立技能等级（1~4 级：35% 概率，1.4x/1.6x/1.8x/2.0x）驱动，可暴击伤害（普攻、无敌斩、剑刃风暴旋风）触发致命一击（T3 右天赋 +0.15x）
       DotaDamage.RegisterCritSource("juggernaut.blade_dance", Args =>
       {
         var Attacker = Args.Attacker;
@@ -541,7 +565,8 @@ namespace Pathos.DotaHeroes.Heroes
           }
           else if (CritArgs.Defender?.Square != null)
           {
-            PathosEngineBridge.StoryStriking(CritArgs.Engine, Delay.HalfSecond, CritArgs.Defender.Square, BladeDanceCritStrike ?? Ctx.Strikes.flame);
+            DotaVfx.Strike(CritArgs.Engine, CritArgs.Defender.Square, BladeDanceCritStrike ?? Ctx.Strikes.flame, 0.36f,
+              DotaVfx.AngleOf(Attacker.Square, CritArgs.Defender.Square));
             PathosEngineBridge.StoryCaption(CritArgs.Engine, CritArgs.Defender.Square, Colour.OrangeRed, DotaLocalization.T("ui.caption.crit"), Delayed: false);
             PathosEngineBridge.StoryEmitting(CritArgs.Engine, CritArgs.Defender.Square, Ctx.Sonics.sever, Audibility: 6);
           }
@@ -634,6 +659,19 @@ namespace Pathos.DotaHeroes.Heroes
       // 施法当回合立即结算一次旋转伤害，并标记跳过同一指令的 Postfix 重复结算
       SkipNextBladeFuryTick.Add(Caster);
       TriggerBladeFuryPulse(Ctx, Args.Engine, Caster);
+
+      // 持续旋风演出：按 DOTA2 伤害节拍（0.2 秒）真实时间刷新跟随主宰的剑刃旋风，
+      // 等待玩家输入时也持续旋转；状态结束或死亡自动停止（伤害仍按回合结算，与演出解耦）
+      if (BladeFuryWhirlStrike != null)
+      {
+        DotaPresentation.Loop(
+          Args.Engine,
+          Caster,
+          BladeFuryLoopKey,
+          BladeFuryTickSeconds,
+          Ch => BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Ch, BladeFuryStatusProperty),
+          (Engine, Ch) => DotaVfx.StrikeOn(Engine, Ch, BladeFuryWhirlStrike, BladeFuryWhirlSeconds));
+      }
     }
 
     private void TriggerBladeFuryPulse(DotaHeroContext Ctx, object Engine, Character Caster)
@@ -645,8 +683,10 @@ namespace Pathos.DotaHeroes.Heroes
 
       var Targets = DotaCombatHelper.FindHostilesInRadius(Caster, Caster.Square, Radius: 1);
 
-      // 播放自定义 3×3 剑刃风暴金橙旋风贴图（Pathos 原生 Explosion 管线，对齐原版火球爆炸 0.5 秒持续时长），精准标出 3×3 生效范围
-      PathosEngineBridge.StoryExploding(Engine, Delay.HalfSecond, Caster.Square, BladeFuryExplosion ?? Ctx.Explosions.fiery);
+      // 旋风本体由 HandleBladeFuryCast 中的 DotaPresentation.Loop 持续绘制；
+      // 客户端渲染补丁缺失（如 PathosMaker / 无客户端）时回退为原生 3×3 爆炸贴图，保证生效范围仍可见
+      if (BladeFuryWhirlStrike == null)
+        PathosEngineBridge.StoryExploding(Engine, Delay.HalfSecond, Caster.Square, BladeFuryExplosion ?? Ctx.Explosions.fiery);
 
       if (Targets.Count == 0)
         return;
@@ -659,7 +699,11 @@ namespace Pathos.DotaHeroes.Heroes
           continue;
 
         var Dir = Caster.Square.AsDirection(Target.Square);
+        var HitSquare = Target.Square;
         DotaDamage.Harm(Engine, Caster, Target, Dir, Ctx.Elements.magical, SpinDice, SpinInfo);
+
+        // 命中切痕：每个被卷入的敌人身上闪一道细刃光（随机角度，0.25 秒衰减）
+        DotaVfx.Strike(Engine, HitSquare, BladeFuryCutStrike, 0.25f);
       }
     }
 
@@ -771,6 +815,7 @@ namespace Pathos.DotaHeroes.Heroes
         return;
 
       var Omni = ComputeOmnislash(Ctx, Args.Engine, Caster, Cast.Tier);
+      var Engine = Args.Engine;
 
       var Session = new OmnislashSession
       {
@@ -781,61 +826,76 @@ namespace Pathos.DotaHeroes.Heroes
         OmniBonusDamage = Omni.OmniBonusDamage,
         WeaponDice = Omni.WeaponDice
       };
+      ActiveOmnislashSessions.AddOrUpdate(Caster, Session);
+      if (OmnislashStatusProperty != null)
+        PathosEngineBridge.ApplyTransient(Engine, Caster, Caster, OmnislashStatusProperty, Dice.Fixed(Session.TotalSlashes + 1));
 
-      // 方案 A：当回合先瞬移斩出第 1 刀，剩余斩数自动推进回合逐斩跳跃（全程无敌、无需手动操作）
-      ExecuteSingleOmnislashStep(Ctx, Args.Engine, Caster, Session, InitialTarget);
+      // 演出节奏：把 DOTA2 原版持续时间（3/3.25/3.5 秒）平均分配到每一斩（夹在 0.2~0.42 秒之间），
+      // 播放期间冻结世界，每斩只放行 1 回合逻辑时间 —— 与旧版「每斩自动 Wait 1 回合」的回合消耗完全一致，
+      // 但每一刀都有清晰的瞬步 → 挥砍 → 刀光衰减过程，不再一瞬间全部结算完。
+      float Interval = GetOmnislashSlashInterval(Caster, Session.TotalSlashes);
+      int WorldTicksPerSlash = Math.Max(1, PathosEngineBridge.GetMoveDelay(Engine, Caster).GetTurns());
 
-      if (Session.RemainingSlashes > 0 && !Caster.Deceased && DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3) != null)
+      // 全程保持忙碌（逻辑时钟只在每斩预算内推进），玩家无法在连斩中途插入指令
+      PathosEngineBridge.SetBusy(Engine, Caster, Delay.FromTurns(WorldTicksPerSlash * (Session.TotalSlashes + 1)));
+
+      var Sequence = DotaPresentation.Sequence(Engine, Caster, OmnislashSequenceKey)
+        .FreezeWorld(WorldTicksPerSlash)
+        .OnFinish((SeqCtx, _) =>
+        {
+          FinishOmnislashSession(Ctx, SeqCtx.Engine, Caster, Session);
+          // 收刀：恢复正常行动节奏（1 回合后可再次行动）
+          if (!Caster.Deceased)
+            PathosEngineBridge.SetBusy(SeqCtx.Engine, Caster, PathosEngineBridge.GetMoveDelay(SeqCtx.Engine, Caster));
+        });
+
+      for (int I = 0; I < Session.TotalSlashes; I++)
       {
-        ActiveOmnislashSessions.AddOrUpdate(Caster, Session);
-        SkipNextOmnislashTick.Add(Caster);
-        if (OmnislashStatusProperty != null)
-          PathosEngineBridge.ApplyTransient(Args.Engine, Caster, Caster, OmnislashStatusProperty, Dice.Fixed(Session.RemainingSlashes + 1));
+        Sequence.At(I * Interval, SeqCtx =>
+        {
+          if (Caster.Deceased || Caster.Square == null || Session.RemainingSlashes <= 0)
+          {
+            SeqCtx.Stop();
+            return;
+          }
 
-        // 自动排入下一回合 Wait，驱动引擎播完当前斩击动画后自动跳斩下一刀
-        PathosEngineBridge.QueueWaitDecision(Caster);
+          var Target = SeqCtx.StepIndex == 0 && InitialTarget != null && !InitialTarget.Deceased && InitialTarget.Square?.Map == Caster.Square.Map
+            ? InitialTarget
+            : DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3);
+          if (Target == null)
+          {
+            SeqCtx.Stop();
+            return;
+          }
+
+          ExecuteSingleOmnislashStep(Ctx, SeqCtx, Caster, Session, Target);
+
+          if (Session.RemainingSlashes <= 0 || DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3) == null)
+            SeqCtx.Stop();
+        });
       }
-      else
-      {
-        FinishOmnislashSession(Ctx, Args.Engine, Caster, Session);
-      }
+
+      Sequence.Play();
     }
 
-    private void TickOmnislash(DotaHeroContext Ctx, object Engine, Character Caster, OmnislashSession Session)
+    /// <summary>
+    /// 单斩演出间隔（秒）：DOTA2 7.42a 无敌斩持续 3 / 3.25 / 3.5 秒（按 R 技能等级），平均分配到总斩数。
+    /// </summary>
+    private static float GetOmnislashSlashInterval(Character Caster, int TotalSlashes)
     {
-      if (Caster == null || Caster.Deceased || Caster.Square == null || Session == null || Session.RemainingSlashes <= 0)
-      {
-        FinishOmnislashSession(Ctx, Engine, Caster, Session);
-        return;
-      }
-
-      var NextTarget = DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3);
-      if (NextTarget == null)
-      {
-        FinishOmnislashSession(Ctx, Engine, Caster, Session);
-        return;
-      }
-
-      ExecuteSingleOmnislashStep(Ctx, Engine, Caster, Session, NextTarget);
-
-      if (Session.RemainingSlashes > 0 && !Caster.Deceased && DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3) != null)
-      {
-        // 继续自动推进下一回合，直到斩数耗尽或周围 3 格内无敌方目标
-        PathosEngineBridge.QueueWaitDecision(Caster);
-      }
-      else
-      {
-        FinishOmnislashSession(Ctx, Engine, Caster, Session);
-      }
+      int Level = OmnislashAbility.Level(Caster, OmnislashDotaDurationSeconds.Length);
+      float Duration = OmnislashDotaDurationSeconds[Level - 1];
+      return Math.Clamp(Duration / Math.Max(1, TotalSlashes), OmnislashMinSlashInterval, OmnislashMaxSlashInterval);
     }
 
     private void ExecuteSingleOmnislashStep(
       DotaHeroContext Ctx,
-      object Engine,
+      DotaSequenceContext SeqCtx,
       Character Caster,
       OmnislashSession Session,
       Character Target)
     {
+      var Engine = SeqCtx.Engine;
       if (Caster?.Square == null || Target?.Square == null || Caster.Deceased || Target.Deceased)
         return;
 
@@ -846,40 +906,52 @@ namespace Pathos.DotaHeroes.Heroes
       ActiveOmnislashCasters.Add(Caster);
       try
       {
+        bool Dashed = false;
         if (DestSquare != null && DestSquare != Caster.Square)
         {
-          DotaCombatHelper.PlayBeamTrail(Engine, FromSq, DestSquare, OmnislashDashBeam, BaseDelay: Delay.FromTurns(10), StepIncrementTurns: 1);
-          // 使用静音突进位移，彻底避免 Engine.TeleportCharacter 每刀反复播放刺耳的传送音效
+          // 瞬步：静音位移（避免 TeleportCharacter 每刀刺耳传送音），贴图用 Flinging 在 0.08 秒内飞过去，身后留下一道淡蓝残影
           PathosEngineBridge.DashCharacter(Engine, Caster, DestSquare);
-        }
-        else if (FromSq != TargetSq)
-        {
-          DotaCombatHelper.PlayBeamTrail(Engine, FromSq, TargetSq, OmnislashDashBeam, BaseDelay: Delay.FromTurns(10), StepIncrementTurns: 1);
+          PathosEngineBridge.StoryFlinging(Engine, DotaPresentation.Seconds(OmnislashDashSeconds), FromSq, DestSquare, Caster);
+          DotaVfx.BeamTrail(Engine, FromSq, DestSquare, OmnislashDashBeam, 0.3f, IncludeStart: true, IncludeEnd: false);
+          Dashed = true;
         }
 
         var ToSq = Caster.Square;
         int SlashDamage = DotaCombatHelper.RollDice(Session.WeaponDice) + Session.StatBonus + Session.OmniBonusDamage;
         var Dir = ToSq.AsDirection(TargetSq);
+        float SlashAngle = DotaVfx.AngleOf(ToSq, TargetSq);
 
         LastOmnislashStrikeCritted = false;
         // 物理攻击类伤害（可触发剑舞暴击与剑心犹在加成）
         DotaDamage.Strike(Engine, Caster, Target, Dir, SlashDamage, DotaDamageInfo.Physical(OmnislashSpellName));
+        bool Critted = LastOmnislashStrikeCritted;
 
-        // 播放 Pathos 原生挥砍动作（0.25 秒紧凑连斩节奏）+ 自定义无敌斩金白交叉斩击贴图（0.5 秒完整放大渐隐，暴击时切换炽红新月暴击贴图）
-        PathosEngineBridge.StoryAttacking(Engine, Delay.FromTurns(15), Caster, Dir);
-        PathosEngineBridge.StoryStriking(
-          Engine,
-          Delay.HalfSecond,
-          TargetSq,
-          LastOmnislashStrikeCritted
-            ? (BladeDanceCritStrike ?? Ctx.Strikes.flame)
-            : (OmnislashStrike ?? Ctx.Strikes.sever));
-
-        if (LastOmnislashStrikeCritted)
+        void PlaySlash(DotaSequenceContext _)
         {
-          PathosEngineBridge.StoryCaption(Engine, TargetSq, Colour.OrangeRed, DotaLocalization.T("ui.caption.crit"), Delayed: false);
-          PathosEngineBridge.StoryEmitting(Engine, TargetSq, Ctx.Sonics.sever, Audibility: 6);
+          if (Caster.Deceased || Caster.Square == null)
+            return;
+          // 挥砍动作 + 沿攻击方向的冰蓝利刃斩痕（0.32 秒淡出）；暴击换成红橙新月刀光 + CRIT 飘字
+          PathosEngineBridge.StoryCancelCharacter(Engine, Caster);
+          PathosEngineBridge.StoryAttacking(Engine, DotaPresentation.Seconds(0.16f), Caster, Dir);
+          DotaVfx.Strike(
+            Engine,
+            TargetSq,
+            Critted ? (BladeDanceCritStrike ?? Ctx.Strikes.flame) : (OmnislashStrike ?? Ctx.Strikes.sever),
+            Critted ? 0.4f : OmnislashSlashSeconds,
+            SlashAngle);
+
+          if (Critted)
+          {
+            PathosEngineBridge.StoryCaption(Engine, TargetSq, Colour.OrangeRed, DotaLocalization.T("ui.caption.crit"), Delayed: false);
+            PathosEngineBridge.StoryEmitting(Engine, TargetSq, Ctx.Sonics.sever, Audibility: 6);
+          }
         }
+
+        // 瞬步落地后再挥刀，避免「飞行」与「挥砍」两个角色动画叠出重影
+        if (Dashed)
+          SeqCtx.After(OmnislashDashSeconds, PlaySlash);
+        else
+          PlaySlash(SeqCtx);
 
         Session.SlashesDone++;
         Session.RemainingSlashes = Math.Max(0, Session.RemainingSlashes - 1);
@@ -896,7 +968,6 @@ namespace Pathos.DotaHeroes.Heroes
         return;
 
       ActiveOmnislashSessions.Remove(Caster);
-      SkipNextOmnislashTick.Remove(Caster);
 
       if (OmnislashStatusProperty != null && PathosEngineBridge.HasTransient(Caster, OmnislashStatusProperty))
         PathosEngineBridge.RemoveTransient(Engine, Caster, Caster, OmnislashStatusProperty);
@@ -953,23 +1024,25 @@ namespace Pathos.DotaHeroes.Heroes
     private static int GetOmnislashExtraDamage(Character Character)
       => OmnislashAbility.StarSteps(Character) * 2;
 
-    private static float GetBladeDanceCritChanceByLevel(int SkillLevel) => SkillLevel switch
-    {
-      <= 0 => 0.0f,
-      1 => 0.20f,
-      2 => 0.25f,
-      3 => 0.30f,
-      _ => 0.35f
-    };
+    // DOTA2 7.42a：blade_dance_crit_chance = 35（各级相同），blade_dance_crit_mult = 140 / 160 / 180 / 200
+    private const float BladeDanceCritChance = 0.35f;
+    private static readonly float[] BladeDanceCritMultByLevel = { 1.40f, 1.60f, 1.80f, 2.00f };
+    private const float BladeDanceTalentCritMultBonus = 0.15f; // T3 右天赋「+15% 剑舞暴击伤害」
+
+    private static float GetBladeDanceCritChanceByLevel(int SkillLevel) => SkillLevel <= 0 ? 0.0f : BladeDanceCritChance;
+
+    private static float GetBladeDanceCritMultByLevel(int SkillLevel)
+      => SkillLevel <= 0 ? 1.0f : BladeDanceCritMultByLevel[Math.Clamp(SkillLevel - 1, 0, BladeDanceCritMultByLevel.Length - 1)];
 
     private static float GetBladeDanceCritChance(Character Character)
       => GetBladeDanceCritChanceByLevel(HeroSkillService.GetSkillLevel(Character, SkillBladeDanceId));
 
     // ---- 施法结算与帮助面板共用的数值计算（单一来源，防止两处公式漂移） ----
 
-    /// <summary>剑舞暴击倍率（T3 右天赋 1.95×，否则 1.8×）。</summary>
+    /// <summary>剑舞暴击倍率：按剑舞技能等级 1.4× / 1.6× / 1.8× / 2.0×，T3 右天赋额外 +0.15×。</summary>
     private static float GetBladeDanceCritMultiplier(Character Character)
-      => TalentService.HasTalent(Character, TalentT3BladeDanceCrit) ? 1.95f : 1.80f;
+      => GetBladeDanceCritMultByLevel(HeroSkillService.GetSkillLevel(Character, SkillBladeDanceId))
+         + (TalentService.HasTalent(Character, TalentT3BladeDanceCrit) ? BladeDanceTalentCritMultBonus : 0.0f);
 
     /// <summary>剑心犹在：近战普攻 / 无敌斩每层追加 2.5% DEX 伤害。</summary>
     private static int GetBladeformBonusDamage(Character Character)
@@ -1363,7 +1436,7 @@ namespace Pathos.DotaHeroes.Heroes
           Lv => DotaLocalization.Format(
             "jugg.help.e.val_crit",
             DotaHelpColor.Passive($"{GetBladeDanceCritChanceByLevel(Lv) * 100:0}%"),
-            DotaHelpColor.Passive("1.8×")))
+            DotaHelpColor.Passive($"{GetBladeDanceCritMultByLevel(Lv):0.0#}×")))
       });
 
       // 先天：剑心犹在（无等级）

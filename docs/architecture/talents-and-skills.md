@@ -17,7 +17,7 @@
   - 支持多法术联动槽位（`CreateActiveGroup`），例如水人 E（属性转换·敏捷/力量）与 R（变形/解除变形）一次加点同步学会/升星。
 - **被动技能（独立技能等级驱动）**：
   - 彻底脱离原版武器/学派熟练度（避免持重刃却挂中刃熟练度的违和问题）。
-  - `0 → 1` 级自动通过 `Engine.GainTalent` 授予原生可见被动专长，`1 → 4` 级直接由 `HeroSkillService.GetSkillLevel(character, skillId)` 驱动数值（如主宰剑舞 `20% / 25% / 30% / 35%`）。
+  - `0 → 1` 级自动通过 `Engine.GainTalent` 授予原生可见被动专长，`1 → 4` 级直接由 `HeroSkillService.GetSkillLevel(character, skillId)` 驱动数值（如主宰剑舞暴击倍率 `1.4× / 1.6× / 1.8× / 2.0×`）。
 - **100% 原生存档持久化**：
   - 每个槽位在 Campaign 构建期自动生成 `dota_skill_<id>_lv1..N` 内部 `Property` 标记并注册至 `DotaPropertyVisibility` 隐藏，写入 `Character.AcquiredTalentSet`，读档自动还原。
 
@@ -117,15 +117,49 @@ DotaStatusBarBridge.RegisterProvider("juggernaut.bladeform", Character =>
 2. `AfterCastSpell`：执行施法瞬间逻辑（如基础驱散 + 立刻结算第 1 跳），并将角色加入 `SkipNextTick` 集合（防止同一回合 `AfterExecuteCommand` 紧接着再结算一次）。
 3. `AfterExecuteCommand`：若 `HasTransient(actor, statusProp)`，先检查 `SkipNextTick.Remove(actor)`，否则执行每回合 Tick。
 
-### 4.2 多回合自动推进技能（如无敌斩）
-当技能需要跨越多个回合自动执行动作并逐帧播完动画（且期间无需玩家反复手动按等待）时，采用 **Session + `QueueWaitDecision`** 模式：
-1. 在 `ConditionalWeakTable<Character, TSession>` 中记录剩余次数与参数。
-2. `AfterCastSpell` 执行第 1 步；若仍有剩余次数，挂上短期状态 `ApplyTransient`、记录 `SkipNextTick`，并调用 `PathosEngineBridge.QueueWaitDecision(caster)`。
-3. 引擎自动推进下一回合触发 `AfterExecuteCommand`，继续执行下一步并再次 `QueueWaitDecision`，直至次数耗尽或无目标时清理 Session 并 `RemoveTransient`。
+### 4.2 多步演出技能（如无敌斩、波浪形态）：`DotaPresentation` 时间轴
+Pathos 的游戏逻辑时钟正常速度一回合只有 **5 帧（≈0.08 秒）**，用「每步自动 Wait 一回合」推进的连斩会在不到 1 秒内全部结算完、特效叠成一片。
+凡是「一个技能包含多个有先后的动作」（连斩、突进飞行、逐格扫过的弹道），一律用演出时间轴按**真实秒数**排步骤：
 
-### 4.3 自定义像素特效（`DotaHeroContext` VFX 工厂）
+```csharp
+DotaPresentation.Sequence(Engine, Caster, "<hero_id>.<feature>")
+  .FreezeWorld(WorldTicksPerStep)          // 播放期间冻结世界；每步放行 N 逻辑帧以保留原有回合消耗（0 = 完全冻结）
+  .At(0.00f, Ctx => { /* 第 1 步 */ })
+  .At(0.25f, Ctx => { /* 第 2 步；Ctx.Stop() 提前收尾；Ctx.After(秒, ...) 插入收尾动作 */ })
+  .OnFinish((Ctx, Completed) => { /* 清理 Session / 恢复忙碌时长 */ })
+  .Play();
+```
+
+1. 节奏必须从 DOTA2 原版时长推导（如无敌斩 3/3.25/3.5 秒 ÷ 斩数、波浪形态 射程 ÷ 1250 速度），写入英雄文档溯源表。
+2. 会冻结世界的序列开始前确认施法者处于忙碌状态（施法指令已自动设置；长序列用 `PathosEngineBridge.SetBusy` 覆盖整段），防止玩家中途插入指令。
+3. 位移演出：逻辑位置先 `DashCharacter` 到终点，再用 `PathosEngineBridge.StoryFlinging(...)` 让贴图在指定秒数内平滑飞过去。
+4. 纯视觉的持续循环（如剑刃风暴旋风）用 `DotaPresentation.Loop(...)`，不冻结世界、等待输入时也持续播放；重击顿帧用 `DotaPresentation.HitStop(...)`。
+5. 旧的 **Session + `QueueWaitDecision`** 模式仅保留给「确实需要每步消耗一个完整玩家回合」的技能，新代码优先使用时间轴。
+
+### 4.3 自定义像素特效（`DotaHeroContext` VFX 工厂 + `DotaVfx` 样式）
 所有自定义特效走 Pathos 原生 `Story` 管线，单份 PNG 放在 `Resources/Heroes/<hero_id>/`：
-- **单格打击/脉冲**（`Strike`）：`Ctx.RegisterStrikeVfx("name", "glyph name")` → `PathosEngineBridge.StoryStriking(...)`
-- **4 方向光束/瞬移残影**（`Beam`）：`Ctx.RegisterBeamVfx("name", h, v, f, b)` → `DotaCombatHelper.PlayBeamTrail(...)`
-- **3×3 范围爆炸**（`Explosion`）：准备 `<prefix> tl/tc/tr/ml/mc/mr/bl/bc/br.png` 9 张贴图，`Ctx.RegisterExplosion3x3Vfx("name", "<prefix>")` → `PathosEngineBridge.StoryExploding(...)`
+- **单格打击/脉冲**（`Strike`）：`Ctx.RegisterStrikeVfx("name", "glyph name")` → `DotaVfx.Strike(...)` / 跟随角色 `DotaVfx.StrikeOn(...)`
+- **4 方向光束/瞬移残影**（`Beam`）：`Ctx.RegisterBeamVfx("name", h, v, f, b)` → `DotaVfx.Beam(...)` / `DotaVfx.BeamTrail(...)`
+- **3×3 范围爆炸**（`Explosion`）：准备 `<prefix> tl/tc/tr/ml/mc/mr/bl/bc/br.png` 9 张贴图，`Ctx.RegisterExplosion3x3Vfx("name", "<prefix>")` → `DotaVfx.Explode(...)`
 - **原生飘字与范围波纹**：`PathosEngineBridge.StoryCaption(...)`、`PathosEngineBridge.StoryDetecting(...)`、`PathosEngineBridge.StoryAttacking(...)`
+
+**必须为每个自定义 Strike / Beam / Explosion 注册 `DotaVfxStyle`**：原生 `Striking/Beaming/Exploding` 渲染全程 100% 不透明、没有任何衰减，不注册样式的刀光/拖尾会「满屏高亮交错」。
+
+```csharp
+DotaVfx.Style(OmnislashStrike, new DotaVfxStyle { FadeIn = 0.06f, FadeOutStart = 0.35f, ScaleFrom = 0.85f, ScaleTo = 1.2f, AngleJitter = 30 });
+DotaVfx.Style(WhirlStrike,     new DotaVfxStyle { Span = 3, SpinDegreesPerSecond = 900, PeakOpacity = 0.85f });
+```
+
+| 字段 | 作用 |
+| :--- | :--- |
+| `FadeIn` / `FadeOutStart` / `PeakOpacity` | 透明度包络（淡入比例、开始淡出的进度、峰值不透明度）。叠加频繁的拖尾建议峰值 0.5~0.8。 |
+| `ScaleFrom` / `ScaleTo` | 生命周期内缩放（三次缓出），如重劈 1.45→1.0「砸下去」、冲击环 0.3→1.05「扩散」。 |
+| `Span` | Strike 占格边长（3 = 覆盖 3×3）；`DotaVfx.Strike(..., Span: 2R+1)` 可按技能半径逐次覆盖。 |
+| `SpinDegreesPerSecond` | 按 Story 绝对时钟旋转，循环重复生成的旋风能无缝衔接。 |
+| `RandomAngle` / `AngleJitter` | 斩击随机角度 / 在指定攻击方向（`DotaVfx.AngleOf(from, to)`）上抖动，避免多刀完全重叠。 |
+
+贴图本身由 [tools/VfxGen](../../tools/VfxGen/Program.cs) 程序化生成（8× 超采样 → 64 逻辑像素 → 2× 最近邻放大，保持与现有贴图一致的 2px 像素颗粒；跨 3×3 旋转的环形贴图直接输出 128 全分辨率）。修改造型/配色后在仓库根目录执行：
+
+```powershell
+dotnet run --project tools/VfxGen -- .
+```

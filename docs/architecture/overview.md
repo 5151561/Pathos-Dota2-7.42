@@ -33,6 +33,7 @@ flowchart TD
   - `0Harmony.dll` 作为 `EmbeddedResource` 内嵌进 `DotaHeroesExpansion.dll`，保持单 DLL 零外置依赖。
   - 在 `PathosMaker.exe` 打包期，`HookBootstrap` 自动识别进程名并跳过 Harmony 补丁，避免干扰图集与词条生成。
 - **客户端 UI 桥接层（`Framework/Talents/`、`Framework/Targeting/`、`Framework/UI/`）**：通过共享的 `PathosClientReflection` 挂载 `Pathos.dll` 客户端类，实现独立天赋树面板（左下角原生按钮 + `F2`）、全射程方格选框、左上角状态栏动态叠层徽章，以及原生天赋栏/百科的短期状态隐藏过滤。
+- **演出层（`Framework/Presentation/`）**：`DotaPresentation` 在 `Story.NextTurn`（每帧）上按真实秒数推进技能步骤并可冻结 `Engine.Process`，让连斩/突进/弹道拥有 DOTA2 原版的时长观感；`DotaVfx` 接管 `Animator.Execute`，为自定义特效提供淡入淡出、缩放、旋转与跟随角色。
 
 ---
 
@@ -59,6 +60,7 @@ pathos-mod/
 │   │   ├── TalentRegistry.cs                  # 全局天赋树索引与 dota_talent_* 持久化标记生成
 │   │   ├── TalentService.cs                   # 天赋状态查询、不可洗点学习、减冷却→减蓝耗、升级解锁提示
 │   │   └── TalentTreeUiBridge.cs              # 左下角原生 MenuButton + 左侧停靠天赋面板 + 原生面板/百科过滤
+│   ├── Presentation/                          # 技能演出时间轴（DotaPresentation：真实时间节拍/世界冻结/顿帧）与 VFX 渲染样式（DotaVfx）
 │   ├── Targeting/                             # 全射程选格施法子系统
 │   │   └── DotaRangeTargetingBridge.cs        # 拦截 DirectQuery 扩展全射程方格选框与点击捕获
 │   └── UI/                                    # 客户端共享反射、状态栏徽章与可见性注册表
