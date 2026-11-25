@@ -109,6 +109,13 @@ namespace Pathos.DotaHeroes.Framework
     /// <summary>DOTA2 原始每秒伤害（DPS）；框架按 K_dmg 与 1 秒 = 2 回合逐回合累加小数后结算整数伤害。</summary>
     public float DotDotaDps { get; set; }
 
+    /// <summary>
+    /// 每次受到伤害的格挡量（Pathos 伤害点，允许小数 = DOTA2 原值 ÷ K_dmg 的期望值，如帕吉肉盾 8 → 0.53）。
+    /// 对所有伤害类型（物理/魔法/纯粹）逐次生效：整数部分必挡，小数部分按概率再挡 1 点，伤害最低扣到 0；
+    /// 只减少生命伤害，不拦截攻击附带的命中效果。多个 Modifier 的格挡相加。
+    /// </summary>
+    public float DamageBlock { get; set; }
+
     public int Stacks { get; set; } = 1;
 
     /// <summary>英雄自定义附加数据。</summary>
@@ -154,6 +161,49 @@ namespace Pathos.DotaHeroes.Framework
       DotaHookBus.RegisterAfterExecuteCommand("dota.modifiers.tick", Args => TickHolder(Args.Engine, Args.Character));
       DotaHookBus.RegisterDefenceQuery("dota.modifiers.defence", HandleDefenceQuery);
       DotaHookBus.RegisterSpeedQuery("dota.modifiers.speed", HandleSpeedQuery);
+      // 伤害格挡排在魔抗（Reduction）之后：先按比例减伤，再逐次扣除固定格挡
+      DotaHookBus.RegisterBeforeDamage("dota.modifiers.block", HandleDamageBlock, DotaHookPriority.Reduction + 10);
+    }
+
+    /// <summary>单位当前全部 Modifier 的伤害格挡合计（Pathos 伤害点，可为小数）。</summary>
+    public static float GetTotalDamageBlock(Character Character)
+    {
+      float Total = 0.0f;
+      foreach (var M in GetAll(Character))
+        Total += M.DamageBlock;
+      return Total;
+    }
+
+    /// <summary>
+    /// 把小数格挡量掷成本次实际格挡的整数点数：整数部分必挡，小数部分按概率 +1（保持期望值不变）。
+    /// </summary>
+    public static int RollBlock(float Block)
+    {
+      if (Block <= 0.0f)
+        return 0;
+
+      int Whole = (int)MathF.Floor(Block);
+      return Whole + (Random.Shared.NextSingle() < Block - Whole ? 1 : 0);
+    }
+
+    private static void HandleDamageBlock(DamageEventArgs Args)
+    {
+      if (Args.Defender == null || Args.DamagePoints <= 0 || (Args.Info != null && Args.Info.Has(DotaDamageFlags.NoBlock)))
+        return;
+
+      float Block = GetTotalDamageBlock(Args.Defender);
+      if (Block <= 0.0f)
+        return;
+
+      int Blocked = RollBlock(Block);
+      if (Blocked <= 0)
+        return;
+
+      int Remaining = Args.DamagePoints - Blocked;
+      if (Remaining <= 0)
+        Args.Cancel = true;
+      else
+        Args.DamagePoints = Remaining;
     }
 
     /// <summary>
@@ -247,6 +297,7 @@ namespace Pathos.DotaHeroes.Framework
         Existing.MoveSpeedPct = Strongest(Existing.MoveSpeedPct, Candidate.MoveSpeedPct);
         Existing.AttackSpeedPct = Strongest(Existing.AttackSpeedPct, Candidate.AttackSpeedPct);
         Existing.DotDotaDps = Math.Max(Existing.DotDotaDps, Candidate.DotDotaDps);
+        Existing.DamageBlock = Math.Max(Existing.DamageBlock, Candidate.DamageBlock);
         Existing.Stacks = Math.Max(Existing.Stacks, Candidate.Stacks);
         Existing.Tag = Candidate.Tag ?? Existing.Tag;
         Result = Existing;

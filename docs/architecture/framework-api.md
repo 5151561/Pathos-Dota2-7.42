@@ -18,7 +18,8 @@
 | 减冷却天赋 | `TalentNode.ManaReductions` + `SpellManaReductionRule` | [talents-and-skills.md §1.3](talents-and-skills.md) |
 | 造成伤害 | `DotaDamage.Strike/Harm` + `DotaDamageInfo.Physical/Magical/Pure` | [hook-system.md §7](hook-system.md) |
 | 暴击 / 魔抗 | `DotaDamage.RegisterCritSource` / `RegisterMagicResist` | [hook-system.md §7.2](hook-system.md) |
-| 带回合数的增益/减益（护甲、移速、攻速、DoT、徽章） | `DotaModifierService.Define` + `Apply` | [hook-system.md §6](hook-system.md) |
+| 带回合数的增益/减益（护甲、移速、攻速、DoT、伤害格挡、徽章） | `DotaModifierService.Define` + `Apply` | [hook-system.md §6](hook-system.md) |
+| 每次受伤固定格挡（含小数，概率进位） | `DotaModifier.DamageBlock`；已自行结算格挡的伤害加 `DotaDamageFlags.NoBlock` | [hook-system.md §6.2](hook-system.md)；参考实现：帕吉「肉盾」 |
 | 嘲讽 | `DotaTauntService.ApplyTaunt` | [hook-system.md §5](hook-system.md) |
 | 无敌 / 禁魔 | `DotaHookBus.RegisterInvulnerableQuery` / `RegisterSilenceQuery` | [hook-system.md §2](hook-system.md) |
 | 临时六维加成（不改永久值） | `DotaHookBus.RegisterActiveFormQuery` | [hook-system.md §2](hook-system.md)；参考实现：斧王「一人之军」 |
@@ -32,6 +33,7 @@
 | 运行时文本（日志、面板、天赋/技能描述） | `DotaLocalization.T/Format` + `Resources/Localization/ui.<lang>.json` | 本文 §4 |
 | 法术/职业/Property 名称与描述 | Codex 声明 + `Assets/DotaHeroesExpansion.<lang>.Dictionary` | 本文 §4 |
 | 自定义像素特效 | `Ctx.RegisterStrikeVfx/BeamVfx/Explosion3x3Vfx` + `DotaVfx.Style` + `DotaVfx.Strike/StrikeOn/Beam/BeamTrail/Explode` | [hook-system.md §13.3](hook-system.md)、[talents-and-skills.md §4.3](talents-and-skills.md) |
+| 贴地范围特效（画在角色之下，如毒雾、光环） | `DotaVfxStyle { Ground = true }` + `DotaVfx.Explode` | [talents-and-skills.md §4.3](talents-and-skills.md)；参考实现：帕吉「腐烂」 |
 | 多段演出（连斩、突进、弹道）、持续旋风、顿帧 | `DotaPresentation.Sequence/Loop/HitStop` | [hook-system.md §13.2](hook-system.md) |
 | 原生飘字 / 波纹 / 挥砍动作 / 平滑飞行 | `PathosEngineBridge.StoryCaption/StoryDetecting/StoryAttacking/StoryFlinging` | [hook-system.md §3](hook-system.md) |
 | 召唤 / 销毁召唤物 | `PathosEngineBridge.SummonAllyEntity` / `DespawnSummon` | [range-targeting.md §3.3](range-targeting.md) |
@@ -102,6 +104,7 @@ HeroSkillRegistry.Register(Ctx, Build);
 | `CreatePassive(...)` | 独立被动技能等级（0→4），由 `HeroSkillService.GetSkillLevel` 驱动（零 Property） |
 | `CreateStandardAttributeBonus` | 7 级黄点（`CreateStandard` 自动追加，无需手写） |
 
+- 悬停卡片第一段是技能说明 `Slot.Description`：主动技能默认取法术 Codex 描述的当前语言译文（`PathosEngineBridge.GetLocalizedDescription`，多法术槽位逐条换行）；被动技能没有法术，必须传 `DescriptionResolver`（通常复用被动帮助面板的 `<hero>.help.e.desc`）。第二段才是 `DescribeLevel(当前等级)` 的一句话数值（金色）。
 - `Stats`：悬停卡片里的逐级数值行（`DotaSkillStat.Of(labelKey, Lv => text)`，返回 `null` 表示该级无此项）。必须与 `DescribeLevel`、施法共用同一套按等级函数。
 - `OnUpgrade(engine, ch, newLevel)`：加点瞬间的一次性效果。
 - 主动技能的等级/升星在英雄代码里用 `Ability.Level(ch)` / `Ability.StarMultiplier(ch)`（需在 `DotaAbilitySpec.SkillSlotId` 填槽位 ID）。

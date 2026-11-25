@@ -77,7 +77,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       Action<object, Character, int> OnUpgrade = null,
       Func<string> TitleResolver = null,
       DotaPrimaryAttribute PrimaryAttribute = DotaPrimaryAttribute.Universal,
-      IReadOnlyList<DotaSkillStat> Stats = null)
+      IReadOnlyList<DotaSkillStat> Stats = null,
+      Func<string> DescriptionResolver = null)
     {
       if (string.IsNullOrWhiteSpace(Id))
         throw new ArgumentException("DotaSkillSlot Id cannot be null or empty.", nameof(Id));
@@ -97,6 +98,32 @@ namespace Pathos.DotaHeroes.Framework.Skills
       this.OnUpgrade = OnUpgrade;
       this.PrimaryAttribute = PrimaryAttribute;
       this.Stats = Stats ?? Array.Empty<DotaSkillStat>();
+      this.DescriptionResolver = DescriptionResolver;
+    }
+
+    private readonly Func<string> DescriptionResolver;
+
+    /// <summary>
+    /// 技能本身的说明（加点面板悬浮卡第一段，与等级无关）：
+    /// 优先用 <c>DescriptionResolver</c>；主动技能未提供时取法术的 Codex 描述译文（多法术槽位逐条换行拼接）。
+    /// </summary>
+    public string Description
+    {
+      get
+      {
+        string Custom = DescriptionResolver?.Invoke();
+        if (!string.IsNullOrWhiteSpace(Custom) || Spells.Count == 0)
+          return Custom;
+
+        var Parts = new List<string>(Spells.Count);
+        foreach (var Spell in Spells)
+        {
+          string Text = PathosEngineBridge.GetLocalizedDescription(Spell);
+          if (!string.IsNullOrWhiteSpace(Text) && !Parts.Contains(Text))
+            Parts.Add(Text);
+        }
+        return Parts.Count > 0 ? string.Join("\n", Parts) : null;
+      }
     }
 
     public string Id { get; }
@@ -133,7 +160,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       bool IsUltimate = false,
       Action<object, Character, int> OnUpgrade = null,
       Func<string> TitleResolver = null,
-      IReadOnlyList<DotaSkillStat> Stats = null)
+      IReadOnlyList<DotaSkillStat> Stats = null,
+      Func<string> DescriptionResolver = null)
     {
       return CreateActiveGroup(
         Id,
@@ -145,7 +173,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
         IsUltimate,
         OnUpgrade,
         TitleResolver,
-        Stats);
+        Stats,
+        DescriptionResolver);
     }
 
     public static DotaSkillSlot CreateActiveGroup(
@@ -158,7 +187,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       bool IsUltimate = false,
       Action<object, Character, int> OnUpgrade = null,
       Func<string> TitleResolver = null,
-      IReadOnlyList<DotaSkillStat> Stats = null)
+      IReadOnlyList<DotaSkillStat> Stats = null,
+      Func<string> DescriptionResolver = null)
     {
       return new DotaSkillSlot(
         Id: Id,
@@ -172,7 +202,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
         DescribeLevel: DescribeLevel,
         OnUpgrade: OnUpgrade,
         TitleResolver: TitleResolver,
-        Stats: Stats);
+        Stats: Stats,
+        DescriptionResolver: DescriptionResolver);
     }
 
     public static DotaSkillSlot CreatePassive(
@@ -184,7 +215,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
       bool IsUltimate = false,
       Action<object, Character, int> OnUpgrade = null,
       Func<string> TitleResolver = null,
-      IReadOnlyList<DotaSkillStat> Stats = null)
+      IReadOnlyList<DotaSkillStat> Stats = null,
+      Func<string> DescriptionResolver = null)
     {
       return new DotaSkillSlot(
         Id: Id,
@@ -198,7 +230,8 @@ namespace Pathos.DotaHeroes.Framework.Skills
         DescribeLevel: DescribeLevel,
         OnUpgrade: OnUpgrade,
         TitleResolver: TitleResolver,
-        Stats: Stats);
+        Stats: Stats,
+        DescriptionResolver: DescriptionResolver);
     }
 
     /// <summary>

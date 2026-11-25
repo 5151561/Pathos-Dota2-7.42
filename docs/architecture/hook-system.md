@@ -139,7 +139,7 @@ var Mod = DotaModifierService.Apply(BattleHungerModifier, Caster, Target, Durati
 {
   M.DotDotaDps = EffectiveDps;   // DOTA2 原始 DPS，框架按 K_dmg = 15、每回合 0.5 秒累加小数结算
   M.MoveSpeedPct = -Slow;        // 负数为减速
-  // M.Defence（已 MapArmorToDefence 折算）/ M.AttackSpeedPct / M.Stacks / M.Tag
+  // M.Defence（已 MapArmorToDefence 折算）/ M.AttackSpeedPct / M.DamageBlock / M.Stacks / M.Tag
 });
 if (Mod == null) { /* 目标无效、减益被免疫 */ }
 ```
@@ -149,6 +149,7 @@ if (Mod == null) { /* 目标无效、减益被免疫 */ }
 | `Defence` | 全部 Modifier 相加，经 `dota.modifiers.defence` 叠加到面板防御 |
 | `MoveSpeedPct` / `AttackSpeedPct` | 全部 Modifier **加算**后乘到速度上（对齐 DOTA2 百分比移速加算），倍率下限 `MinMoveSpeedMultiplier = 0.35` |
 | `DotDotaDps` | 持有者每回合行动后结算，小数自动累加 |
+| `DamageBlock` | 每次受到伤害的格挡量（Pathos 点，可为小数，通常 = DOTA2 原值 ÷ 15）。全部 Modifier 相加，经 `dota.modifiers.block`（`BeforeDamage`，优先级 `Reduction + 10`，排在魔抗之后）对物理/魔法/纯粹伤害逐次扣除：整数部分必挡，小数部分按概率 +1（`DotaModifierService.RollBlock`），扣到 0 时取消本次伤害，但不拦截命中附带效果。已自行结算过格挡的伤害带 `DotaDamageFlags.NoBlock` 跳过。参考实现：帕吉「肉盾」 |
 
 ### 6.3 生命周期
 

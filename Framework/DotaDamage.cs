@@ -41,7 +41,10 @@ namespace Pathos.DotaHeroes.Framework
     DoT = 1 << 2,
 
     /// <summary>允许触发暴击（剑舞等）。</summary>
-    CanCrit = 1 << 3
+    CanCrit = 1 << 3,
+
+    /// <summary>绕过 <see cref="DotaModifier.DamageBlock"/> 伤害格挡（调用方已自行按 DOTA2 逐跳结算过格挡，如帕吉腐烂自伤）。</summary>
+    NoBlock = 1 << 4
   }
 
   /// <summary>

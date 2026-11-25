@@ -1260,14 +1260,29 @@ namespace Pathos.DotaHeroes.Framework.Talents
           $"[{Slot.Hotkey}] {Slot.Title}",
           $"{KindText} · {DescribeSlotLevel(Character, Slot, CurrentLv)}"));
 
-        string DescText = Slot.DescribeLevel?.Invoke(CurrentLv);
-        if (!string.IsNullOrWhiteSpace(DescText))
+        // 第一段：技能本身做什么（与等级无关）；第二段：当前等级的一句话数值。
+        // 未学会时 DescribeLevel(0) 只是「学习 X：……」的简介，已有完整描述就不再重复。
+        string SkillText = Slot.Description;
+        string LevelText = Slot.DescribeLevel?.Invoke(CurrentLv);
+        if (CurrentLv <= 0 && !string.IsNullOrWhiteSpace(SkillText))
+          LevelText = null;
+
+        if (!string.IsNullOrWhiteSpace(SkillText))
         {
           var Desc = CreateLabel(TextSecondaryColour, FontSize: 13);
-          Desc.Text = DescText;
+          Desc.Text = SkillText;
           Desc.LineWrapping = true;
           Desc.Margin.Set(10, 8, 10, 0);
           Body.AddPanel(Desc);
+        }
+
+        if (!string.IsNullOrWhiteSpace(LevelText))
+        {
+          var Level = CreateLabel(string.IsNullOrWhiteSpace(SkillText) ? TextSecondaryColour : GoldBrightColour, FontSize: 13);
+          Level.Text = LevelText;
+          Level.LineWrapping = true;
+          Level.Margin.Set(10, 6, 10, 0);
+          Body.AddPanel(Level);
         }
 
         // DOTA2 式逐级数值：100 / 150 / 200 / 250，当前等级金色高亮；可升级时下一级绿色高亮（即升级预览）

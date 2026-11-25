@@ -295,6 +295,7 @@ namespace Pathos.DotaHeroes.Heroes
                   : DotaLocalization.T("jugg.skill.e.desc_max_suffix"),
                 $"{GetBladeDanceCritMultByLevel(Lv):0.0#}×"),
           TitleResolver: () => DotaLocalization.T("jugg.skill.e.title"),
+          DescriptionResolver: () => DotaLocalization.T("jugg.help.e.desc"),
           Stats: new[]
           {
             DotaSkillStat.Of("ui.stat.crit_chance", Lv => Lv > 0 ? $"{GetBladeDanceCritChanceByLevel(Lv) * 100:0}%" : null)

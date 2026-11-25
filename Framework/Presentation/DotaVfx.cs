@@ -46,6 +46,13 @@ namespace Pathos.DotaHeroes.Framework.Presentation
     /// <summary>施放时指定方向角后的随机抖动幅度（±度）。</summary>
     public float AngleJitter { get; init; }
 
+    /// <summary>
+    /// 地面层（目前仅 Explosion 支持）：改为逐格画在地板之上、物品与角色之下（如帕吉腐烂毒雾），
+    /// 而不是像普通特效那样在所有角色之后整体覆盖。地面层忽略缩放，只套用淡入淡出与峰值不透明度；
+    /// 不会画在墙体 / 关闭的门等阻挡格上。
+    /// </summary>
+    public bool Ground { get; init; }
+
     internal float Opacity(float P)
     {
       float A = 1.0f;
@@ -86,6 +93,11 @@ namespace Pathos.DotaHeroes.Framework.Presentation
     private static readonly Dictionary<object, DotaVfxStyle> Styles = new(ReferenceEqualityComparer.Instance);
     private static readonly ConditionalWeakTable<object, InstanceState> Instances = new();
 
+    // 地面层：动画阶段（角色之后）只记录要画的格子，下一帧 ScenePanel.DrawLocation 画完该格地板后立即补画（1 帧延迟，肉眼不可见）
+    private static Dictionary<Square, List<(Glyph Glyph, float Opacity)>> GroundRecording = new();
+    private static Dictionary<Square, List<(Glyph Glyph, float Opacity)>> GroundDrawing = new();
+    private static readonly HashSet<Square> GroundDrawnThisFrame = new();
+
     private static readonly Assembly EngineAsm = typeof(Expansion).Assembly;
     private static readonly Type EngineType = EngineAsm.GetType("Pathos.Engine");
     private static readonly Type StoryType = EngineAsm.GetType("Pathos.Story");
@@ -108,6 +120,7 @@ namespace Pathos.DotaHeroes.Framework.Presentation
     private static readonly PropertyInfo BeamingBeamProp = BeamingType?.GetProperty("Beam", PathosClientReflection.AnyInstance);
     private static readonly PropertyInfo ExplodingSquareProp = ExplodingType?.GetProperty("Square", PathosClientReflection.AnyInstance);
     private static readonly PropertyInfo ExplodingExplosionProp = ExplodingType?.GetProperty("Explosion", PathosClientReflection.AnyInstance);
+    private static readonly PropertyInfo LocationSquareProp = EngineAsm.GetType("Pathos.Location")?.GetProperty("Square", PathosClientReflection.AnyInstance);
 
     // 客户端（Pathos.dll）ScenePanel 成员，在 ApplyPatches 中解析
     private static FieldInfo AnimatorScenePanelField;
@@ -285,6 +298,16 @@ namespace Pathos.DotaHeroes.Framework.Presentation
 
         PathosClientReflection.PatchSafe(Harmony, AnimatorType, "Execute", new[] { typeof(DrawContract), AnimationType }, typeof(DotaVfx),
           Prefix: nameof(AnimatorExecutePrefix), Tag: "DotaVfx");
+
+        // 地面层：每帧开始交换记录缓冲；每格地板画完后补画该格的地面特效（早于同格物品与角色）
+        var LocationType = AccessTools.TypeByName("Pathos.Location");
+        PathosClientReflection.PatchSafe(Harmony, PanelType, "Draw", new[] { typeof(DrawContract) }, typeof(DotaVfx),
+          Prefix: nameof(ScenePanelDrawPrefix), Tag: "DotaVfx.Ground");
+        if (LocationType != null)
+        {
+          PathosClientReflection.PatchSafe(Harmony, PanelType, "DrawLocation", new[] { typeof(DrawContract), LocationType, typeof(Rect) }, typeof(DotaVfx),
+            Postfix: nameof(DrawLocationPostfix), Tag: "DotaVfx.Ground");
+        }
       }
       catch (Exception Ex)
       {
@@ -453,6 +476,12 @@ namespace Pathos.DotaHeroes.Framework.Presentation
       if (Opacity <= 0.01f)
         return true;
 
+      if (Style.Ground)
+      {
+        RecordGround(Center, Explosion, Opacity);
+        return true;
+      }
+
       float Scale = Style.Scale(P);
       float Cell = F.Size * Scale;
       float Cx = F.CenterX(Center), Cy = F.CenterY(Center);
@@ -471,6 +500,61 @@ namespace Pathos.DotaHeroes.Framework.Presentation
         }
       }
       return true;
+    }
+
+    // ---------------------------------------------------------------- 地面层
+
+    private static void RecordGround(Square Center, Explosion Explosion, float Opacity)
+    {
+      var Map = Center.Map;
+      int Index = 0;
+      for (int Dy = -1; Dy <= 1; Dy++)
+      {
+        for (int Dx = -1; Dx <= 1; Dx++, Index++)
+        {
+          var Glyph = Explosion.GetGlyph((ExplosionArea)Index);
+          if (Glyph == null || Map == null || !Map.IsValid(Center.X + Dx, Center.Y + Dy))
+            continue;
+
+          var Sq = Map[Center.X + Dx, Center.Y + Dy];
+          if (!GroundRecording.TryGetValue(Sq, out var List))
+            GroundRecording[Sq] = List = new List<(Glyph, float)>(1);
+          List.Add((Glyph, Opacity));
+        }
+      }
+    }
+
+    private static void ScenePanelDrawPrefix()
+    {
+      // 上一帧动画阶段记录的地面层 → 本帧随地板绘制
+      (GroundDrawing, GroundRecording) = (GroundRecording, GroundDrawing);
+      GroundRecording.Clear();
+      GroundDrawnThisFrame.Clear();
+    }
+
+    private static void DrawLocationPostfix(object __instance, DrawContract DC, object Location, Rect LocationRect)
+    {
+      if (GroundDrawing.Count == 0 || DC == null || Location == null)
+        return;
+
+      try
+      {
+        var Square = LocationSquareProp?.GetValue(Location) as Square;
+        if (Square == null || !GroundDrawing.TryGetValue(Square, out var List) || !GroundDrawnThisFrame.Add(Square))
+          return;
+        if (Square.IsVoid() || Square.IsBlocked(Vision: true))
+          return;
+
+        foreach (var (Glyph, Opacity) in List)
+        {
+          if (PanelSelectImageMethod.Invoke(__instance, new object[] { Glyph }) is Image Img)
+            DC.DrawImage(Img, LocationRect, Opacity, null, null, null);
+        }
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"DotaVfx ground layer failed: {Ex.Message}");
+      }
     }
   }
 }

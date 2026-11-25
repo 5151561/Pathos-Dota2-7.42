@@ -42,6 +42,10 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       TranslationType?.GetMethod("GetName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Entity) }, null);
 
+    private static readonly MethodInfo TranslationGetSpellDescriptionMethod =
+      TranslationType?.GetMethod("GetDescription", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Spell) }, null);
+
     private static readonly ConstructorInfo InteractionSourceSquareCtor =
       InteractionType?.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Character), typeof(Square), typeof(string) }, null);
@@ -1354,6 +1358,23 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       catch { }
 
       return Entity.Name ?? string.Empty;
+    }
+
+    /// <summary>法术描述的当前语言译文（Codex 字典 SpellDescription），取不到时回退英文原文。</summary>
+    public static string GetLocalizedDescription(Spell Spell)
+    {
+      if (Spell == null)
+        return string.Empty;
+
+      try
+      {
+        if (TranslationGetSpellDescriptionMethod?.Invoke(null, new object[] { Spell }) is string Localized &&
+            !string.IsNullOrEmpty(Localized))
+          return Localized;
+      }
+      catch { }
+
+      return Spell.Description ?? string.Empty;
     }
 
     private static Ability FindAbility(Form Form, string AttributeName)

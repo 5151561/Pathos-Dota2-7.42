@@ -282,6 +282,7 @@ namespace Pathos.DotaHeroes.Heroes
                   ? DotaLocalization.Format("axe.skill.e.desc_next_suffix", GetHelixThresholdByLevel(Lv + 1))
                   : DotaLocalization.T("axe.skill.desc_max_suffix")),
           TitleResolver: () => DotaLocalization.T("axe.skill.e.title"),
+          DescriptionResolver: () => DotaLocalization.T("axe.help.e.desc"),
           Stats: new[]
           {
             DotaSkillStat.Of("ui.stat.trigger_hits", Lv => Lv > 0 ? $"{GetHelixThresholdByLevel(Lv)}" : null),

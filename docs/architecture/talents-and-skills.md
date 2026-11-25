@@ -149,6 +149,7 @@ DotaVfx.Style(WhirlStrike,     new DotaVfxStyle { Span = 3, SpinDegreesPerSecond
 | `Span` | Strike 占格边长（3 = 覆盖 3×3）；`DotaVfx.Strike(..., Span: 2R+1)` 可按技能半径覆盖。 |
 | `SpinDegreesPerSecond` | 按 Story 绝对时钟旋转，循环生成的旋风无缝衔接。 |
 | `RandomAngle` / `AngleJitter` | 斩击随机角度 / 在指定方向（`DotaVfx.AngleOf(from, to)`）上抖动，避免多刀重叠。 |
+| `Ground` | 地面层（仅 Explosion）：普通特效在所有角色之后整体覆盖，地面层改为逐格画在该格地板之后、物品与角色之前，适合贴地的光环 / 毒雾，不遮挡单位。实现：动画阶段只记录格子，下一帧 `ScenePanel.DrawLocation` 后置补画（1 帧延迟）；忽略缩放，跳过墙体与关闭的门。参考实现：帕吉「腐烂」。 |
 
 贴图由 [tools/VfxGen](../../tools/VfxGen/Program.cs) 按 Pathos 原生特效像素风生成：单格特效画在 32×32 网格上、最近邻 ×4 放大到 128；跨 3×3 旋转的贴图用 64 网格（×2），3×3 切片用 96 网格。每种特效只用一条 5~7 色色阶（暗色描边、亮色作芯），无抗锯齿，过渡与淡出用 4×4 有序抖动，边缘噪声扰动，底层垫很淡的柔光。造型与配色对照刀塔百科（wiki.dota2.com.cn）技能演示视频。修改后在仓库根目录执行：
 
