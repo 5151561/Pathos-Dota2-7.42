@@ -158,7 +158,7 @@ DotaVfx.Style(WhirlStrike,     new DotaVfxStyle { Span = 3, SpinDegreesPerSecond
 | `SpinDegreesPerSecond` | 按 Story 绝对时钟旋转，循环重复生成的旋风能无缝衔接。 |
 | `RandomAngle` / `AngleJitter` | 斩击随机角度 / 在指定攻击方向（`DotaVfx.AngleOf(from, to)`）上抖动，避免多刀完全重叠。 |
 
-贴图本身由 [tools/VfxGen](../../tools/VfxGen/Program.cs) 程序化生成（8× 超采样 → 64 逻辑像素 → 2× 最近邻放大，保持与现有贴图一致的 2px 像素颗粒；跨 3×3 旋转的环形贴图直接输出 128 全分辨率）。修改造型/配色后在仓库根目录执行：
+贴图本身由 [tools/VfxGen](../../tools/VfxGen/Program.cs) 按 Pathos 原生特效的像素画风格生成：单格特效画在 32×32 像素网格上、最近邻 ×4 放大到 128（与原生 fire beam / flame strike 的 4px 像素颗粒一致）；跨 3×3 旋转的贴图用 64 网格（×2），3×3 回退切片用 96 网格。每种特效只用一条 5~7 色色阶（暗色作描边、亮色作芯），无抗锯齿，过渡与淡出用 4×4 有序抖动，边缘用噪声扰动，底层垫一层很淡的柔光。造型与配色对照刀塔百科（wiki.dota2.com.cn）技能演示视频。修改造型/配色后在仓库根目录执行：
 
 ```powershell
 dotnet run --project tools/VfxGen -- .

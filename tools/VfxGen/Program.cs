@@ -1,418 +1,523 @@
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 
 // =====================================================================================
-// DOTA2 英雄 VFX 贴图生成器
+// DOTA2 英雄 VFX 像素贴图生成器
 //
-// 所有特效贴图在 64×64「逻辑像素」画布上用 8× 超采样矢量绘制，再缩到 64×64 并以最近邻放大到 128×128，
-// 与项目现有 2px 像素颗粒的贴图风格一致。颜色/造型参考 DOTA2 官方技能演示：
-//   - 主宰 无敌斩：白芯 + 冰蓝外缘的细长利刃斩痕，残影为淡蓝细线
-//   - 主宰 剑刃风暴：剑刃环绕旋转（钢白刃 + 金色刃光 + 风痕），中心镂空露出英雄
-//   - 主宰 剑舞暴击：红橙新月刀光 + 速度线
-//   - 斧王 淘汰之刃：自上而下的重斧劈砍（猩红 + 白热刃口）
-//   - 斧王 反击螺旋：猩红斧刃回旋弧
-//   - 斧王 狂战士之吼：红橙怒吼冲击环
-//   - 水人 波浪形态：半透明水流带（深蓝 → 青 + 白色浪尖）与落点水花环
+// 风格对齐 Pathos 原生特效（如 fire beam / flame strike / acid strike）：
+//   - 单格特效在 32×32 像素网格上绘制，最近邻 ×4 放大到 128（与原生 4px 像素颗粒一致）；
+//     跨 3×3 旋转的大特效用 64×64 网格（×2），3×3 回退切片用 96×96 网格（每格 32）。
+//   - 每种特效只用一条 5~7 色的色阶（暗色作描边 → 亮色作芯），无抗锯齿；
+//     过渡与淡出用 4×4 有序抖动（Bayer），边缘用噪声扰动，避免几何规整的「矢量感」。
+//   - 底层再垫一层很淡的柔光（与原生 fire beam 的光晕同理），贴图本体仍是硬像素。
+//
+// 造型与配色对照刀塔百科（wiki.dota2.com.cn）官方技能演示：
+//   - 主宰 无敌斩：白热芯 → 金黄 → 橙红刃缘的利刃斩痕，突进残影是断续的金色刀光
+//   - 主宰 剑刃风暴：红色新月扫痕（刃头橙金、尾部抖动淡出）+ 细金环 + 钢剑
+//   - 主宰 剑舞暴击：淡金长弧刀光 + 命中处红色血花
+//   - 斧王 淘汰之刃：红色闪爆 + 白热劈砍 + 金色火星 + 暗红血溅
+//   - 斧王 反击螺旋：暗红回旋拖影 + 钢斧 + 甩出的血滴
+//   - 斧王 狂战士之吼：参差放射的红色冲击波
+//   - 水人 波浪形态：奔涌的青蓝水体 + 白色浪沫与飞沫；落点水花环；适应性打击为水团溅射
 //
 // 用法：dotnet run --project tools/VfxGen -- <仓库根目录>
 // =====================================================================================
-
-const int Logical = 64;     // 每格逻辑像素
-const int Supersample = 8;  // 超采样倍数
-const int OutputScale = 2;  // 输出放大倍数（64 → 128）
 
 string Root = args.Length > 0 ? args[0] : ".";
 string Jugg = Path.Combine(Root, "Resources", "Heroes", "juggernaut");
 string Axe = Path.Combine(Root, "Resources", "Heroes", "axe");
 string Morph = Path.Combine(Root, "Resources", "Heroes", "morphling");
 
-// ---------------------------------------------------------------- 调色板
-var White = Color.FromArgb(255, 255, 255, 255);
-var IceCore = Color.FromArgb(255, 236, 250, 255);
-var IceMid = Color.FromArgb(200, 150, 226, 255);
-var IceGlow = Color.FromArgb(70, 80, 170, 255);
-var Steel = Color.FromArgb(255, 244, 247, 255);
-var Gold = Color.FromArgb(220, 255, 196, 84);
-var GoldGlow = Color.FromArgb(70, 255, 150, 40);
-var CritCore = Color.FromArgb(255, 255, 236, 190);
-var CritMid = Color.FromArgb(235, 255, 84, 34);
-var CritGlow = Color.FromArgb(90, 200, 16, 40);
-var BloodCore = Color.FromArgb(255, 255, 240, 200);
-var BloodMid = Color.FromArgb(240, 222, 30, 30);
-var BloodDark = Color.FromArgb(200, 120, 6, 16);
-var BloodGlow = Color.FromArgb(80, 170, 0, 20);
-var RoarCore = Color.FromArgb(235, 255, 120, 40);
-var RoarGlow = Color.FromArgb(80, 210, 30, 20);
-var WaterDeep = Color.FromArgb(90, 30, 110, 255);
-var WaterBody = Color.FromArgb(170, 60, 190, 255);
-var WaterLight = Color.FromArgb(210, 150, 235, 255);
-var Foam = Color.FromArgb(235, 245, 252, 255);
+// ---------------------------------------------------------------- 色阶（暗 → 亮）
+Color[] Omni = { H("6E1A10"), H("C2401A"), H("EE7C22"), H("FFC03A"), H("FFEB96"), H("FFFFF2") };
+Color[] Fury = { H("5E0C10"), H("9C1418"), H("CC261E"), H("EC5228"), H("FF9038"), H("FFCF5A"), H("FFF4D2") };
+Color[] Crit = { H("7E3412"), H("C2661E"), H("EAA040"), H("FFD27A"), H("FFF2C8"), H("FFFFFF") };
+Color[] Blood = { H("4E080C"), H("8A1016"), H("C42024"), H("EC4A34") };
+Color[] Flash = { H("6A0C10"), H("B01A1C"), H("E2382A"), H("FF6A3A"), H("FFAA50") };
+Color[] Chop = { H("7A1612"), H("D63A1E"), H("FFA44A"), H("FFEFC8"), H("FFFFFF") };
+Color[] Helix = { H("3E070B"), H("6E0E14"), H("A21A20"), H("D2352A"), H("F07448") };
+Color[] Roar = { H("5C0A0C"), H("9C1418"), H("D22A22"), H("F2582C"), H("FF9A48"), H("FFDA94") };
+Color[] Water = { H("123878"), H("1E60B6"), H("2E8CDE"), H("50C4F0"), H("A6ECFF"), H("FFFFFF") };
+
+Color Gold = H("FFCF5A"), GoldDark = H("B87A22"), Ember = H("FFE48A"), White = H("FFFFFF");
+Color SteelOut = H("26232C"), SteelMid = H("7A8496"), SteelLight = H("BAC4D2"), SteelEdge = H("F2F6FF");
+Color Wood = H("8A5A30"), WoodDark = H("4A2A12");
 
 // =====================================================================================
 // 主宰
 // =====================================================================================
 
-// 无敌斩斩痕（水平基准，渲染时按攻击方向旋转 + 随机抖动）
-Save(Tile(G =>
+// 无敌斩斩痕（水平基准，渲染时按攻击方向旋转）：一道微弧利刃 + 下方一道短刀风 + 刃尖火星
 {
-  // 主斩：贯穿整格中线的细长利刃（大半径、小张角，微弧），中段最厚、两端尖
-  var Main = Arc(32, 30 + 92, 92, -90 - 18, 36, Symmetric(4.2f, 0.55f));
-  Layer(G, Main, (3.6f, IceGlow), (2.0f, IceMid), (1.0f, IceCore));
-  // 副斩：下方一道更短更细的刀风余光
-  var Echo = Arc(30, 38 + 80, 80, -90 - 12, 24, Symmetric(1.6f, 0.7f));
-  Layer(G, Echo, (2.4f, IceGlow), (1.0f, IceMid));
-  // 刃尖星芒
-  Spark(G, 60.0f, 34.0f, 3.6f, IceMid, White);
-}), Jugg, "omnislash fx strike");
-
-// 无敌斩突进残影（四方向细线）
-foreach (var (Name, Angle) in BeamDirections())
-{
-  Save(Tile(G => StreakAcross(G, Angle, Symmetric(2.4f, 0.25f), (3.2f, IceGlow), (1.7f, IceMid), (0.7f, IceCore))),
-    Jugg, $"omnislash fx beam {Name}");
+  var G = new Px(32);
+  Field(G, Omni, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, 16, 54);
+    float T = (A - (-90 - 24)) / 48f;
+    if (T < 0 || T > 1) return 0;
+    float W = 3.3f * MathF.Pow(MathF.Sin(MathF.PI * T), 0.8f) * (0.8f + 0.4f * Noise(T * 7, 0, 11));
+    return W < 0.4f ? 0 : 1 - MathF.Abs(R - 38) / W;
+  });
+  Field(G, Omni, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, 14, 60);
+    float T = (A - (-90 - 16)) / 30f;
+    if (T < 0 || T > 1) return 0;
+    float W = 1.7f * MathF.Pow(MathF.Sin(MathF.PI * T), 0.7f);
+    return W < 0.4f ? 0 : 0.75f * (1 - MathF.Abs(R - 38) / W);
+  });
+  Dots(G, (30, 16, White), (29, 15, Ember), (31, 14, Gold), (27, 13, Omni[2]), (25, 12, Omni[3]),
+    (2, 16, Omni[2]), (4, 14, Omni[3]), (24, 23, Omni[2]), (9, 25, Omni[1]), (19, 26, Omni[3]));
+  Save(G, 4, Omni[3], 0.30f, 5, Jugg, "omnislash fx strike");
 }
 
-// 剑刃风暴：主宰伸臂持剑高速自转 —— 1 把实体长剑 + 2 道剑影，每把剑身后拖一片渐隐的扇形剑痕
-// （单张贴图，渲染时覆盖 3×3 并按顺时针持续旋转，中心镂空露出英雄本体）
-Bitmap BladeFuryWhirl(int Size)
+// 无敌斩突进残影（四方向，可沿路径无缝拼接）：断续的金色刀光 + 零星火星
+foreach (var Dir in new[] { "h", "v", "f", "b" })
 {
-  return Canvas(Size, G =>
+  var G = new Px(32);
+  Beam(G, Dir, Omni, (S, D) =>
   {
-    float C = Size / 2.0f, K = Size / 64.0f;
-    float Hilt = Size * 0.15f, Guard = Size * 0.19f, Tip = Size * 0.47f;
-    for (int I = 0; I < 3; I++)
+    float W = 0.7f + 1.1f * Noise(S / 8f, 3, 21, 4);
+    if (Noise(S / 4f, 7, 22, 8) < 0.4f) W *= 0.3f;
+    float V = 0.9f * (1 - MathF.Abs(D) / W);
+    if (V > 0) return V;
+    int Si = Wrap((int)MathF.Floor(S), 32), Di = (int)MathF.Floor(D);
+    return MathF.Abs(D) < 5 && Hash(Si, Di, 23) > 0.93f ? 0.45f : 0;
+  }, 0.5f);
+  Save(G, 4, Omni[3], 0.28f, 4, Jugg, $"omnislash fx beam {Dir}");
+}
+
+// 剑刃风暴：红色新月扫痕（刃头橙金、尾部抖动淡出）+ 细金环 + 伸出的钢剑；
+// 64 网格单张旋转贴图（覆盖 3×3）与 96 网格 3×3 回退切片
+Px BladeFury(int N)
+{
+  var G = new Px(N);
+  float K = N / 64f, C = N / 2f;
+  Field(G, Fury, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, C, C);
+    float Behind = Mod(-90 - A, 360);
+    if (Behind > 235) return 0;
+    float T = Behind / 235f;
+    float Rin = (11 + 13 * T) * K + (Noise(A / 360 * 24 + 24, 1, 31, 24) - 0.5f) * 3 * K;
+    float Rout = (29.5f - 2.5f * T) * K + (Noise(A / 360 * 18 + 18, 2, 32, 18) - 0.5f) * 2.5f * K;
+    if (R < Rin || R > Rout) return 0;
+    float U = (R - Rin) / (Rout - Rin);
+    float V = MathF.Pow(1 - T, 1.5f) * (0.5f + 0.5f * U);
+    if (Behind < 14) V = MathF.Max(V, 0.9f + 0.1f * U);
+    return V;
+  }, 0.9f);
+  // 细金环（断续）
+  for (int Y = 0; Y < N; Y++)
+    for (int X = 0; X < N; X++)
     {
-      float Theta = -90 + I * 120;
-      float Alpha = I == 0 ? 1.0f : 0.42f;
-
-      // 扇形剑痕：剑身扫过的区域，越往后越淡（顺时针旋转 → 痕迹在逆时针一侧）
-      const int Slices = 28;
-      float TrailSweep = 105;
-      for (int S = 0; S < Slices; S++)
+      var (R, A) = Polar(X + 0.5f, Y + 0.5f, C, C);
+      if (MathF.Abs(R - 31 * K) < 0.55f * K + 0.05f)
       {
-        float T0 = S / (float)Slices;
-        float Fade = MathF.Pow(1 - T0, 1.8f) * Alpha;
-        float A0 = Theta - TrailSweep * (S + 1) / Slices, Sweep = TrailSweep / Slices + 0.6f;
-        float Mid = (Guard + Tip) * 0.5f + Size * 0.02f, Band = (Tip - Guard) * (0.9f - 0.35f * T0);
-        Layer(G, Arc(C, C, Mid, A0, Sweep, _ => Band), (1.0f, Fade01(Color.FromArgb(70, 255, 214, 130), Fade)));
-        // 剑尖划出的亮线
-        Layer(G, Arc(C, C, Tip - 0.6f * K, A0, Sweep, _ => 1.3f * K), (1.0f, Fade01(Color.FromArgb(210, 255, 240, 205), Fade)));
-      }
-
-      // 剑身：护手 → 剑尖的细长三角刃，钢白刃身 + 金色刃光 + 白色剑脊
-      float Rad = Theta * MathF.PI / 180;
-      float Ux = MathF.Cos(Rad), Uy = MathF.Sin(Rad);
-      PointF At(float R) => new(C + Ux * R, C + Uy * R);
-      var BladeShape = Ribbon(T => At(Guard + (Tip - Guard) * T), T => 3.0f * K * MathF.Pow(1 - T, 0.55f) + 0.4f * K);
-      Layer(G, BladeShape, (2.4f, Fade01(GoldGlow, Alpha)), (1.5f, Fade01(Gold, Alpha)), (1.0f, Fade01(Steel, Alpha)));
-      Layer(G, Ribbon(T => At(Guard + (Tip - Guard) * 0.92f * T), _ => 0.6f * K), (1.0f, Fade01(White, Alpha)));
-      if (I == 0)
-      {
-        // 护手与剑柄（仅实体剑）
-        var Gp = At(Guard);
-        Layer(G, Streak(Gp.X - Uy * 3.2f * K, Gp.Y + Ux * 3.2f * K, Gp.X + Uy * 3.2f * K, Gp.Y - Ux * 3.2f * K, _ => 1.5f * K),
-          (1.0f, Color.FromArgb(255, 214, 160, 60)));
-        Layer(G, Ribbon(T => At(Hilt + (Guard - Hilt) * T), _ => 1.4f * K), (1.0f, Color.FromArgb(255, 120, 70, 40)));
+        float Nz = Noise(A / 360 * 40 + 40, 5, 33, 40);
+        if (Nz > 0.32f) G.Put(X, Y, Nz > 0.6f ? Gold : GoldDark, 0.5f);
       }
     }
-  });
+  // 钢剑：剑尖朝上（旋转时领先扫痕）
+  int Cx = (int)C, Tip = (int)MathF.Round(C - 30 * K), Guard = (int)MathF.Round(C - 10 * K);
+  for (int Y = Tip; Y <= Guard; Y++)
+  {
+    G.Put(Cx - 2, Y, SteelOut); G.Put(Cx + 1, Y, SteelOut);
+    G.Put(Cx - 1, Y, Y == Tip ? SteelEdge : SteelLight);
+    G.Put(Cx, Y, Y == Tip ? SteelOut : SteelMid);
+  }
+  G.Put(Cx - 1, Tip - 1, SteelOut);
+  G.Put(Cx - 1, Tip + 3, SteelEdge); G.Put(Cx - 1, Tip + 4, SteelEdge);
+  for (int X = Cx - 5; X <= Cx + 4; X++) { G.Put(X, Guard + 1, Gold); G.Put(X, Guard + 2, GoldDark); }
+  G.Put(Cx - 6, Guard + 1, SteelOut); G.Put(Cx + 5, Guard + 1, SteelOut);
+  for (int Y = Guard + 3; Y <= Guard + 6; Y++) { G.Put(Cx - 1, Y, Wood); G.Put(Cx, Y, WoodDark); }
+  return G;
 }
 
-SaveRaw(Downscale(BladeFuryWhirl(Logical * OutputScale)), Jugg, "blade fury whirl");
-SaveSlices(BladeFuryWhirl(Logical * 3), Jugg, "blade fury fx");
+Save(BladeFury(64), 2, Fury[3], 0.25f, 6, Jugg, "blade fury whirl");
+SaveSlices(BladeFury(96), Fury[3], 0.25f, 6, Jugg, "blade fury fx");
 
-// 剑刃风暴命中切痕（小号细斩）
-Save(Tile(G =>
+// 剑刃风暴命中切痕：短促的红橙刀口
 {
-  var Cut = Arc(32, 32 + 54, 54, -90 - 20, 40, Symmetric(2.4f, 0.7f));
-  Layer(G, Cut, (2.8f, GoldGlow), (1.6f, Gold), (0.8f, Steel));
-}), Jugg, "blade fury cut");
-
-// 剑舞暴击：红橙新月刀光 + 速度线（水平基准）
-Save(Tile(G =>
-{
-  var Crescent = Arc(28, 34, 22, -150, 190, Leading(7.5f, 0.55f, 0.35f));
-  Layer(G, Crescent, (2.2f, CritGlow), (1.45f, CritMid), (0.55f, CritCore));
-  var Rim = Arc(28, 34, 25.5f, -110, 120, Symmetric(1.3f, 0.6f));
-  Layer(G, Rim, (1.0f, CritCore));
-  for (int I = 0; I < 3; I++)
+  var G = new Px(32);
+  Field(G, Fury, (X, Y) =>
   {
-    float Y = 20 + I * 12;
-    Layer(G, Streak(4 + I * 3, Y, 18 + I * 2, Y, Symmetric(1.1f, 0.4f)), (1.0f, Color.FromArgb(150, 255, 160, 90)));
-  }
-}), Jugg, "blade dance fx crit");
+    var (R, A) = Polar(X, Y, 16, 42);
+    float T = (A - (-90 - 26)) / 52f;
+    if (T < 0 || T > 1) return 0;
+    float W = 2.6f * MathF.Pow(MathF.Sin(MathF.PI * T), 0.7f) * (0.8f + 0.4f * Noise(T * 6, 1, 35));
+    return W < 0.4f ? 0 : 1 - MathF.Abs(R - 26) / W;
+  });
+  Dots(G, (27, 14, Ember), (28, 12, Fury[4]), (5, 15, Fury[3]), (21, 20, Fury[2]));
+  Save(G, 4, Fury[3], 0.25f, 4, Jugg, "blade fury cut");
+}
+
+// 剑舞暴击：淡金长弧刀光（刃头厚、尾部细）+ 命中端红色血花（水平基准）
+{
+  var G = new Px(32);
+  Field(G, Crit, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, 15, 30);
+    float T = (A - (-165)) / 150f;
+    if (T < 0 || T > 1) return 0;
+    float W = 4.4f * MathF.Pow(T, 1.1f) * MathF.Pow(1 - T, 0.22f) / 0.82f * (0.85f + 0.3f * Noise(T * 8, 2, 41));
+    return W < 0.4f ? 0 : 1 - MathF.Abs(R - 15) / W;
+  });
+  Field(G, Blood, (X, Y) =>
+  {
+    float Dx = X - 27, Dy = Y - 25;
+    float R = MathF.Sqrt(Dx * Dx + Dy * Dy) / (3.8f + 1.6f * Noise(MathF.Atan2(Dy, Dx) * 1.3f + 8, 1, 42));
+    return R < 1 ? 0.95f * (1 - R) + 0.1f : 0;
+  }, 0.5f);
+  Dots(G, (31, 21, Blood[2]), (30, 30, Blood[1]), (24, 30, Blood[2]), (29, 31, Blood[1]), (31, 26, Blood[3]),
+    (23, 21, Blood[2]), (26, 19, Blood[1]), (3, 22, Crit[2]), (6, 16, Crit[3]), (11, 13, Crit[1]));
+  Save(G, 4, Crit[3], 0.28f, 5, Jugg, "blade dance fx crit");
+}
 
 // =====================================================================================
 // 斧王
 // =====================================================================================
 
-// 淘汰之刃：自上而下的重斧劈砍 + 劈裂冲击纹
-Save(Tile(G =>
+// 淘汰之刃：红色闪爆 + 自上而下的白热劈砍 + 金色火星 + 下方暗红血溅
 {
-  var Chop = Arc(-26, 32, 60, -36, 72, Leading(10.0f, 0.6f, 0.2f));
-  Layer(G, Chop, (2.0f, BloodGlow), (1.35f, BloodDark), (0.85f, BloodMid), (0.3f, BloodCore));
-  // 劈落点横向冲击与裂纹
-  Layer(G, Streak(12, 50, 52, 50, Symmetric(2.0f, 0.5f)), (2.4f, BloodGlow), (1.0f, Color.FromArgb(200, 255, 120, 80)));
-  foreach (var (Dx, Dy) in new[] { (-14f, 8f), (12f, 9f), (-7f, 12f), (7f, 13f) })
-    Layer(G, Streak(32, 50, 32 + Dx, 50 + Dy, Symmetric(1.2f, 0.5f)), (1.0f, BloodDark));
-}), Axe, "culling blade fx strike");
-
-// 反击螺旋：猩红斧刃回旋弧（单张，渲染时覆盖 3×3 并高速旋转）
-Bitmap CounterHelixWhirl(int Size)
-{
-  return Canvas(Size, G =>
+  var G = new Px(32);
+  Field(G, Flash, (X, Y) =>
   {
-    float C = Size / 2.0f, R = Size * 0.39f, K = Size / 64.0f;
-    Layer(G, Arc(C, C, R, 0, 290, Leading(7.0f * K, 1.3f, 0.12f)), (1.9f, BloodGlow), (1.35f, BloodDark), (0.9f, BloodMid), (0.3f, BloodCore));
-    Layer(G, Arc(C, C, R * 0.7f, 150, 160, Symmetric(1.6f * K, 0.5f)), (1.6f, BloodGlow), (1.0f, Color.FromArgb(150, 255, 110, 80)));
-  });
+    float Dx = X - 16, Dy = Y - 17;
+    float R = MathF.Sqrt(Dx * Dx + Dy * Dy) / (9.5f + 3f * Noise(MathF.Atan2(Dy, Dx) * 1.6f + 8, 2, 51));
+    return R < 1 ? 0.8f * (1 - R) : 0;
+  }, 0.9f);
+  // 血溅：劈落点一小摊 + 向下、向两侧喷开的参差血线
+  Field(G, Blood, (X, Y) =>
+  {
+    float Dx = X - 16, Dy = Y - 23.5f;
+    if (Dx * Dx / 9 + Dy * Dy / 4 < 1) return 0.9f;
+    if (Y < 22) return 0;
+    float Spread = 3 + (Y - 22) * 0.9f;
+    if (MathF.Abs(Dx) > Spread) return 0;
+    float Stripe = Noise((X - 16) / Spread * 3.2f + 20, 0, 52);
+    float Len = 4 + 7 * Stripe;
+    return Stripe > 0.45f && Y - 22 < Len ? 0.8f * (1 - (Y - 22) / Len) + 0.15f : 0;
+  }, 0.6f);
+  Field(G, Chop, (X, Y) =>
+  {
+    if (Y > 22) return 0;
+    float W = 0.6f + 2.6f * MathF.Pow(Y / 22f, 1.2f);
+    float D = MathF.Abs(X - 16.5f + (Y - 11) * 0.12f);
+    return 1 - D / W;
+  }, 0.5f);
+  Dots(G, (6, 12, Ember), (9, 7, Gold), (24, 9, Ember), (27, 14, Gold), (4, 20, GoldDark), (28, 21, Ember),
+    (11, 4, Gold), (21, 5, GoldDark), (7, 27, Gold), (25, 28, Ember), (20, 13, White), (12, 15, Ember),
+    (10, 30, Blood[1]), (22, 31, Blood[1]), (19, 30, Blood[2]), (13, 31, Blood[0]), (8, 25, Blood[1]), (24, 24, Blood[2]));
+  Save(G, 4, Flash[2], 0.32f, 6, Axe, "culling blade fx strike");
 }
 
-SaveRaw(Downscale(CounterHelixWhirl(Logical * OutputScale)), Axe, "counter helix whirl");
-SaveSlices(CounterHelixWhirl(Logical * 3), Axe, "counter helix fx");
-
-// 狂战士之吼：怒吼冲击环（单张，渲染时由小放大）
-Bitmap RoarRing(int Size)
+// 反击螺旋：暗红回旋拖影 + 钢斧（斧刃朝顺时针前进方向）+ 甩出的血滴；64 网格旋转贴图 + 96 网格回退切片
+Px CounterHelix(int N)
 {
-  return Canvas(Size, G =>
+  var G = new Px(N);
+  float K = N / 64f, C = N / 2f;
+  Field(G, Helix, (X, Y) =>
   {
-    float C = Size / 2.0f, R = Size * 0.40f, K = Size / 64.0f;
-    Layer(G, Arc(C, C, R, 0, 360, _ => 4.2f * K), (2.4f, RoarGlow), (1.0f, RoarCore), (0.35f, Color.FromArgb(230, 255, 214, 150)));
-    // 外沿 10 道放射状怒吼尖刺
-    for (int I = 0; I < 10; I++)
-    {
-      float A = I * 36 + 8, Rad = A * MathF.PI / 180;
-      float X0 = C + MathF.Cos(Rad) * (R + 2 * K), Y0 = C + MathF.Sin(Rad) * (R + 2 * K);
-      float X1 = C + MathF.Cos(Rad) * (R + 7 * K), Y1 = C + MathF.Sin(Rad) * (R + 7 * K);
-      Layer(G, Streak(X0, Y0, X1, Y1, Symmetric(1.6f * K, 0.3f)), (1.8f, RoarGlow), (1.0f, RoarCore));
-    }
-  });
+    var (R, A) = Polar(X, Y, C, C);
+    float Behind = Mod(-90 - A, 360);
+    if (Behind > 340) return 0;
+    float T = Behind / 340f;
+    float Half = (4.5f + 2.0f * (Noise(A / 360 * 20 + 20, 3, 61, 20) - 0.5f)) * K;
+    float V = (1 - MathF.Abs(R - 25 * K) / Half) * (0.3f + 0.7f * MathF.Pow(1 - T, 1.3f));
+    if (V <= 0 && Behind < 220 && (MathF.Abs(R - 17 * K) < 0.5f || MathF.Abs(R - 32 * K) < 0.5f)
+      && Noise(A / 360 * 30 + 30, 4, 62, 30) > 0.45f) return 0.22f;
+    return V;
+  }, 0.9f);
+  int Cx = (int)C, Top = (int)MathF.Round(C - 30 * K), Hand = (int)MathF.Round(C - 8 * K);
+  for (int Y = Top; Y <= Hand; Y++) { G.Put(Cx - 1, Y, WoodDark); G.Put(Cx, Y, Wood); }
+  Sprite(G, Cx + 1, Top, new[]
+  {
+    "ooo......",
+    "omloo....",
+    "omllloo..",
+    "omlllwwo.",
+    "omllllwwo",
+    "omllllwwo",
+    "omlllwwo.",
+    "omlloo...",
+    "omoo.....",
+    "oo.......",
+  }, new() { ['o'] = SteelOut, ['m'] = SteelMid, ['l'] = SteelLight, ['w'] = SteelEdge });
+  Sprite(G, Cx - 4, Top + 1, new[] { "..oo", ".oml", "omll", ".oml", "..oo" },
+    new() { ['o'] = SteelOut, ['m'] = SteelMid, ['l'] = SteelLight });
+  for (int I = 0; I < 7; I++)
+  {
+    float A = (-90 + 10 + I * 13) * MathF.PI / 180, R = (32 + I % 3 * 1.5f) * K;
+    G.Put((int)(C + MathF.Cos(A) * R), (int)(C + MathF.Sin(A) * R), I % 2 == 0 ? Blood[2] : Blood[1]);
+  }
+  return G;
 }
 
-SaveRaw(Downscale(RoarRing(Logical * OutputScale)), Axe, "berserkers call ring");
-SaveSlices(RoarRing(Logical * 3), Axe, "berserkers call fx");
+Save(CounterHelix(64), 2, Helix[3], 0.22f, 6, Axe, "counter helix whirl");
+SaveSlices(CounterHelix(96), Helix[3], 0.22f, 6, Axe, "counter helix fx");
+
+// 狂战士之吼：参差放射的红色冲击波（内沿最亮，尖刺向外抖动淡出）
+Px RoarRing(int N)
+{
+  var G = new Px(N);
+  float K = N / 64f, C = N / 2f;
+  Field(G, Roar, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, C, C);
+    float Inner = (21 + 1.5f * (Noise(A / 360 * 16 + 16, 1, 71, 16) - 0.5f)) * K;
+    float Spike = MathF.Pow(Noise(A / 360 * 22 + 22, 2, 72, 22), 1.6f);
+    float Outer = (24 + 10.5f * Spike) * K;
+    if (R < Inner) return R > Inner * 0.7f ? 0.3f * (R / Inner - 0.7f) / 0.3f : 0;
+    if (R > Outer) return 0;
+    return 1.02f - 0.95f * (R - Inner) / (Outer - Inner);
+  }, 0.9f);
+  return G;
+}
+
+Save(RoarRing(64), 2, Roar[2], 0.28f, 6, Axe, "berserkers call ring");
+SaveSlices(RoarRing(96), Roar[2], 0.28f, 6, Axe, "berserkers call fx");
 
 // =====================================================================================
 // 水人
 // =====================================================================================
 
-// 波浪形态水流带（四方向）
-foreach (var (Name, Angle) in BeamDirections())
+// 波浪形态水流（四方向，可沿路径无缝拼接）：上缘浪沫、体内速度流线、下缘深色描边、上方飞沫
+foreach (var Dir in new[] { "h", "v", "f", "b" })
 {
-  Save(Tile(G =>
+  var G = new Px(32);
+  Beam(G, Dir, Water, (S, D) =>
   {
-    float Len = Angle % 90 == 0 ? 64 : 64 * 1.42f;
-    var Saved = G.Save();
-    G.TranslateTransform(32, 32);
-    G.RotateTransform(Angle);
-    PointF Center(float T) => new(-Len / 2 + Len * T, MathF.Sin(T * MathF.PI * 4) * 3.0f);
-    Layer(G, Ribbon(Center, _ => 10.0f), (1.5f, WaterDeep), (1.0f, WaterBody), (0.5f, WaterLight));
-    // 浪尖白沫：沿波峰的一条细线
-    PointF Crest(float T) => new(-Len / 2 + Len * T, MathF.Sin(T * MathF.PI * 4) * 3.0f - 3.6f);
-    Layer(G, Ribbon(Crest, T => 1.6f * (0.4f + 0.6f * MathF.Abs(MathF.Sin(T * MathF.PI * 4)))), (1.0f, Foam));
-    G.Restore(Saved);
-  }), Morph, $"waveform fx beam {Name}");
+    float Top = -4.5f - 2.4f * Noise(S / 8f, 1, 81, 4) - 2.4f * Noise(S / 4f, 5, 86, 8);
+    float Bottom = 4.5f + 1.5f * Noise(S / 8f, 2, 82, 4);
+    if (D < Top)
+    {
+      int Si = Wrap((int)MathF.Floor(S), 32), Di = (int)MathF.Floor(D);
+      return D > Top - 4 && Hash(Si, Di, 83) > 0.88f ? 0.8f : 0;
+    }
+    if (D > Bottom) return 0;
+    if (Bottom - D < 1) return 0.1f;
+    float U = (D - Top) / (Bottom - Top);
+    float V = 0.92f - 0.62f * U;
+    if (Noise(S / 16f, MathF.Floor(D) * 0.7f + 10, 84, 2) > 0.64f) V += 0.25f;
+    if (D - Top < 1.3f && Noise(S / 4f, 3, 85, 8) > 0.42f) V = 1;
+    return V;
+  }, 0.6f);
+  Save(G, 4, Water[3], 0.25f, 4, Morph, $"waveform fx beam {Dir}");
 }
 
-// 波浪形态落点水花（3×3）
-SaveSlices(Canvas(Logical * 3, G =>
+// 波浪形态落点水花（96 网格 3×3）：外缘浪峰最亮、向内抖动淡出，外圈飞溅水滴
 {
-  float C = Logical * 1.5f, R = Logical * 1.05f;
-  Layer(G, Arc(C, C, R, 0, 360, _ => 16f), (1.6f, WaterDeep), (1.0f, WaterBody), (0.35f, WaterLight));
-  Layer(G, Arc(C, C, R + 7, 0, 360, T => 2.4f * (0.5f + 0.5f * MathF.Sin(T * MathF.PI * 18))), (1.0f, Foam));
-  var Rnd = new Random(42);
-  for (int I = 0; I < 26; I++)
+  var G = new Px(96);
+  const float C = 48;
+  Field(G, Water, (X, Y) =>
   {
-    float A = (float)(Rnd.NextDouble() * Math.PI * 2);
-    float D = R + 12 + (float)Rnd.NextDouble() * 26;
-    float S = 2.5f + (float)Rnd.NextDouble() * 3.5f;
-    Dot(G, C + MathF.Cos(A) * D, C + MathF.Sin(A) * D, S, Color.FromArgb(190, 120, 220, 255), Foam);
-  }
-}), Morph, "waveform fx");
+    var (R, A) = Polar(X, Y, C, C);
+    float Inner = 24 + 3 * (Noise(A / 360 * 14 + 14, 1, 91, 14) - 0.5f);
+    float Outer = 35 + 7 * MathF.Pow(Noise(A / 360 * 26 + 26, 2, 92, 26), 2);
+    if (R < Inner) return R > Inner * 0.72f ? 0.25f * (R / Inner - 0.72f) / 0.28f : 0;
+    if (R > Outer)
+      return R < Outer + 7 && Hash(X > 0 ? (int)X : 0, (int)Y, 93) > 0.97f ? 0.85f : 0;
+    float U = (R - Inner) / (Outer - Inner);
+    return Outer - R < 1.4f ? 1 : 0.35f + 0.6f * U;
+  }, 0.8f);
+  SaveSlices(G, Water[3], 0.25f, 6, Morph, "waveform fx");
+}
+
+// 适应性打击：水团命中溅射（向上的水冠 + 飞散水滴）
+{
+  var G = new Px(32);
+  Field(G, Water, (X, Y) =>
+  {
+    var (R, A) = Polar(X, Y, 16, 21);
+    bool Crown = A > -165 && A < -15;
+    float L = Crown ? 6 + 10 * MathF.Pow(Noise(A / 360 * 14 + 14, 1, 101, 14), 1.3f) : 4.5f + Noise(A / 40 + 9, 2, 102);
+    return R < L ? 1.15f - 0.85f * R / L : 0;
+  }, 0.6f);
+  Dots(G, (4, 8, Water[4]), (27, 6, Water[3]), (8, 3, Water[3]), (24, 2, Water[4]), (2, 17, Water[2]),
+    (30, 14, Water[4]), (12, 1, White), (20, 4, White), (6, 26, Water[2]), (27, 25, Water[3]));
+  Save(G, 4, Water[3], 0.28f, 5, Morph, "adaptive strike fx strike");
+}
 
 Console.WriteLine("VFX generated.");
 return;
 
 // =====================================================================================
-// 绘制工具
+// 像素绘制工具
 // =====================================================================================
 
-static IEnumerable<(string Name, float Angle)> BeamDirections()
+static Color H(string Hex) => ColorTranslator.FromHtml("#" + Hex);
+
+static float Mod(float V, float M) => ((V % M) + M) % M;
+
+static int Wrap(int V, int M) => ((V % M) + M) % M;
+
+/// <summary>像素中心 → (半径, 角度°)，角度 0 = 向右，屏幕坐标下顺时针为正。</summary>
+static (float R, float A) Polar(float X, float Y, float Cx, float Cy)
 {
-  yield return ("h", 0);
-  yield return ("v", 90);
-  yield return ("f", -45); // 「/」东北-西南
-  yield return ("b", 45);  // 「\」西北-东南
+  float Dx = X - Cx, Dy = Y - Cy;
+  return (MathF.Sqrt(Dx * Dx + Dy * Dy), MathF.Atan2(Dy, Dx) * 180 / MathF.PI);
 }
 
-static Bitmap Canvas(int Size, Action<Graphics> Draw)
+static float Hash(int X, int Y, int Seed)
 {
-  var Bmp = new Bitmap(Size * Supersample, Size * Supersample, PixelFormat.Format32bppPArgb);
-  using var G = Graphics.FromImage(Bmp);
-  G.Clear(Color.Transparent);
-  G.SmoothingMode = SmoothingMode.AntiAlias;
-  G.CompositingQuality = CompositingQuality.HighQuality;
-  G.ScaleTransform(Supersample, Supersample);
-  Draw(G);
+  unchecked
+  {
+    uint Hv = (uint)(X * 374761393 + Y * 668265263 + Seed * 1442695041);
+    Hv = (Hv ^ (Hv >> 13)) * 1274126177u;
+    Hv ^= Hv >> 16;
+    return (Hv & 0xFFFF) / 65535f;
+  }
+}
+
+/// <summary>平滑值噪声；Period &gt; 0 时在 X 方向按该周期回绕（用于可拼接的光束与环形角度）。</summary>
+static float Noise(float X, float Y, int Seed, int Period = 0)
+{
+  int X0 = (int)MathF.Floor(X), Y0 = (int)MathF.Floor(Y);
+  float Fx = X - X0, Fy = Y - Y0;
+  Fx = Fx * Fx * (3 - 2 * Fx);
+  Fy = Fy * Fy * (3 - 2 * Fy);
+  int Wx(int V) => Period > 0 ? Wrap(V, Period) : V;
+  float A = Hash(Wx(X0), Y0, Seed), B = Hash(Wx(X0 + 1), Y0, Seed);
+  float C = Hash(Wx(X0), Y0 + 1, Seed), D = Hash(Wx(X0 + 1), Y0 + 1, Seed);
+  return (A + (B - A) * Fx) + ((C + (D - C) * Fx) - (A + (B - A) * Fx)) * Fy;
+}
+
+static float Bayer(int X, int Y)
+{
+  int[] M = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
+  return (M[(Y & 3) * 4 + (X & 3)] + 0.5f) / 16f;
+}
+
+/// <summary>按强度场 V(x,y)∈[0,1] 上色：强度映射到色阶，色阶交界与淡出处用有序抖动。</summary>
+static void Field(Px G, Color[] Ramp, Func<float, float, float> V, float Dither = 0.7f)
+{
+  for (int Y = 0; Y < G.N; Y++)
+    for (int X = 0; X < G.N; X++)
+    {
+      float Val = V(X + 0.5f, Y + 0.5f);
+      if (Val <= 0) continue;
+      int I = (int)MathF.Floor(Val * Ramp.Length + (Bayer(X, Y) - 0.5f) * Dither);
+      if (I < 0) continue;
+      if (I >= Ramp.Length) I = Ramp.Length - 1;
+      G.Put(X, Y, Ramp[I], (I + 1) / (float)Ramp.Length);
+    }
+}
+
+/// <summary>光束格：F(S, D)，S 为沿光束方向坐标（每格周期 32，保证相邻格无缝），D 为垂直光束的有符号距离。</summary>
+static void Beam(Px G, string Dir, Color[] Ramp, Func<float, float, float> F, float Dither)
+{
+  const float Rt2 = 1.41421356f;
+  Field(G, Ramp, (X, Y) => Dir switch
+  {
+    "h" => F(X, Y - 16),
+    "v" => F(Y, X - 16),
+    "f" => F((X - Y) / 2 + 16, (X + Y - 32) / Rt2),
+    _ => F((X + Y) / 2, (Y - X) / Rt2),
+  }, Dither);
+}
+
+static void Dots(Px G, params (int X, int Y, Color C)[] List)
+{
+  foreach (var (X, Y, C) in List) G.Put(X, Y, C, 1.5f);
+}
+
+/// <summary>手绘像素块：字符画逐像素贴入，'.' 为透明。</summary>
+static void Sprite(Px G, int Ox, int Oy, string[] Rows, Dictionary<char, Color> Pal)
+{
+  for (int Y = 0; Y < Rows.Length; Y++)
+    for (int X = 0; X < Rows[Y].Length; X++)
+      if (Pal.TryGetValue(Rows[Y][X], out var C)) G.Put(Ox + X, Oy + Y, C);
+}
+
+/// <summary>像素网格 → 最近邻放大位图，底层垫一层很淡的同色柔光。</summary>
+static Bitmap Render(Px G, int Scale, Color Glow, float GlowAlpha, int GlowRadius)
+{
+  int S = G.N * Scale;
+  var Mask = new float[S * S];
+  for (int Y = 0; Y < S; Y++)
+    for (int X = 0; X < S; X++)
+      Mask[Y * S + X] = G[X / Scale, Y / Scale].A > 0 ? 1 : 0;
+  for (int Pass = 0; Pass < 3; Pass++) BoxBlur(Mask, S, GlowRadius);
+
+  var Bmp = new Bitmap(S, S, PixelFormat.Format32bppArgb);
+  for (int Y = 0; Y < S; Y++)
+    for (int X = 0; X < S; X++)
+    {
+      var P = G[X / Scale, Y / Scale];
+      if (P.A > 0) Bmp.SetPixel(X, Y, P);
+      else
+      {
+        int A = (int)MathF.Round(Math.Clamp(Mask[Y * S + X] * GlowAlpha, 0, 1) * 255);
+        if (A > 2) Bmp.SetPixel(X, Y, Color.FromArgb(A, Glow));
+      }
+    }
   return Bmp;
 }
 
-static Bitmap Tile(Action<Graphics> Draw) => Downscale(Canvas(Logical, Draw));
-
-/// <summary>超采样画布 → 逻辑尺寸（高质量缩小）。</summary>
-static Bitmap Downscale(Bitmap Src)
+static void BoxBlur(float[] M, int S, int R)
 {
-  int W = Src.Width / Supersample, H = Src.Height / Supersample;
-  var Dst = new Bitmap(W, H, PixelFormat.Format32bppPArgb);
-  using (var G = Graphics.FromImage(Dst))
-  {
-    G.Clear(Color.Transparent);
-    G.InterpolationMode = InterpolationMode.HighQualityBicubic;
-    G.PixelOffsetMode = PixelOffsetMode.HighQuality;
-    G.CompositingMode = CompositingMode.SourceCopy;
-    G.DrawImage(Src, new Rectangle(0, 0, W, H));
-  }
-  Src.Dispose();
-  return Dst;
+  var T = new float[M.Length];
+  for (int Y = 0; Y < S; Y++)
+    for (int X = 0; X < S; X++)
+    {
+      float Sum = 0;
+      for (int K = -R; K <= R; K++) { int Xx = X + K; if (Xx >= 0 && Xx < S) Sum += M[Y * S + Xx]; }
+      T[Y * S + X] = Sum / (2 * R + 1);
+    }
+  for (int Y = 0; Y < S; Y++)
+    for (int X = 0; X < S; X++)
+    {
+      float Sum = 0;
+      for (int K = -R; K <= R; K++) { int Yy = Y + K; if (Yy >= 0 && Yy < S) Sum += T[Yy * S + X]; }
+      M[Y * S + X] = Sum / (2 * R + 1);
+    }
 }
 
-/// <summary>逻辑尺寸 → 输出尺寸（最近邻放大，保留像素颗粒）。</summary>
-static Bitmap Upscale(Bitmap Src)
+static void Save(Px G, int Scale, Color Glow, float GlowAlpha, int GlowRadius, string Dir, string Name)
 {
-  var Dst = new Bitmap(Src.Width * OutputScale, Src.Height * OutputScale, PixelFormat.Format32bppArgb);
-  using var G = Graphics.FromImage(Dst);
-  G.Clear(Color.Transparent);
-  G.InterpolationMode = InterpolationMode.NearestNeighbor;
-  G.PixelOffsetMode = PixelOffsetMode.Half;
-  G.CompositingMode = CompositingMode.SourceCopy;
-  G.DrawImage(Src, new Rectangle(0, 0, Dst.Width, Dst.Height));
-  return Dst;
-}
-
-static void Save(Bitmap Logical64, string Dir, string Name)
-{
-  using var Out = Upscale(Logical64);
-  Logical64.Dispose();
+  using var Bmp = Render(G, Scale, Glow, GlowAlpha, GlowRadius);
   Directory.CreateDirectory(Dir);
   string P = Path.Combine(Dir, Name + ".png");
-  Out.Save(P, ImageFormat.Png);
+  Bmp.Save(P, ImageFormat.Png);
   Console.WriteLine($"  {P}");
 }
 
-/// <summary>3×3 超采样大图 → 切成 tl/tc/tr/ml/mc/mr/bl/bc/br 9 张贴图（原生 Explosion 回退用）。</summary>
-static void SaveSlices(Bitmap Big, string Dir, string Prefix)
+/// <summary>96 网格 3×3 大图 → 切成 tl/tc/tr/ml/mc/mr/bl/bc/br 9 张 128 贴图（原生 Explosion 回退用）。</summary>
+static void SaveSlices(Px G, Color Glow, float GlowAlpha, int GlowRadius, string Dir, string Prefix)
 {
-  using var Small = Downscale(Big);
+  using var Big = Render(G, 4, Glow, GlowAlpha, GlowRadius);
   string[] Names = { "tl", "tc", "tr", "ml", "mc", "mr", "bl", "bc", "br" };
+  Directory.CreateDirectory(Dir);
   for (int I = 0; I < 9; I++)
   {
-    var Part = new Bitmap(Logical, Logical, PixelFormat.Format32bppPArgb);
-    using (var G = Graphics.FromImage(Part))
-    {
-      G.CompositingMode = CompositingMode.SourceCopy;
-      G.DrawImage(Small, new Rectangle(0, 0, Logical, Logical), new Rectangle((I % 3) * Logical, (I / 3) * Logical, Logical, Logical), GraphicsUnit.Pixel);
-    }
-    Save(Part, Dir, $"{Prefix} {Names[I]}");
+    using var Part = Big.Clone(new Rectangle((I % 3) * 128, (I / 3) * 128, 128, 128), PixelFormat.Format32bppArgb);
+    string P = Path.Combine(Dir, $"{Prefix} {Names[I]}.png");
+    Part.Save(P, ImageFormat.Png);
+    Console.WriteLine($"  {P}");
   }
 }
 
-/// <summary>两端尖、中间厚的对称宽度曲线。</summary>
-static Func<float, float> Symmetric(float Width, float Sharpness)
-  => T => Width * MathF.Pow(MathF.Max(0, MathF.Sin(MathF.PI * T)), Sharpness);
-
-/// <summary>前端（T→1）厚、尾端细的刃形宽度曲线，末端仍收成尖。</summary>
-static Func<float, float> Leading(float Width, float Rise, float Fall)
+/// <summary>像素网格：每个像素记录所用色阶亮度，叠加时只允许更亮（或手绘强制）覆盖，避免后画的暗边盖掉亮芯。</summary>
+sealed class Px
 {
-  float Peak = Rise / (Rise + Fall);
-  float Max = MathF.Pow(Peak, Rise) * MathF.Pow(1 - Peak, Fall);
-  return T => Width * MathF.Pow(Math.Clamp(T, 0, 1), Rise) * MathF.Pow(Math.Clamp(1 - T, 0, 1), Fall) / Max;
-}
+  public readonly int N;
+  readonly Color[,] Cells;
+  readonly float[,] Level;
 
-/// <summary>以 (Cx,Cy) 为圆心、半径 R 的弧形条带（角度：度，0 = 向右，顺时针）。</summary>
-static Func<float, Func<float, float>, PointF[]> Arc(float Cx, float Cy, float R, float StartDeg, float SweepDeg, Func<float, float> Width)
-{
-  return (Scale, _) => RibbonPoints(
-    T =>
-    {
-      float A = (StartDeg + SweepDeg * T) * MathF.PI / 180;
-      return new PointF(Cx + MathF.Cos(A) * R, Cy + MathF.Sin(A) * R);
-    },
-    T => Width(T) * Scale);
-}
-
-static Func<float, Func<float, float>, PointF[]> Streak(float X0, float Y0, float X1, float Y1, Func<float, float> Width)
-  => (Scale, _) => RibbonPoints(T => new PointF(X0 + (X1 - X0) * T, Y0 + (Y1 - Y0) * T), T => Width(T) * Scale);
-
-static Func<float, Func<float, float>, PointF[]> Ribbon(Func<float, PointF> Center, Func<float, float> Width)
-  => (Scale, _) => RibbonPoints(Center, T => Width(T) * Scale);
-
-/// <summary>沿中心线、按宽度函数生成闭合条带多边形。</summary>
-static PointF[] RibbonPoints(Func<float, PointF> Center, Func<float, float> Width, int Samples = 96)
-{
-  var Left = new List<PointF>();
-  var Right = new List<PointF>();
-  for (int I = 0; I <= Samples; I++)
+  public Px(int N)
   {
-    float T = I / (float)Samples;
-    var P = Center(T);
-    var Q = Center(Math.Clamp(T + 0.002f, 0, 1));
-    var Pm = Center(Math.Clamp(T - 0.002f, 0, 1));
-    float Dx = Q.X - Pm.X, Dy = Q.Y - Pm.Y;
-    float L = MathF.Max(1e-5f, MathF.Sqrt(Dx * Dx + Dy * Dy));
-    float Nx = -Dy / L, Ny = Dx / L;
-    float H = Width(T) * 0.5f;
-    Left.Add(new PointF(P.X + Nx * H, P.Y + Ny * H));
-    Right.Add(new PointF(P.X - Nx * H, P.Y - Ny * H));
+    this.N = N;
+    Cells = new Color[N, N];
+    Level = new float[N, N];
   }
-  Right.Reverse();
-  Left.AddRange(Right);
-  return Left.ToArray();
-}
 
-/// <summary>由外到内叠加多层（宽度倍率, 颜色），模拟辉光 → 刃身 → 白芯。</summary>
-static void Layer(Graphics G, Func<float, Func<float, float>, PointF[]> Shape, params (float Scale, Color Colour)[] Layers)
-{
-  foreach (var (Scale, Colour) in Layers)
+  public Color this[int X, int Y] => X >= 0 && Y >= 0 && X < N && Y < N ? Cells[X, Y] : Color.Transparent;
+
+  public void Put(int X, int Y, Color C, float Lvl = 2f)
   {
-    using var B = new SolidBrush(Colour);
-    G.FillPolygon(B, Shape(Scale, null), FillMode.Winding);
+    if (X < 0 || Y < 0 || X >= N || Y >= N || Lvl < Level[X, Y]) return;
+    Cells[X, Y] = C;
+    Level[X, Y] = Lvl;
   }
-}
-
-static void StreakAcross(Graphics G, float AngleDeg, Func<float, float> Width, params (float Scale, Color Colour)[] Layers)
-{
-  float Len = AngleDeg % 90 == 0 ? 64 : 64 * 1.42f;
-  var State = G.Save();
-  G.TranslateTransform(32, 32);
-  G.RotateTransform(AngleDeg);
-  Layer(G, Streak(-Len / 2, 0, Len / 2, 0, T => Width(0.5f) * (0.55f + 0.45f * MathF.Sin(MathF.PI * T))), Layers);
-  G.Restore(State);
-}
-
-static Color Fade01(Color C, float Multiplier)
-  => Color.FromArgb(Math.Clamp((int)MathF.Round(C.A * Multiplier), 0, 255), C.R, C.G, C.B);
-
-static void Spark(Graphics G, float X, float Y, float R, Color Outer, Color Inner)
-{
-  Layer(G, Streak(X - R, Y, X + R, Y, Symmetric(1.4f, 0.8f)), (1.8f, Outer), (0.8f, Inner));
-  Layer(G, Streak(X, Y - R * 0.7f, X, Y + R * 0.7f, Symmetric(1.1f, 0.8f)), (1.8f, Outer), (0.8f, Inner));
-}
-
-static void Dot(Graphics G, float X, float Y, float R, Color Outer, Color Inner)
-{
-  using (var B = new SolidBrush(Outer))
-    G.FillEllipse(B, X - R, Y - R, R * 2, R * 2);
-  using (var B = new SolidBrush(Inner))
-    G.FillEllipse(B, X - R * 0.45f, Y - R * 0.6f, R * 0.8f, R * 0.8f);
-}
-
-/// <summary>已是输出尺寸（128×128）的贴图直接保存，不做像素放大（用于跨 3×3 绘制的旋转环，保留细节）。</summary>
-static void SaveRaw(Bitmap Image128, string Dir, string Name)
-{
-  Directory.CreateDirectory(Dir);
-  string P = Path.Combine(Dir, Name + ".png");
-  Image128.Save(P, ImageFormat.Png);
-  Image128.Dispose();
-  Console.WriteLine($"  {P}");
 }

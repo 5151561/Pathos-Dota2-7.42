@@ -50,7 +50,7 @@
 | 项目 | DOTA2 7.42a 原版 | Pathos 演出 | 说明 |
 | :--- | :--- | :--- | :--- |
 | **无敌斩持续时间** | `duration = 3 / 3.25 / 3.5` 秒（`attack_rate_multiplier = 1.4`） | 按 R 技能等级取 `3 / 3.25 / 3.5` 秒，**平均分配到总斩数**，单斩间隔夹在 `0.2 ~ 0.42` 秒 | `DotaPresentation` 时间轴冻结世界逐斩播放；每斩仍放行 1 回合逻辑时间（回合消耗与旧版一致） |
-| **无敌斩单斩** | 瞬步至目标身旁挥砍 | `0.08` 秒 Flinging 瞬步 + 淡蓝残影（`0.3` 秒淡出）→ 挥砍动作 + 沿攻击方向的冰蓝斩痕（`0.32` 秒，±30° 抖动）；暴击换红橙新月刀光 | 原生拖尾全程满亮度，改由 `DotaVfxStyle` 淡入淡出 |
+| **无敌斩单斩** | 瞬步至目标身旁挥砍 | `0.08` 秒 Flinging 瞬步 + 断续金色刀光残影（`0.3` 秒淡出）→ 挥砍动作 + 沿攻击方向的金橙利刃斩痕（白热芯，`0.32` 秒，±30° 抖动）；暴击换淡金长弧刀光 + 红色血花 | 原生拖尾全程满亮度，改由 `DotaVfxStyle` 淡入淡出 |
 | **剑刃风暴旋风** | `blade_fury_damage_tick = 0.2` 秒 | 每 `0.2` 秒（真实时间）刷新一张跟随主宰的 3×3 剑刃旋风，`900°/s` 顺时针旋转；命中敌人身上闪细刃切痕 | 伤害仍按回合结算（`5s → 10` 回合），旋风演出与伤害解耦，等待输入时也持续旋转 |
 
 ---
@@ -100,7 +100,7 @@
   - 主宰自身不定义任何 Modifier，仅注册减益免疫 `juggernaut.blade_fury_debuff_immunity`（`RegisterDebuffImmunity`）：剑刃风暴期间免疫一切 Hook 实现的减益 Modifier（如斧王战斗饥渴）；无敌斩期间经 `InvulnerableQuery` 同样免疫。
   - **刻意未迁移**：先天「剑心犹在」是无持续时间的永久叠层计数器（`ConditionalWeakTable<Character, BladeformState>`，粘滞期仅为内部子状态，徽章颜色动态变化，层数在 `juggernaut.turn_ticks` 同回合内被剑刃风暴读取），其移速/攻速仍由 `juggernaut.bladeform_speed` 独立相乘；T2 左剑刃风暴 `+15%` 移速绑定原生 `blade fury` Transient；治疗守卫到期属于召唤物生命周期；无敌斩为连斩会话——均不属于「带回合数的增益/减益」。
 - **自定义像素特效（`DotaHeroContext` VFX 工厂）**：
-  - 3×3 剑刃风暴金橙旋风（`blade fury spin`）、无敌斩斩击（`omnislash slash`）、无敌斩瞬移残影光束（`omnislash dash`）、剑舞暴击新月（`blade dance crit`）、治疗守卫脉冲（`healing ward pulse`）。
+  - 3×3 剑刃风暴红色新月扫痕 + 钢剑（`blade fury spin`）、无敌斩斩击（`omnislash slash`）、无敌斩瞬移残影光束（`omnislash dash`）、剑舞暴击淡金刀光 + 血花（`blade dance crit`）、治疗守卫脉冲（`healing ward pulse`）。
 
 ### 注册的 `DotaHookBus` Key
 - `dota.fixed_starting_stats`（`AfterCreateActor`，共享框架）：开局/重摇锁定固定六维并重算初始 HP/Mana。

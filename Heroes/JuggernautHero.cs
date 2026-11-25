@@ -909,7 +909,7 @@ namespace Pathos.DotaHeroes.Heroes
         bool Dashed = false;
         if (DestSquare != null && DestSquare != Caster.Square)
         {
-          // 瞬步：静音位移（避免 TeleportCharacter 每刀刺耳传送音），贴图用 Flinging 在 0.08 秒内飞过去，身后留下一道淡蓝残影
+          // 瞬步：静音位移（避免 TeleportCharacter 每刀刺耳传送音），贴图用 Flinging 在 0.08 秒内飞过去，身后留下一道断续的金色刀光残影
           PathosEngineBridge.DashCharacter(Engine, Caster, DestSquare);
           PathosEngineBridge.StoryFlinging(Engine, DotaPresentation.Seconds(OmnislashDashSeconds), FromSq, DestSquare, Caster);
           DotaVfx.BeamTrail(Engine, FromSq, DestSquare, OmnislashDashBeam, 0.3f, IncludeStart: true, IncludeEnd: false);
@@ -930,7 +930,7 @@ namespace Pathos.DotaHeroes.Heroes
         {
           if (Caster.Deceased || Caster.Square == null)
             return;
-          // 挥砍动作 + 沿攻击方向的冰蓝利刃斩痕（0.32 秒淡出）；暴击换成红橙新月刀光 + CRIT 飘字
+          // 挥砍动作 + 沿攻击方向的金橙利刃斩痕（0.32 秒淡出）；暴击换成淡金长弧刀光 + 血花 + CRIT 飘字
           PathosEngineBridge.StoryCancelCharacter(Engine, Caster);
           PathosEngineBridge.StoryAttacking(Engine, DotaPresentation.Seconds(0.16f), Caster, Dir);
           DotaVfx.Strike(
