@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,การหมุนเกลียวสว�
 ExplosionName,waveform splash,การระเบิดน้ำเวฟฟอร์ม
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,ลูกแก้วกระแสน้ำมีชีวิตที่ควบแน่นขึ้นเพื่อใช้ยิงจากหนังสติ๊กเป็นกระสุนระยะไกลแบบไม่จำกัด
 ItemName,tidal orb,ลูกแก้วกระแสน้ำ
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,ติดตัวกำเนิด (ท่วงท่าดาบ): ได้รับ 1 สแตกทุกๆ 4 เทิร์นที่ไม่ได้รับความเสียหาย (สูงสุด 12 สแตก) แต่ละสแตกเพิ่มความเร็วเคลื่อนที่ +1% และพลังโจมตีกับความเร็วโจมตีสายความว่องไว +2.5%; คงอยู่ต่ออีก 4 เทิร์นหลังถูกโจมตี
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,ติดตัวกำเนิด (น้ำขึ้นน้ำลง): ความว่องไวเพิ่มความเร็วเคลื่อนที่และระยะโจมตีไกล พละกำลังเพิ่มระยะร่ายเวทและต้านทานการชะลอตัว คงอยู่ตลอดระหว่างการแปลงร่าง
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",ติดตัว (กองทัพคนเดียว): ขณะไม่มีพันธมิตรที่มีชีวิตภายใน 4 ช่อง (คงอยู่ 6 เทิร์นเมื่อพันธมิตรเข้าใกล้) แอ็กซ์ได้พละกำลังโบนัสเท่ากับ 50% ของป้องกันส่วนเกิน (ป้องกัน - 10) เพิ่มความเสียหายระยะประชิด
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,พุ่งกระโจนระหว่างศัตรูใกล้เคียงด้วยคมดาบที่ไร้เทียมทาน: ป้องกันความเสียหายและดีบัฟทั้งหมดขณะฟาดฟันศัตรูใกล้ตัวในทุกเทิร์น
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).",สกิลติดตัว (ระบำดาบ): การโจมตีระยะประชิด การฟันของออมนิสแลช และการหมุนของพายุดาบพิโรธมีโอกาส 35% (ตามเลเวลระบำดาบ 1-4) ที่จะโจมตีคริติคอล 1.4/1.6/1.8/2.0 เท่า
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",ติดตัว (เกลียวสวนกลับ): ทุก 7 / 6 / 5 / 4 การโจมตีที่ถูกกระทำ (ตามเลเวลสกิล 1-4 รวมที่พลาด) จะกระตุ้นการหมุนขวานสีแดงเลือด 3x3 สร้างความเสียหายบริสุทธิ์ 100 / 120 / 140 / 160 (1d6+3 ถึง 3d6)
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",หมุนตัวในพายุดาบทำลายล้าง: ต้านทานดีบัฟทั้งหมด ลดความเสียหายเวทลง 80% และสร้างความเสียหายเวทมนตร์รอบตัวในทุกเทิร์น
-PropertyName,blade dance,ระบำดาบ
-PropertyName,blade fury,พายุดาบพิโรธ
-PropertyName,bladeform,ท่วงท่าดาบ
-PropertyName,counter helix,เกลียวสวนกลับ
-PropertyName,ebb and flow,น้ำขึ้นน้ำลง
-PropertyName,omnislash,ออมนิสแลช
-PropertyName,one man army,กองทัพคนเดียว
 RaceName,waterkin//female,วิญญาณวารี
 RaceName,waterkin//male,วิญญาณวารี
 RaceName,waterkin//non-binary,วิญญาณวารี

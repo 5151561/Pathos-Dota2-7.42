@@ -43,22 +43,24 @@ namespace Pathos.DotaHeroes.Framework.UI
   }
 
   /// <summary>
-  /// 被动 / 先天 Property 帮助面板渲染上下文（原生 HelpContext.CompileProperty 不传角色，
-  /// Character 取自当前冒险的主控玩家；主菜单百科中为 null）。
+  /// 被动 / 先天技能帮助面板渲染上下文（零 Codex.Properties，点击状态栏徽章时弹出原生 HelpQuery）。
   /// </summary>
   public sealed class DotaPassiveHelpContext
   {
     public Character Character { get; init; }
-    public Property Property { get; init; }
     public object Engine { get; init; }
   }
 
   /// <summary>
-  /// 单个被动 / 先天 Property 的帮助面板定义：在原生描述后追加「当前实时面板」「技能机制」与按技能等级的数值明细。
+  /// 单个被动 / 先天技能的帮助面板定义：包含标题、图标、基础描述、「当前实时面板」「技能机制」与按技能等级的数值明细。
   /// </summary>
   public sealed class DotaPassiveHelpSpec
   {
-    public string PropertyName { get; init; }
+    /// <summary>唯一 ID（如 <c>axe.one_man_army</c>、<c>juggernaut.bladeform</c>）。</summary>
+    public string Id { get; init; }
+    public Glyph IconGlyph { get; init; }
+    public Func<string> TitleResolver { get; init; }
+    public Func<string> DescriptionResolver { get; init; }
     /// <summary>当前技能等级（0 = 未学，不高亮任何等级）；为空则不高亮。</summary>
     public Func<Character, int> ResolveCurrentLevel { get; init; }
     /// <summary>实时数值行；返回 null / 空表示该角色不适用（如非本英雄）。</summary>
@@ -162,10 +164,18 @@ namespace Pathos.DotaHeroes.Framework.UI
     private static PropertyInfo ShellEngineProp;
 
     private static FieldInfo HelpEntryItemListField;
+    private static ConstructorInfo HelpEntryCtor;
     private static PropertyInfo HelpItemTypeProp;
+    private static MethodInfo HelpEntryDescriptionMethod;
     private static MethodInfo HelpEntryHighlightMethod;
     private static MethodInfo HelpEntryPropertyMethod;
     private static MethodInfo HelpEntryInformationMethod;
+    private static MethodInfo HelpEntryRenderMethod;
+
+    private static FieldInfo HelpQueryShellField;
+    private static FieldInfo HelpQuerySurfaceField;
+    private static FieldInfo HelpQueryDetailStackField;
+    private static MethodInfo HelpQueryShowMethod;
 
     private static FieldInfo HelpRenderSearchField;
     private static PropertyInfo HelpPropertyKeyProp;
@@ -216,14 +226,69 @@ namespace Pathos.DotaHeroes.Framework.UI
     }
 
     /// <summary>
-    /// 注册被动 / 先天 Property 的帮助面板（按 Property.Name 匹配，覆盖原生天赋栏、技能面板被动与百科中的 Property 帮助）。
+    /// 注册被动 / 先天技能的帮助面板（按 <see cref="DotaPassiveHelpSpec.Id"/> 匹配，零 Codex.Properties，点击状态栏徽章弹出原生帮助弹窗）。
     /// </summary>
     public static void RegisterPassive(DotaPassiveHelpSpec Spec)
     {
-      if (Spec == null || string.IsNullOrWhiteSpace(Spec.PropertyName))
+      if (Spec == null || string.IsNullOrWhiteSpace(Spec.Id))
         return;
 
-      PassiveSpecs[Spec.PropertyName] = Spec;
+      PassiveSpecs[Spec.Id] = Spec;
+    }
+
+    /// <summary>
+    /// 通过 Pathos 原生 <c>HelpQuery.Show</c> 弹出指定被动 / 先天技能的帮助面板。
+    /// </summary>
+    public static bool ShowPassiveHelp(object HelpQuery, Character Character, string PassiveId)
+    {
+      if (HelpQuery == null || string.IsNullOrWhiteSpace(PassiveId))
+        return false;
+
+      if (!PassiveSpecs.TryGetValue(PassiveId, out var Spec))
+        return false;
+
+      if (HelpEntryCtor == null || HelpEntryRenderMethod == null || HelpQueryShowMethod == null)
+        return false;
+
+      try
+      {
+        var Shell = HelpQueryShellField?.GetValue(HelpQuery);
+        var Engine = Shell != null ? ShellEngineProp?.GetValue(Shell) : null;
+        var Surface = HelpQuerySurfaceField?.GetValue(HelpQuery) as Surface;
+        var DetailStack = HelpQueryDetailStackField?.GetValue(HelpQuery) as Inv.Stack;
+        if (Surface == null || DetailStack == null)
+          return false;
+
+        var Entry = HelpEntryCtor.Invoke(null);
+        if (Entry == null)
+          return false;
+
+        string Desc = Spec.DescriptionResolver?.Invoke();
+        if (!string.IsNullOrWhiteSpace(Desc))
+          HelpEntryDescriptionMethod?.Invoke(Entry, new object[] { Desc });
+
+        PopulatePassiveEntry(Entry, Spec, Character ?? ResolveMainCharacter(Engine), Engine);
+
+        var IconImage = Spec.IconGlyph != null ? PathosClientReflection.GetThemeGlyphImage(Spec.IconGlyph) : null;
+        string Title = Spec.TitleResolver?.Invoke() ?? Spec.Id;
+
+        Action Populate = () =>
+        {
+          if (HelpEntryRenderMethod.Invoke(Entry, new object[] { Surface, null }) is IEnumerable<Inv.Panel> Panels)
+          {
+            foreach (var Panel in Panels)
+              DetailStack.AddPanel(Panel);
+          }
+        };
+
+        HelpQueryShowMethod.Invoke(HelpQuery, new object[] { IconImage, Title, Populate });
+        return true;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"DotaSpellHelpBridge.ShowPassiveHelp failed for '{PassiveId}': {Ex}");
+        return false;
+      }
     }
 
     /// <summary>按技能等级 1..<paramref name="MaxLevel"/> 构建被动明细（标题后缀 + 单条说明）。</summary>
@@ -353,6 +418,7 @@ namespace Pathos.DotaHeroes.Framework.UI
         var HelpContextType = ClientAsm.GetType("Pathos.HelpContext");
         var HelpEntryType = ClientAsm.GetType("Pathos.HelpEntry");
         var HelpItemType = ClientAsm.GetType("Pathos.HelpItem");
+        var HelpQueryType = ClientAsm.GetType("Pathos.HelpQuery");
         var HelpRenderType = ClientAsm.GetType("Pathos.HelpRender");
         var HelpPropertyType = ClientAsm.GetType("Pathos.HelpProperty");
         var HelpBlockType = ClientAsm.GetType("Pathos.HelpBlock");
@@ -369,10 +435,19 @@ namespace Pathos.DotaHeroes.Framework.UI
         ShellEngineProp = ShellType?.GetProperty("Engine", AnyInstance);
 
         HelpEntryItemListField = HelpEntryType.GetField("ItemList", AnyInstance);
+        HelpEntryCtor = HelpEntryType.GetConstructor(AnyInstance, null, Type.EmptyTypes, null);
         HelpItemTypeProp = HelpItemType.GetProperty("Type", AnyInstance);
+        HelpEntryDescriptionMethod = HelpEntryType.GetMethod("Description", AnyInstance, null, new[] { typeof(string) }, null);
         HelpEntryHighlightMethod = HelpEntryType.GetMethod("Highlight", AnyInstance, null, new[] { typeof(string), typeof(Colour) }, null);
         HelpEntryPropertyMethod = HelpEntryType.GetMethod("Property", AnyInstance, null, new[] { typeof(string), typeof(string) }, null);
         HelpEntryInformationMethod = HelpEntryType.GetMethod("Information", AnyInstance, null, new[] { typeof(string) }, null);
+        if (HelpSearchType != null)
+          HelpEntryRenderMethod = HelpEntryType.GetMethod("Render", AnyInstance, null, new[] { typeof(Surface), HelpSearchType }, null);
+
+        HelpQueryShellField = HelpQueryType?.GetField("Shell", AnyInstance);
+        HelpQuerySurfaceField = HelpQueryType?.GetField("Surface", AnyInstance);
+        HelpQueryDetailStackField = HelpQueryType?.GetField("DetailStack", AnyInstance);
+        HelpQueryShowMethod = HelpQueryType?.GetMethod("Show", AnyInstance, null, new[] { typeof(Inv.Image), typeof(string), typeof(Action) }, null);
 
         PathosClientReflection.PatchSafe(
           Harmony,
@@ -382,15 +457,6 @@ namespace Pathos.DotaHeroes.Framework.UI
           typeof(DotaSpellHelpBridge),
           Postfix: nameof(CompileSpellPostfix),
           Tag: "SpellHelp");
-
-        PathosClientReflection.PatchSafe(
-          Harmony,
-          HelpContextType,
-          "CompileProperty",
-          new[] { typeof(Property) },
-          typeof(DotaSpellHelpBridge),
-          Postfix: nameof(CompilePropertyPostfix),
-          Tag: "PassiveHelp");
 
         if (HelpRenderType != null && HelpPropertyType != null && HelpBlockType != null && HelpSearchType != null)
         {
@@ -745,95 +811,78 @@ namespace Pathos.DotaHeroes.Framework.UI
       }
     }
 
-    private static void CompilePropertyPostfix(object __instance, Property Property, ref object __result)
+    private static void PopulatePassiveEntry(object Entry, DotaPassiveHelpSpec Spec, Character Character, object Engine)
     {
-      if (__result == null || Property == null || string.IsNullOrEmpty(Property.Name))
-        return;
-
-      if (!PassiveSpecs.TryGetValue(Property.Name, out var Spec))
-        return;
-
-      try
+      var HelpCtx = new DotaPassiveHelpContext
       {
-        object Shell = HelpContextShellField?.GetValue(__instance);
-        object Engine = Shell != null ? ShellEngineProp?.GetValue(Shell) : null;
+        Character = Character,
+        Engine = Engine
+      };
 
-        var HelpCtx = new DotaPassiveHelpContext
+      // 1. 当前实时面板
+      if (HelpCtx.Character != null && Spec.BuildLiveStats != null)
+      {
+        var LiveRows = Spec.BuildLiveStats(HelpCtx);
+        if (LiveRows != null && LiveRows.Count > 0)
         {
-          Character = ResolveMainCharacter(Engine),
-          Property = Property,
-          Engine = Engine
-        };
-
-        // 1. 原生条目（标题 / 图标 / 描述）全部保留，其后追加「当前实时面板」
-        if (HelpCtx.Character != null && Spec.BuildLiveStats != null)
-        {
-          var LiveRows = Spec.BuildLiveStats(HelpCtx);
-          if (LiveRows != null && LiveRows.Count > 0)
+          InvokeHighlight(Entry, LayoutSectionPrefix + DotaLocalization.T("help.section.live_stats"), Colour.Gold);
+          foreach (var (Key, Value) in LiveRows)
           {
-            InvokeHighlight(__result, LayoutSectionPrefix + DotaLocalization.T("help.section.live_stats"), Colour.Gold);
-            foreach (var (Key, Value) in LiveRows)
-            {
-              if (!string.IsNullOrEmpty(Key) && !string.IsNullOrEmpty(Value))
-                InvokeProperty(__result, LayoutLiveRowPrefix + Key, Value);
-            }
-          }
-        }
-
-        // 2. 技能机制
-        var Notes = Spec.BuildMechanicsNotes?.Invoke(HelpCtx);
-        if (Notes != null && Notes.Count > 0)
-        {
-          InvokeProperty(__result, LayoutTierHdrPrefix + DotaLocalization.T("help.section.mechanics"), DotaLocalization.T("help.section.all_levels"));
-          foreach (var Note in Notes)
-          {
-            if (!string.IsNullOrWhiteSpace(Note))
-              InvokeInformation(__result, $"{LayoutBulletPrefix}· {Note}");
-          }
-        }
-
-        // 3. 按技能等级的数值明细（当前等级橙色高亮）
-        var Levels = Spec.BuildLevels?.Invoke(HelpCtx);
-        if (Levels == null || Levels.Count == 0)
-          return;
-
-        int CurrentLevel = HelpCtx.Character != null && Spec.ResolveCurrentLevel != null
-          ? Spec.ResolveCurrentLevel(HelpCtx.Character)
-          : 0;
-
-        foreach (var Level in Levels)
-        {
-          if (Level == null)
-            continue;
-
-          string LevelName = DotaLocalization.Format("help.level.n", Level.Tier);
-          string Suffix = Level.HeaderSuffix ?? string.Empty;
-
-          if (CurrentLevel > 0 && Level.Tier == CurrentLevel)
-          {
-            string HighlightHeader = string.IsNullOrEmpty(Suffix)
-              ? DotaLocalization.Format("help.tier.current_no_suffix", LevelName)
-              : DotaLocalization.Format("help.tier.current_with_suffix", LevelName, Suffix);
-            InvokeHighlight(__result, LayoutSectionPrefix + HighlightHeader, Colour.DarkOrange);
-          }
-          else
-          {
-            InvokeProperty(__result, LayoutTierHdrPrefix + LevelName, string.IsNullOrEmpty(Suffix) ? DotaLocalization.T("help.tier.effect_fallback") : Suffix);
-          }
-
-          if (Level.Bullets != null)
-          {
-            foreach (var Bullet in Level.Bullets)
-            {
-              if (!string.IsNullOrWhiteSpace(Bullet))
-                InvokeInformation(__result, $"{LayoutBulletPrefix}· {Bullet}");
-            }
+            if (!string.IsNullOrEmpty(Key) && !string.IsNullOrEmpty(Value))
+              InvokeProperty(Entry, LayoutLiveRowPrefix + Key, Value);
           }
         }
       }
-      catch (Exception Ex)
+
+      // 2. 技能机制
+      var Notes = Spec.BuildMechanicsNotes?.Invoke(HelpCtx);
+      if (Notes != null && Notes.Count > 0)
       {
-        HookBootstrap.WriteError($"DotaSpellHelpBridge.CompilePropertyPostfix failed for '{Property.Name}': {Ex}");
+        InvokeProperty(Entry, LayoutTierHdrPrefix + DotaLocalization.T("help.section.mechanics"), DotaLocalization.T("help.section.all_levels"));
+        foreach (var Note in Notes)
+        {
+          if (!string.IsNullOrWhiteSpace(Note))
+            InvokeInformation(Entry, $"{LayoutBulletPrefix}· {Note}");
+        }
+      }
+
+      // 3. 按技能等级的数值明细（当前等级橙色高亮）
+      var Levels = Spec.BuildLevels?.Invoke(HelpCtx);
+      if (Levels == null || Levels.Count == 0)
+        return;
+
+      int CurrentLevel = HelpCtx.Character != null && Spec.ResolveCurrentLevel != null
+        ? Spec.ResolveCurrentLevel(HelpCtx.Character)
+        : 0;
+
+      foreach (var Level in Levels)
+      {
+        if (Level == null)
+          continue;
+
+        string LevelName = DotaLocalization.Format("help.level.n", Level.Tier);
+        string Suffix = Level.HeaderSuffix ?? string.Empty;
+
+        if (CurrentLevel > 0 && Level.Tier == CurrentLevel)
+        {
+          string HighlightHeader = string.IsNullOrEmpty(Suffix)
+            ? DotaLocalization.Format("help.tier.current_no_suffix", LevelName)
+            : DotaLocalization.Format("help.tier.current_with_suffix", LevelName, Suffix);
+          InvokeHighlight(Entry, LayoutSectionPrefix + HighlightHeader, Colour.DarkOrange);
+        }
+        else
+        {
+          InvokeProperty(Entry, LayoutTierHdrPrefix + LevelName, string.IsNullOrEmpty(Suffix) ? DotaLocalization.T("help.tier.effect_fallback") : Suffix);
+        }
+
+        if (Level.Bullets != null)
+        {
+          foreach (var Bullet in Level.Bullets)
+          {
+            if (!string.IsNullOrWhiteSpace(Bullet))
+              InvokeInformation(Entry, $"{LayoutBulletPrefix}· {Bullet}");
+          }
+        }
       }
     }
 

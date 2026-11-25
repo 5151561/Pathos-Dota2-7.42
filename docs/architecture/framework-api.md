@@ -23,8 +23,8 @@
 | 无敌 / 禁魔 | `DotaHookBus.RegisterInvulnerableQuery` / `RegisterSilenceQuery` | [hook-system.md §2](hook-system.md) |
 | 临时六维加成（不改永久值） | `DotaHookBus.RegisterActiveFormQuery` | [hook-system.md §2](hook-system.md)；参考实现：斧王「一人之军」 |
 | 读写永久属性 / 最大生命联动 | `DotaStats` / `DotaLife.AdjustMax` | [hook-system.md §9](hook-system.md) |
-| 被动/先天技能（出现在原生天赋栏） | `Ctx.RegisterPassiveProperty` + `Class.AddFeat` | [talents-and-skills.md §2](talents-and-skills.md)（**占用全局 Property 名额，见 §2**） |
-| 主动技能施法期间的状态图标 | 优先 `DotaModifierService`（零 Property）；必须用原生 `Transient` 时才 `Ctx.RegisterSkillStatusProperty` | [talents-and-skills.md §2](talents-and-skills.md) |
+| 被动 / 先天技能（零 Property，点击状态栏徽章弹出原生帮助） | `DotaSkillSlot.CreatePassive` + `DotaSpellHelpBridge.RegisterPassive` + `DotaStatusBadge.ForPassive` | 本文 §2.3、§5 |
+| 主动技能施法期间的状态图标 / 带回合数增益减益 | `DotaModifierService.Define` + `Apply`（零 Property，自动徽章） | [hook-system.md §6](hook-system.md) |
 | 跨存档保存的英雄数值（永久层数等） | `DotaCharacterStorage.Get/Set/AddCustomInt` | 本文 §2 |
 | 角色私有运行时状态（不存档） | `ConditionalWeakTable<Character, TState>`；只需布尔标记时用 `DotaCharacterFlagSet` | 本文 §2 |
 | 左上角状态栏徽章 | `DotaStatusBarBridge.RegisterProvider` + `DotaStatusBadge.ForPassive` | [hook-system.md §12](hook-system.md) |
@@ -64,22 +64,15 @@
 - 带剩余回合的效果：直接用 `DotaModifierService`，不要自建状态类。
 - 以上都**读档即清空**，需要跨存档的走 §2.1。
 
-### 2.3 全局 Property 名额（仍然有效的硬约束）
+### 2.3 全局 Property 约束（本扩展零占用）
 
 Pathos 的 `PropertySet` 底层是 `Inv.BitmixSet`（单个 `Int64`），全局最多 64 个 `Property`，超出会按位回绕撞上官方状态（如幻觉）。官方 `CodexProperties` 已占 **57** 个。
 
-当前扩展占用 **7** 个，**已达 64/64 上限**：
-
-| Property | 注册方式 | 英雄 |
-| :--- | :--- | :--- |
-| 一人之军、反击螺旋 | `RegisterPassiveProperty` | 斧王 |
-| 剑心犹在、剑舞 | `RegisterPassiveProperty` | 主宰 |
-| 剑刃风暴、无敌斩（状态） | `RegisterSkillStatusProperty` | 主宰 |
-| 潮涨潮落 | `RegisterPassiveProperty` | 水人 |
-
-因此：
-- 天赋、技能等级、计数器等**一律不用 Property**（已全部迁到 §2.1，旧文档里的 `dota_talent_*` / `dota_skill_*` 标记早已删除）。
-- 新英雄若还需要 `RegisterPassiveProperty` / `RegisterSkillStatusProperty`，必须先腾出名额（例如把主宰两个技能状态迁到 `DotaModifierService` 徽章），否则会撞官方状态。
+**本扩展已全部迁移为零自定义 Property（0 占用，总计 57/64）**：
+- 天赋、技能等级、计数器 → `DotaCharacterStorage`（§2.1）。
+- 主动技能短期状态与带回合数增益/减益 → `DotaModifierService`（自动生成左上角徽章）。
+- 先天技能与被动技能 → `HeroSkillService`（独立等级）+ `DotaSpellHelpBridge.RegisterPassive`（原生 `HelpQuery` 弹窗）+ `DotaStatusBadge.ForPassive`（左上角徽章）。
+- **禁止调用 `Ctx.Properties.Add`**，确保后续新增任意数量英雄都不受 64 位上限约束。
 
 ---
 
@@ -96,7 +89,7 @@ var Build = HeroSkillBuild.CreateStandard(
     TitleResolver: () => DotaLocalization.T("axe.skill.q.title"),
     Stats: new[] { DotaSkillStat.Of("ui.stat.duration", Lv => Lv > 0 ? $"{...}" : null) }),
   SlotW: ..., SlotR: DotaSkillSlot.CreateActive(..., IsUltimate: true),
-  SlotE: DotaSkillSlot.CreatePassive(Id: SkillHelixId, Hotkey: "E", ..., PassiveProperty: CounterHelixProperty),
+  SlotE: DotaSkillSlot.CreatePassive(Id: SkillHelixId, Hotkey: "E", ..., IconGlyph: CounterHelixGlyph),
   HeroDisplayNameResolver: () => DotaLocalization.T("axe.hero_display"),
   PrimaryAttribute: DotaPrimaryAttribute.Strength);   // 决定第 7 级黄点额外 +1 的属性
 HeroSkillRegistry.Register(Ctx, Build);
@@ -106,7 +99,7 @@ HeroSkillRegistry.Register(Ctx, Build);
 | :--- | :--- |
 | `CreateActive(..., Spell)` | 0→1 学会法术，1→N 原生升星（★~★★★）。小技能 4 级（Lv 1/3/5/7 解锁），`IsUltimate` 3 级（Lv 6/12/18） |
 | `CreateActiveGroup(..., Spells)` | 一次加点同时学会/升星多个法术（水人 E 两个方向、R 变形/解除） |
-| `CreatePassive(..., PassiveProperty)` | 0→1 通过 `GainTalent` 授予被动 Property（原生天赋栏可见），之后数值由 `HeroSkillService.GetSkillLevel` 驱动 |
+| `CreatePassive(...)` | 独立被动技能等级（0→4），由 `HeroSkillService.GetSkillLevel` 驱动（零 Property） |
 | `CreateStandardAttributeBonus` | 7 级黄点（`CreateStandard` 自动追加，无需手写） |
 
 - `Stats`：悬停卡片里的逐级数值行（`DotaSkillStat.Of(labelKey, Lv => text)`，返回 `null` 表示该级无此项）。必须与 `DescribeLevel`、施法共用同一套按等级函数。
@@ -156,7 +149,7 @@ DotaSpellHelpBridge.RegisterSpell(new DotaSpellHelpSpec
 ```
 
 - `HelpCtx.Character` 在百科中为 `null`，`ComputeXxx` 与 `Ability.*` 需容忍 `null`（按 1 级基础值）。
-- 被动 / 先天 Property 用 `RegisterPassive(new DotaPassiveHelpSpec { PropertyName, ResolveCurrentLevel, BuildLiveStats, BuildMechanicsNotes, BuildLevels })`，按等级明细用 `DotaSpellHelpBridge.Levels(maxLevel, header, bullet)`。
+- 被动 / 先天技能用 `RegisterPassive(new DotaPassiveHelpSpec { Id, IconGlyph, TitleResolver, DescriptionResolver, ResolveCurrentLevel, BuildLiveStats, BuildMechanicsNotes, BuildLevels })`（零 Property，点击状态栏徽章弹出原生 `HelpQuery`），按等级明细用 `DotaSpellHelpBridge.Levels(maxLevel, header, bullet)`。
 - 语义着色 `DotaHelpColor`：`Physical` / `Magic` / `Stat` / `Skill` / `Talent` / `Passive` / `Heal` / `Mana` / `Control`。
 - 骰子显示：`DotaSpellHelpBridge.FormatDiceWithRange(dice)` / `FormatDiceNotation(dice)`。
 - 其余规则（真实蓝耗、施法与面板同源）见 [hook-system.md §11](hook-system.md)。

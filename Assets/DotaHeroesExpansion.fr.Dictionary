@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,Rotation d'Hélice contre-attaque
 ExplosionName,waveform splash,Explosion d'eau d'Onde
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Une sphère condensée d'eau de marée vivante tirée comme munition infinie depuis une fronde.
 ItemName,tidal orb,orbe des marées
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Inné (Forme de lame) : Gagne 1 cumul tous les 4 tours sans subir de dégâts (jusqu'à 12 cumuls). Chaque cumul accorde +1% de vitesse de déplacement et +2,5% de puissance de frappe d'agilité et de vitesse d'attaque ; persiste 4 tours après avoir subi des dégâts."
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Inné (Flux et Reflux) : L'Agilité augmente la vitesse de déplacement et la portée d'attaque à distance ; la Force augmente la portée des sorts et la résistance aux ralentissements. Persiste pendant la métamorphose.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Inné (Armée d'un homme) : tant qu'aucun allié vivant ne se trouve à moins de 4 cases (persiste 6 tours après l'approche d'un allié), Axe gagne un bonus de force égal à 50 % de son excédent de défense (défense - 10), augmentant ses dégâts au corps à corps."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Bondit entre les ennemis proches dans un tourbillon d'entailles invulnérables : immunisé à tous les dégâts et altérations négatives tout en tranchant un ennemi proche à chaque tour.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Passif (Danse de la lame) : Les attaques de mêlée, les frappes d'Omnislash et les rotations de Furie de la lame ont 35% de chances (selon le niveau 1 à 4 de Danse de la lame) d'infliger un coup critique de 1,4/1,6/1,8/2,0x dégâts."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Passif (Hélice contre-attaque) : toutes les 7 / 6 / 5 / 4 attaques subies (selon le niveau 1-4, ratées comprises), une rotation écarlate de la hache en 3x3 inflige 100 / 120 / 140 / 160 dégâts purs (1d6+3 à 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Tournoie dans une tempête destructrice de lames : immunisé aux altérations négatives, 80% de réduction des dégâts magiques et inflige des dégâts magiques autour de vous à chaque tour."
-PropertyName,blade dance,danse de la lame
-PropertyName,blade fury,furie de la lame
-PropertyName,bladeform,forme de lame
-PropertyName,counter helix,Hélice contre-attaque
-PropertyName,ebb and flow,flux et reflux
-PropertyName,omnislash,omnislash
-PropertyName,one man army,Armée d'un homme
 RaceName,waterkin//female,être aquatique
 RaceName,waterkin//male,être aquatique
 RaceName,waterkin//non-binary,être aquatique

@@ -68,6 +68,7 @@ docs/                         # 架构、指南、英雄溯源文档
 - **英雄档案**：三维只在 `DotaHeroProfile` 声明一次；`RegisterHooks` 里 `Profile.RegisterStats()`，职业样板 `Profile.ConfigureClass(...)`。
 - **帮助面板**：数值与施法共用英雄内 `ComputeXxx(ch, tier)`；蓝耗用 `DotaHelpFormat.ActualMana`；射程用 `Ability.RangeAt(ch, tier)`；文本 `DotaHelpFormat` / `DotaHelpColor`。
 - **运行时文本**：一律 `DotaLocalization.T/Format` + `ui.<lang>.json`（至少补 `en` 与 `zh-Simplified`）；不要在 C# 里硬编码中英文。
+- **Codex 字典清理**：移除或重构 Codex 条目（如删除旧 Property/法术/实体）后，`PathosMaker` 会报 `has obsolete terms` 警告，**必须及时清理所有 `Assets/*.Dictionary` 中的对应旧条目**，保持构建零警告。
 - **VFX**：`Ctx.RegisterStrikeVfx/BeamVfx/Explosion3x3Vfx` 注册后**必须** `DotaVfx.Style(...)`，播放用 `DotaVfx.*`（按秒）。贴图用 `tools/VfxGen` 生成，画风贴合 Pathos 原生像素特效（32×32 网格 ×4、单条色阶、无抗锯齿、有序抖动淡出），造型与配色对照刀塔百科技能演示视频。
 - **多段演出**：`DotaPresentation.Sequence(...).FreezeWorld(...).At(秒, ...)` 按 DOTA2 原版时长排步骤；禁止「每步 Wait 一回合」（`QueueWaitDecision` 已无人使用，不要再引入）。
 - **状态栏徽章**：`DotaStatusBarBridge.RegisterProvider(key, className, ...)`；带剩余回合的走 `DotaModifierSpec.Badge*`。
@@ -84,7 +85,7 @@ docs/                         # 架构、指南、英雄溯源文档
 
 ### 3.3 引擎避坑
 
-1. **全局 Property 名额已满（64/64）**：Pathos `PropertySet` 是单个 `Int64`，官方占 57，本扩展的 5 个被动 + 2 个技能状态占满剩余 7 个。超出会回绕撞上官方状态（如幻觉）。天赋/技能等级/计数器早已不用 Property（走 `DotaCharacterStorage`），但 `Ctx.RegisterPassiveProperty` / `RegisterSkillStatusProperty` 仍各占 1 个——新增前必须先腾名额，详见 [framework-api.md §2.3](docs/architecture/framework-api.md)。不要直接调 `Ctx.Properties.Add`。
+1. **零自定义 `Codex.Properties`**：Pathos `PropertySet` 是单个 `Int64`（硬上限 64，官方已占 57），超出会按位回绕撞上官方状态（如幻觉）。本扩展**不注册任何自定义 Property（0 占用，总计 57/64）**：天赋/技能等级/计数器走 `DotaCharacterStorage`，带回合数技能状态与增益/减益走 `DotaModifierService`，先天/被动技能走 `HeroSkillService` + `DotaSpellHelpBridge.RegisterPassive` + `DotaStatusBarBridge`（详见 [framework-api.md §2.3](docs/architecture/framework-api.md)）。禁止调用 `Ctx.Properties.Add`。
 2. **学法/升星**用 `PathosEngineBridge.LearnSpell`（`Knowledge.LearnSpell`），禁止 `Engine.LearnSpell`（低智力会触发读书失败惩罚）。`HeroSkillService` 已封装。
 3. **点地召唤**：法术外壳 `Plain(Range)` 会对射线每格执行 `Apply`，所以外壳保持 `Apply.Nothing()`（`DotaAbility` 默认如此），在 `OnCast` 里 `PathosEngineBridge.SummonAllyEntity`。
 4. **召唤物到期/替换**用 `PathosEngineBridge.DespawnSummon`，禁止 `DismissAlly`（会留下野生单位）。

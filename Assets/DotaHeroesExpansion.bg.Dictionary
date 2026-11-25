@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,Завъртане на Контраспира�
 ExplosionName,waveform splash,Водна експлозия на Вълнова форма
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Сгъстена сфера от жива приливна вода, изстрелвана като безкраен далекобоен боеприпас от прашка."
 ItemName,tidal orb,сфера на прилива
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Вродено (Форма на острието): Печелете 1 натрупване на всеки 4 хода без получени щети (до 12 натрупвания). Всяко натрупване дава +1% скорост на движение и +2,5% сила на удара от ловкост и скорост на атака; запазва се 4 хода след получаване на щети."
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Вродено (Прилив и Отлив): Ловкостта дава бонус скорост на движение и далекобоен обсег; Силата дава бонус обсег на заклинанията и устойчивост на забавяне. Запазва се при метаморфоза.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Вродено (Армия от един човек): докато в радиус 4 клетки няма живи съюзници (продължава 6 хода след приближаване на съюзник), Акс получава бонус сила, равен на 50% от излишната му защита (защита - 10), което увеличава щетата в близък бой."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,"Скачане между близките врагове във вихър от неуязвими удари: пълен имунитет към всякакви щети и отрицателни ефекти, докато съсича близък враг на всеки ход."
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Пасивно (Танц на острието): Близките атаки, ударите на Омнислеш и завъртанията на Ярост на острието имат 35% шанс (според ниво 1–4 на Танц на острието) да нанесат критичен удар за 1,4/1,6/1,8/2,0x щети."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Пасивно (Контраспирала): на всеки 7 / 6 / 5 / 4 получени атаки (според нивото на умението 1–4, включително пропуснатите) се задейства аленочервено завъртане на секирата 3x3, нанасящо 100 / 120 / 140 / 160 чиста щета (1d6+3 до 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Въртене в разрушителна буря от остриета: имунитет към отрицателни ефекти, 80% намаление на магическите щети и нанасяне на магически щети около вас на всеки ход."
-PropertyName,blade dance,танц на острието
-PropertyName,blade fury,ярост на острието
-PropertyName,bladeform,форма на острието
-PropertyName,counter helix,Контраспирала
-PropertyName,ebb and flow,прилив и отлив
-PropertyName,omnislash,омнислеш
-PropertyName,one man army,Армия от един човек
 RaceName,waterkin//female,воден дух
 RaceName,waterkin//male,воден дух
 RaceName,waterkin//non-binary,воден дух

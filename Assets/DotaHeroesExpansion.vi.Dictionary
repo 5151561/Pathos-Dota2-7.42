@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,Vòng xoay Xoáy Phản Công
 ExplosionName,waveform splash,Vụ nổ nước Dạng Sóng
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Quả cầu nước thủy triều sống cô đặc được bắn ra từ ná như đạn tầm xa vô tận.
 ItemName,tidal orb,cầu thủy triều
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Bẩm sinh (Kiếm thế): Nhận 1 cộng dồn mỗi 4 lượt không chịu sát thương (tối đa 12 cộng dồn). Mỗi cộng dồn tăng +1% tốc độ di chuyển và +2,5% uy lực đòn đánh theo nhanh nhẹn cùng tốc độ đánh; duy trì thêm 4 lượt sau khi chịu sát thương."
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Bẩm sinh (Triều lên triều xuống): Nhanh nhẹn tăng thêm tốc độ di chuyển và tầm đánh xa; Sức mạnh tăng thêm tầm thi triển phép và kháng làm chậm. Vẫn duy trì khi biến hình.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Nội tại (Đội Quân Một Người): khi không có đồng minh còn sống trong 4 ô (kéo dài 6 lượt khi đồng minh đến gần), Axe nhận thêm sức mạnh bằng 50% phần phòng thủ dư (phòng thủ - 10), tăng sát thương cận chiến."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Lao nhảy giữa các kẻ địch lân cận trong làn nhát chém bất tử: miễn nhiễm mọi sát thương và hiệu ứng bất lợi trong khi chém một kẻ địch gần bên mỗi lượt.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Bị động (Kiếm vũ): Đòn đánh cận chiến, nhát chém Vô ảnh trảm và vòng xoay Kiếm bão có 35% xác suất (theo cấp 1-4 của Kiếm vũ) gây chí mạng 1,4/1,6/1,8/2,0x sát thương."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Nội tại bị động (Xoáy Phản Công): cứ 7 / 6 / 5 / 4 đòn nhận phải (theo cấp kỹ năng 1-4, kể cả trượt) sẽ kích hoạt vòng xoay rìu đỏ thẫm 3x3 gây 100 / 120 / 140 / 160 sát thương thuần (1d6+3 đến 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Xoay tròn trong cơn bão kiếm hủy diệt: miễn nhiễm hiệu ứng bất lợi, giảm 80% sát thương phép và gây sát thương phép xung quanh mỗi lượt."
-PropertyName,blade dance,kiếm vũ
-PropertyName,blade fury,kiếm bão
-PropertyName,bladeform,kiếm thế
-PropertyName,counter helix,Xoáy Phản Công
-PropertyName,ebb and flow,triều lên triều xuống
-PropertyName,omnislash,vô ảnh trảm
-PropertyName,one man army,Đội Quân Một Người
 RaceName,waterkin//female,thủy linh
 RaceName,waterkin//male,thủy linh
 RaceName,waterkin//non-binary,thủy linh

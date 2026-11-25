@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,Ikot ng Counter Helix
 ExplosionName,waveform splash,Pagsabog ng tubig ng Waveform
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Isang siksik na bola ng buhay na tubig-alon na ibinabala nang walang katapusan mula sa tirador.
 ItemName,tidal orb,bolang agos
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,Likas (Anyo ng Talim): Makakuha ng 1 patong bawat 4 na turnong hindi tinatamaan ng pinsala (hanggang 12 patong). Bawat patong ay nagbibigay ng +1% bilis ng pagkilos at +2.5% lakas ng hampas sa liksi at bilis ng atake; nananatili ng 4 na turno matapos matamaan.
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Likas (Taas at Baba ng Alon): Ang Liksi ay nagbibigay ng dagdag na bilis ng pagkilos at layo ng pag-atake sa malayo; ang Lakas ay nagbibigay ng dagdag na layo ng mahika at laban sa pagbagal. Nananatili habang nagpapalit-anyo.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Likas (Hukbo ng Isang Tao): Habang walang buhay na kakampi sa loob ng 4 na tile (tumatagal ng 6 na turn kapag lumapit ang kakampi), nakakakuha si Axe ng bonus na Lakas na katumbas ng 50% ng sobrang Depensa niya (Depensa - 10), na nagpapataas ng melee damage."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Lumulundag sa pagitan ng mga kalapit na kalaban sa isang malabong ulan ng hindi matitinag na hampas: ligtas sa lahat ng pinsala at masamang epekto habang hinihiwa ang isang kalapit na kalaban bawat turno.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasibo (Sayaw ng Talim): Ang mga malapitang atake, hampas ng Omnislash, at pag-ikot ng Poot ng Talim ay may 35% tsansa (ayon sa antas 1-4 ng Sayaw ng Talim) na magdulot ng kritikal na tama na 1.4/1.6/1.8/2.0x na pinsala."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Passive (Counter Helix): Tuwing 7 / 6 / 5 / 4 natanggap na atake (ayon sa antas ng kasanayan 1-4, kasama ang mga pumalya) ay magpapagana ng 3x3 pulang ikot ng palakol na nagbibigay ng 100 / 120 / 140 / 160 Pure damage (1d6+3 hanggang 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Umiikot sa isang mapanirang bagyo ng mga talim: ligtas sa mga masamang epekto, 80% bawas sa pinsalang mahika, at nagdudulot ng pinsalang mahika sa paligid mo bawat turno."
-PropertyName,blade dance,sayaw ng talim
-PropertyName,blade fury,poot ng talim
-PropertyName,bladeform,anyo ng talim
-PropertyName,counter helix,Counter Helix
-PropertyName,ebb and flow,taas at baba ng alon
-PropertyName,omnislash,omnislash
-PropertyName,one man army,Hukbo ng Isang Tao
 RaceName,waterkin//female,nilalang ng tubig
 RaceName,waterkin//male,nilalang ng tubig
 RaceName,waterkin//non-binary,nilalang ng tubig

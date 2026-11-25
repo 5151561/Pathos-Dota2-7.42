@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,反擊螺旋血刃旋斬
 ExplosionName,waveform splash,波浪形態水爆
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的遠程水彈，可作為彈弓無限彈藥發射。
 ItemName,tidal orb,潮汐水彈
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,先天技能「劍心猶在」：每連續 4 回合未受傷害疊加 1 層（上限 12 層），每層提供 +1% 移速與 +2.5% 等效敏捷攻速及近戰/無敵斬額外傷害；受傷後保留 4 回合粘滯期。
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,先天技能「潮漲潮落」：敏捷提供額外移速與遠程攻擊距離；力量提供額外施法距離與減速抗性（變形期間持續保留）。
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",先天技能「一人之軍」：只要斧王周圍 4 格內沒有存活友軍（友軍靠近後保留 6 回合粘滯期），就會獲得相當於自身超額防禦（Defence - 10）50% 的等效力量加成，提升近戰攻擊傷害。
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,無敵斬連斬中：全程免疫一切傷害與負面狀態，每回合自動瞬移斬擊附近一名敵方單位。
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).",被動技能「劍舞」：近戰普攻、無敵斬與劍刃風暴有 35% 概率（隨劍舞技能等級 1~4 級獨立提升）觸發 1.4/1.6/1.8/2.0 倍致命一擊。
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",被動技能「反擊螺旋」：每受到 7 / 6 / 5 / 4 次敵方攻擊（隨反擊螺旋技能等級 1~4 級提升，7.42 包含被閃避或高防 Miss 的攻擊），觸發 3×3 血刃旋斬，造成 100 / 120 / 140 / 160 純粹傷害（1d6+3~3d6）。
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",劍刃風暴旋轉中：免疫負面狀態、獲得 80% 魔法/元素傷害減免，並每回合對周圍敵人造成魔法傷害。
-PropertyName,blade dance,劍舞
-PropertyName,blade fury,劍刃風暴
-PropertyName,bladeform,劍心猶在
-PropertyName,counter helix,反擊螺旋
-PropertyName,ebb and flow,潮漲潮落
-PropertyName,omnislash,無敵斬
-PropertyName,one man army,一人之軍
 RaceName,waterkin//female,變體水靈
 RaceName,waterkin//male,變體水靈
 RaceName,waterkin//non-binary,變體水靈

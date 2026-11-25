@@ -88,37 +88,39 @@
 ## 4. 框架基建接入与 Hook 清单
 
 ### 接入的公共基建
-- **固定初始六维**：`DotaMechanicsMapper.RegisterFixedStartingStats("juggernaut", ...)`
-- **天赋树**：`TalentRegistry.Register`（Lv 5/10/15/20 + Lv 22~25 双修，T1 右/T2 右采用声明式 `SpellManaReductionRule`）
-- **长短期技能分类**：
-  - 长效天赋（原生天赋栏与百科可见）：`bladeform`、`blade dance`（`Ctx.RegisterPassiveProperty`）
-  - 短期主动技能状态（原生天赋栏与百科自动隐藏）：`blade fury`、`omnislash`（`Ctx.RegisterSkillStatusProperty`）
-- **全射程选格（`DotaRangeTargetingBridge`）**：
-  - `omnislash`：`UnitHostile`，射程 `4 / 5 / 5 / 6 / 7`（随变化系熟练度），`AllowSelf: false`
-  - `healing ward`：`PointOpen`，射程 `3 / 3 / 4 / 4 / 5`（随牧师系熟练度），`AllowSelf: true`
+- **英雄档案与初始六维**：`DotaHeroProfile` + `Profile.RegisterStats()` + `Profile.ConfigureClass(...)`
+- **技能加点与天赋树**：`HeroSkillRegistry.Register` + `TalentRegistry.Register`（Lv 10/15/20/25 + Lv 27~30 双修，T1 右/T2 右采用声明式 `SpellManaReductionRule`）
+- **零自定义 Property**：先天「剑心犹在」与被动「剑舞」均通过 `DotaSpellHelpBridge.RegisterPassive` + `DotaStatusBadge.ForPassive` 提供帮助与徽章，不占用任何 `Codex.Properties`。
+- **主动技能声明与全射程选格（`DotaAbility`）**：
+  - `blade fury`：`Self`
+  - `healing ward`：`PointOpen`，射程 `3 / 3 / 4 / 4 / 5`（随牧师系熟练度），`AllowSelfTarget: true`
+  - `omnislash`：`UnitHostile`，射程 `4 / 5 / 5 / 6 / 7`（随变化系熟练度）
+- **增益/减益与技能状态（`DotaModifierService`，零 Property）**：
+  - `juggernaut.blade_fury`：不可驱散增益，自动生成左上角倒计时徽章、`OnTick` 驱动每回合 `3×3` 旋风伤害、`MoveSpeedPct` 承载 T2 左 `+15%` 移速；注册减益免疫 `juggernaut.blade_fury_debuff_immunity`（`RegisterDebuffImmunity`），期间免疫一切 Hook 减益 Modifier（如斧王战斗饥渴）。
+  - `juggernaut.omnislash`：不可驱散状态，左上角徽章实时显示剩余斩数（`×N`），无敌斩结束时移除；期间经 `InvulnerableQuery` 免疫全部伤害与减益。
+  - **刻意未迁移**：先天「剑心犹在」是无持续时间的永久叠层计数器（`ConditionalWeakTable<Character, BladeformState>`，受击粘滞期仅为内部子状态，徽章颜色随粘滞期动态变化），移速/攻速由 `juggernaut.bladeform_speed` 独立提供；治疗守卫到期属于召唤物生命周期。
 - **左上角状态栏徽章（`DotaStatusBarBridge`）**：
-  - `juggernaut.bladeform`：层数 $> 0$ 时显示 `×1 ~ ×10`，受击粘滞期以橙色（`DarkOrange`）高亮提示，点击可查看「剑心犹在」说明。
-- **增益/减益 Modifier（`DotaModifierService`）**：
-  - 主宰自身不定义任何 Modifier，仅注册减益免疫 `juggernaut.blade_fury_debuff_immunity`（`RegisterDebuffImmunity`）：剑刃风暴期间免疫一切 Hook 实现的减益 Modifier（如斧王战斗饥渴）；无敌斩期间经 `InvulnerableQuery` 同样免疫。
-  - **刻意未迁移**：先天「剑心犹在」是无持续时间的永久叠层计数器（`ConditionalWeakTable<Character, BladeformState>`，粘滞期仅为内部子状态，徽章颜色动态变化，层数在 `juggernaut.turn_ticks` 同回合内被剑刃风暴读取），其移速/攻速仍由 `juggernaut.bladeform_speed` 独立相乘；T2 左剑刃风暴 `+15%` 移速绑定原生 `blade fury` Transient；治疗守卫到期属于召唤物生命周期；无敌斩为连斩会话——均不属于「带回合数的增益/减益」。
-- **自定义像素特效（`DotaHeroContext` VFX 工厂）**：
-  - 3×3 剑刃风暴红色新月扫痕 + 钢剑（`blade fury spin`）、无敌斩斩击（`omnislash slash`）、无敌斩瞬移残影光束（`omnislash dash`）、剑舞暴击淡金刀光 + 血花（`blade dance crit`）、治疗守卫脉冲（`healing ward pulse`）。
+  - `juggernaut.bladeform`：层数 $> 0$ 时显示 `×1 ~ ×12`，受击粘滞期以橙色（`DarkOrange`）高亮提示，点击可查看「剑心犹在」说明。
+  - 剑刃风暴与无敌斩徽章由 `DotaModifierService` 自动生成，点击打开对应法术帮助面板。
+- **自定义像素特效（`DotaHeroContext` VFX 工厂 + `DotaVfx`）**：
+  - 剑刃风暴持续旋风（`blade fury whirl`）、命中切痕（`blade fury cut`）、3×3 回退爆炸（`blade fury spin`）、无敌斩斩击（`omnislash slash`）、无敌斩瞬移残影光束（`omnislash dash`）、剑舞暴击淡金刀光 + 血花（`blade dance crit`）、治疗守卫脉冲（`healing ward pulse`）。
 
 ### 注册的 `DotaHookBus` Key
 - `dota.fixed_starting_stats`（`AfterCreateActor`，共享框架）：开局/重摇锁定固定六维并重算初始 HP/Mana。
-- `juggernaut.spell_casts`（`AfterCastSpell`）：处理剑刃风暴基础驱散与首跳、治疗守卫唯一性替换与精确召唤（`SummonAllyEntity` / `DespawnSummon`）、无敌斩启动与空大返蓝。
-- `juggernaut.turn_ticks`（`AfterExecuteCommand`）：驱动剑心犹在叠层/粘滞、剑刃风暴每回合 `3×3` 转伤、治疗守卫每回合光环回血与到期消散、无敌斩自动多回合连斩（`QueueWaitDecision`）。
-- `juggernaut.blade_fury_debuff_immunity`（`BeforeApplyTransient`）：剑刃风暴与无敌斩期间减益免疫。
-- `juggernaut.bladeform_speed`（`SpeedQuery`）：剑心犹在移速（每层 `+1%`）与攻速（每层 `+2.5%`）加成，以及 T2 左剑刃风暴移速天赋（`+15%`）。
+- `dota.abilities.cast`（`AfterCastSpell`，共享框架）：按 `DotaAbility.OnCast` 分发剑刃风暴、治疗守卫与无敌斩（无敌斩连斩由 `DotaPresentation.Sequence` 按真实时间推进）。
+- `juggernaut.turn_ticks`（`AfterExecuteCommand`）：驱动剑心犹在叠层/粘滞、治疗守卫每回合光环回血与到期消散（剑刃风暴每回合 `3×3` 转伤由 `BladeFuryModifier.OnTick` 驱动）。
+- `juggernaut.omnislash_invulnerable`（`InvulnerableQuery`）：无敌斩期间引擎级无敌/不可选中保护。
+- `juggernaut.blade_fury_debuff_immunity`（`BeforeApplyTransient`）：剑刃风暴与无敌斩期间拦截原生负面 `Transient`。
+- `juggernaut.bladeform_speed`（`SpeedQuery`）：剑心犹在移速（每层 `+1%`）与攻速（每层 `+2.5%`）加成。
 - `juggernaut.damage_modifiers`（`BeforeDamage`, Normal）：剑刃风暴期间原生普攻置零（`Info.Origin == BasicAttack`）、剑心犹在对普攻与无敌斩追加敏捷伤害。
 - `juggernaut.blade_fury`（`DotaDamage.RegisterMagicResist`）：剑刃风暴期间 `80%` 魔抗（只减魔法/未知伤害，纯粹与物理不减）。
 - `juggernaut.blade_dance`（`DotaDamage.RegisterCritSource`）：剑舞对所有 `CanCrit` 伤害（普攻、无敌斩、剑刃风暴旋风）判定 `1.4x~2.0x`（随剑舞等级，T3 右 `+0.15x`）暴击，`OnCrit` 处理 T4 暴击吸血、特效与日志；与其他暴击来源取最高、不叠加。
-- 伤害标注：剑刃风暴旋风 `DotaDamageInfo.Magical(..., Spell | CanCrit)`、无敌斩斩击 `DotaDamageInfo.Physical`（攻击类，可暴击）；无敌斩无敌由 `juggernaut.omnislash_invulnerable` 在引擎层拦截。
+- 伤害标注：剑刃风暴旋风 `DotaDamageInfo.Magical(..., Spell | CanCrit)`、无敌斩斩击 `DotaDamageInfo.Physical`（攻击类，可暴击）。
 - `juggernaut.bladeform_on_hit`（`AfterDamage`）：受击后使剑心犹在进入粘滞期。
 
 ### 常用调参常量（位于 [JuggernautHero.cs](../../Heroes/JuggernautHero.cs) 顶部）
-- `DotaBaseStr = 20` / `DotaBaseAgi = 32` / `DotaBaseInt = 14`：DOTA2 7.42 原版初始三维。
-- `BladeformMaxStacks = 10`：剑心犹在最大层数。
+- `Profile`：`BaseStr: 20 (+2.0)` / `BaseAgi: 32 (+2.8)` / `BaseInt: 14 (+1.4)`（DOTA2 7.42 原版初始三维与成长）。
+- `BladeformMaxStacks = 12`：剑心犹在最大层数（7.42a）。
 - `BladeformIntervalTurns = MapDurationTurns(2.0f)`（`4`）：每叠 1 层所需未受伤回合数。
 - `BladeformLingerTurns = MapDurationTurns(2.0f)`（`4`）：受击后粘滞保留回合数。
 - `BladeFuryManaCost` / `HealingWardManaCost` / `OmnislashManaCost`：统一由 `DotaMechanicsMapper.MapSkillManaCost` 推导。

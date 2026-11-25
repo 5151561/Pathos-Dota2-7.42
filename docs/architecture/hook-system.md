@@ -6,7 +6,7 @@
 
 | 文件 | 职责 |
 | :--- | :--- |
-| [HookBootstrap.cs](../../Framework/Hooks/HookBootstrap.cs) | 内嵌 `0Harmony.dll` 解析、跳过 `PathosMaker`、幂等挂载 14 组 `PathosEngine` 引擎补丁，并统一引导 3 组客户端 UI 桥接（天赋树、全射程选格、状态栏徽章）。 |
+| [HookBootstrap.cs](../../Framework/Hooks/HookBootstrap.cs) | 内嵌 `0Harmony.dll` 解析、跳过 `PathosMaker`、幂等挂载 `PathosEngine` 引擎补丁，并统一引导客户端 UI 桥接（技能与天赋面板、全射程选格、状态栏徽章、技能帮助面板）与演出/VFX 补丁（`DotaPresentation`、`DotaVfx`）。 |
 | [DotaHookBus.cs](../../Framework/Hooks/DotaHookBus.cs) | 线程安全、**按字符串 Key 幂等注册**的事件总线。即使 Pathos 多次重建 Campaign，相同 Key 只覆盖旧处理器，不会重复触发。 |
 | [HookEventArgs.cs](../../Framework/Hooks/HookEventArgs.cs) | 所有 Hook 事件的强类型参数对象，部分支持修改返回值或 `Cancel = true` 拦截原生逻辑。 |
 | [PathosEngineBridge.cs](../../Framework/Hooks/PathosEngineBridge.cs) | 统一封装 `PathosEngine` / `Director` / `Story` / `Decision` / `Character` / `Meter` 等内部成员的反射访问与缓存，避免英雄代码散落反射。 |
@@ -35,13 +35,18 @@
 | `RegisterAttackRangeQuery` | `Engine.GetShootRange` / `GetThrowRange` | `Range` | 远程普攻射程加成（如水人高敏加射程） |
 | `RegisterCastRange` | `Engine.CastEffects` | `BonusRange` | 法术施法距离加成（如水人高力加施法距离） |
 | `RegisterBeforeApplyTransient` | `Engine.ApplyTransient` (Prefix) | `Duration`, `Cancel` | 减益免疫（剑刃风暴/无敌斩）、减速抗性、眩晕时长动态缩放 |
-| `RegisterAfterExecuteCommand` | `Director.Execute` (Postfix) | 只读上下文 | 每回合行动结算（光环治疗、持续转伤、脱战叠层、自动多回合连斩） |
+| `RegisterBeforeExecuteCommand` | `Director.Execute` (Prefix) | `Cancel` | 行动前拦截或重定向（如嘲讽强制向嘲讽者移动或近战普攻） |
+| `RegisterAfterExecuteCommand` | `Director.Execute` (Postfix) | 只读上下文 | 每回合行动结算（光环治疗、脱战叠层、Modifier 回合递减） |
 | `RegisterBeforeAttack` | `Director.Attack` (Prefix) | `Cancel` | 拦截/改写普通攻击（或触发「被攻击即计次」类被动，如斧王反击螺旋） |
 | `RegisterAfterAttack` | `Director.Attack` (Postfix) | 只读上下文 | 普攻后触发特效 |
 | `RegisterAfterCreateActor` | `Engine.CreateActor` / `RerollActor` (Postfix) | 只读上下文 | 锁定 DOTA2 英雄固定初始六维与初始 HP/Mana |
 | `RegisterDefenceQuery` | `Engine.GetDefenceClass` (Postfix) | `Defence` | 被动加甲、光环护甲与减甲 Debuff（实时反映在面板 Defence） |
 | `RegisterSpellCostQuery` | `Character.SpellCost` (Postfix) | `ManaCost` | 减冷却转减蓝耗等法术蓝耗修正（施法扣蓝与 UI 显示自动同步） |
-| `RegisterAfterLevelUp` | `Generator.AdvanceLevel` (Postfix) | 只读上下文 | 角色升级解锁天赋点提示与成长联动 |
+| `RegisterLimitFormQuery` | `Character.GetLimitForm` (Postfix) | `Form` | 英雄职业属性上限、天赋 `StatBonus` 与 7 级黄点上限叠加 |
+| `RegisterActiveFormQuery` | `Character.GetActiveForm` (Postfix) | `Form` | 实时临时六维加成（不改永久值，如斧王「一人之军」） |
+| `RegisterAfterLevelUp` | `Generator.AdvanceLevel` (Postfix) | 只读上下文 | 角色升级解锁技能点/天赋点提示与成长联动 |
+| `RegisterInvulnerableQuery` | `DamageCharacter` / `Attack` / `ApplyTransient` / `TrapSquare` / `AfflictCharacter` / `ApplyEffects` | 返回 `bool` | 引擎级无敌/不可选中保护（免疫伤害、攻击、负面状态、陷阱、病痛与敌方/环境 Effect；如无敌斩、波浪形态） |
+| `RegisterSilenceQuery` | `CastSpell` / `CastEffects` / `CanCast` | 返回 `bool` | 全链路沉默/禁魔（拦截法术、魔杖/卷轴、怪物吐息/凝视等；如嘲讽） |
 
 ### 执行顺序与取消
 
@@ -67,14 +72,14 @@
 | | `SetMeter` / `SetMeterPoints` | 直接调整 `Life` / `Mana` 上限与当前值（用于开局重算、空大返蓝）；最大生命联动请用 `DotaLife.AdjustMax`（§9）。 |
 | | `GetSpellManaCost(ch, spell, skill)` | 原生 `Character.SpellCost` 真实蓝耗（含天赋减耗），帮助面板经 `DotaHelpFormat.ActualMana` 调用。 |
 | | `GetQualification` | 查询角色在指定 `Skill` 上的熟练度。 |
-| **战斗与治疗** | `HarmCharacter` / `StrikeCharacter` / `HealCharacter` / `GetMeleeDamageDice` | 走 Pathos 原生伤害/治疗结算（自动触发 `BeforeDamage`、暴击、元素抗性与日志）。 |
-| **位移与状态** | `TeleportCharacter` / `ApplyTransient` / `RemoveTransient` / `HasTransient` | 瞬移、施加/移除/检测短期状态（`Transient`）。 |
+| **战斗与治疗** | `HarmCharacter` / `StrikeCharacter` / `HealCharacter` / `KillCharacter` / `GetMeleeDamageDice` / `ForceDirectorAttack` | 走 Pathos 原生伤害/治疗/斩杀结算（英雄伤害请走 `DotaDamage` 管线，禁止裸调 `Harm/StrikeCharacter`）；`ForceDirectorAttack` 用于嘲讽强制近战攻击。 |
+| **位移、变形与状态** | `TeleportCharacter` / `DashCharacter` / `ApplyTransient` / `RemoveTransient` / `HasTransient` | 瞬移、静音突进（`DashCharacter` 无传送音，配合 `StoryFlinging` 飞跃）、施加/移除/检测短期 `Transient`。 |
+| | `PolymorphCharacter` / `UnpolymorphCharacter` / `ImpersonateCharacter` / `IsPolymorphed` | 变形为指定实体、解除变形、模仿目标角色、查询当前是否处于变形状态（如水人「变形」）。 |
+| **学法与被动** | `LearnSpell` / `GetSpellMasteryLevel` / `GainTalent` / `HasAcquiredTalent` | `LearnSpell` 走 `Knowledge.LearnSpell` 安全学法与原生升星（禁止 `Engine.LearnSpell` 触发低智力惩罚）；`GainTalent` 授予原生被动 `Property`。 |
 | **召唤物生命周期** | `SummonAllyEntity` | 通过原生 `Reactor.SummonEntity` 在指定格**精确召唤 1 个友方随从**，彻底规避 `Plain(Range)` 射线每格重复召唤多个的问题。 |
 | | `DespawnSummon` | 以 `Attacker = null` 结算死亡并移出地图，彻底销毁到期/被替换的召唤物（无尸体、无运程惩罚；**禁止改用 `DismissAlly`**）。 |
-| **天赋持久化** | `GainTalent` / `HasAcquiredTalent` | 读写原生 `AcquiredTalentSet`，随 Pathos 存档自动保存与读档。 |
-| **多回合自动行动** | `QueueWaitDecision` | 为角色排入下一回合的自动 `Wait` 指令（旧模式；多步演出技能请改用 §13 `DotaPresentation` 时间轴）。 |
-| **忙碌与节奏** | `GetMoveDelay` / `SetBusy` | 读取角色「一回合」的逻辑帧数、设置忙碌时长（演出期间锁定玩家输入、收尾后恢复正常行动节奏）。 |
-| **原生 Story 像素特效** | `StoryExploding` / `StoryBeaming` / `StoryStriking` / `StoryDetecting` / `StorySigning` / `StoryTeleporting` / `StoryAttacking` / `StoryCaption` / `StoryFlinging` / `StoryCancelCharacter` | 直接调用 Pathos 原生渲染管线播放 3×3 爆炸、方向光束、单格斩击、范围脉冲、符文、瞬移、挥砍动作与飘字（如 `暴击!`）。 `StoryFlinging` 让角色贴图在指定时长内从 A 格平滑飞到 B 格（突进/波浪），`StoryCancelCharacter` 防止连续角色动画重影。英雄代码播放自定义贴图请走 `DotaVfx`（§13）。 |
+| **视野与节奏** | `IsSquareExplored` / `IsSquareObservable` / `IsObservableCharacter` / `GetMoveDelay` / `GetAttackDelay` / `SetBusy` | 探索/视线判定；读取角色单回合逻辑帧数与设置忙碌时长（演出期间锁定玩家输入、收尾恢复）。 |
+| **原生 Story 像素特效** | `StoryExploding` / `StoryBeaming` / `StoryStriking` / `StoryDetecting` / `StorySigning` / `StoryTeleporting` / `StoryAttacking` / `StoryCaption` / `StoryFlinging` / `StoryCancelCharacter` / `StoryEmitting` | 直接调用 Pathos 原生渲染与音效管线（爆炸、光束、斩击、脉冲、符文、瞬移、挥砍、飘字、平滑飞行、取消角色动画、音效）。自定义贴图特效请走 `DotaVfx`（§13）。 |
 | **阵营、日志与本地化** | `IsAllied` / `WriteInternalLog` / `GetLocalizedName(Property/Entity)` | 友军判定、写入带图标的游戏内战斗日志、获取当前语言本地化名称。 |
 
 ---

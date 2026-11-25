@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,반격 나선 회전베기
 ExplosionName,waveform splash,파형 물폭발
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,새총의 무한 탄약으로 발사되는 응축된 조류 물 구슬.
 ItemName,tidal orb,조류의 구슬
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"선천 (검의 형상): 피해를 입지 않고 4턴이 지날 때마다 1중첩 획득 (최대 12중첩). 중첩당 이동 속도 +1%, 민첩 기반 타격 위력 및 공격 속도 +2.5%를 부여하며, 피해를 입은 뒤에도 4턴 동안 유지된다."
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,"선천 (밀물과 썰물): 민첩은 이동 속도와 원거리 공격 사거리를, 힘은 주문 시전 거리와 둔화 저항을 증가시킨다. 변신 중에도 유지된다."
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",고유 능력(일인군단): 4칸 이내에 살아있는 아군이 없는 동안(아군이 접근해도 6턴 유지) 액스는 초과 방어력(방어력 - 10)의 50%에 해당하는 힘 보너스를 얻어 근접 공격 피해가 증가합니다.
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,무적의 검격 잔상 속에서 주위 적들 사이를 도약하는 중: 모든 피해와 약화 효과에 면역이 되며 매 턴 근처 적 하나를 벤다.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","지속 (검무): 근접 공격, 연속 베기 참격, 분노의 칼날 회전 시 검무 스킬 레벨(1~4)에 따라 35% 확률로 1.4/1.6/1.8/2.0배 치명타가 발동한다."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","패시브(반격 나선): 공격을 7 / 6 / 5 / 4회 받을 때마다(빗나감 포함, 스킬 레벨 1~4) 3x3 진홍빛 도끼 회전이 발동해 순수 피해 100 / 120 / 140 / 160(1d6+3~3d6)을 줍니다."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","파괴적인 칼날 폭풍 속에서 회전 중: 약화 효과 면역과 마법 피해 80% 감소를 얻으며, 매 턴 주변 적에게 마법 피해를 입힌다."
-PropertyName,blade dance,검무
-PropertyName,blade fury,분노의 칼날
-PropertyName,bladeform,검의 형상
-PropertyName,counter helix,반격 나선
-PropertyName,ebb and flow,밀물과 썰물
-PropertyName,omnislash,연속 베기
-PropertyName,one man army,일인군단
 RaceName,waterkin//female,물의 정령
 RaceName,waterkin//male,물의 정령
 RaceName,waterkin//non-binary,물의 정령

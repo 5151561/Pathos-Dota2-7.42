@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,סיבוב סלילון הנגד
 ExplosionName,waveform splash,פיצוץ מים של צורת הגל
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,כדור דחוס של מי גאות חיים הנורה מקלע כתחמושת טווח אינסופית.
 ItemName,tidal orb,כדור גאות
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,מולדת (צורת הלהב): קבל 1 צבירה בכל 4 תורות ללא ספיגת נזק (עד 12 צבירות). כל צבירה מעניקה +1% מהירות תנועה ו-+2.5% עוצמת מכת זריזות ומהירות התקפה; נותרת 4 תורות לאחר ספיגת נזק.
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,מולדת (גאות ושפל): זריזות מעניקה תוספת למהירות תנועה וטווח התקפה מרחוק; כוח מעניק תוספת לטווח לחשים ועמידות להאטה. נשמרת במהלך שינוי צורה.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","מולד (צבא של אדם אחד): כל עוד אין בעלי ברית חיים ברדיוס 4 משבצות (נמשך 6 תורים כשבעל ברית מתקרב), אקס מקבלת כוח בונוס השווה ל-50% מההגנה העודפת שלה (הגנה - 10), המגדיל את נזק הקרב הצמוד."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,מזנק בין אויבים קרובים בסערת מכות חסינות: חסין לכל נזק והשפעות שליליות בעודו משסף אויב קרוב בכל תור.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","פסיבית (ריקוד הלהב): התקפות קפא""פ, מכות אומניסלאש וסיבובי זעם הלהב זוכות לסיכוי של 35% (לפי רמה 1–4 של ריקוד הלהב) לפגיעה קריטית של פי 1.4/1.6/1.8/2.0 נזק."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","פסיבי (סלילון הנגד): כל 7 / 6 / 5 / 4 התקפות שהתקבלו (לפי רמת המיומנות 1-4, כולל החטאות) מפעילות סיבוב גרזן ארגמן 3x3 שגורם 100 / 120 / 140 / 160 נזק טהור (1d6+3 עד 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","מסתחרר בסופת להבים הרסנית: חסין להשפעות שליליות, 80% הפחתת נזק קסום וגרימת נזק קסום סביבך בכל תור."
-PropertyName,blade dance,ריקוד הלהב
-PropertyName,blade fury,זעם הלהב
-PropertyName,bladeform,צורת הלהב
-PropertyName,counter helix,סלילון הנגד
-PropertyName,ebb and flow,גאות ושפל
-PropertyName,omnislash,אומניסלאש
-PropertyName,one man army,צבא של אדם אחד
 RaceName,waterkin//female,רוח מים
 RaceName,waterkin//male,רוח מים
 RaceName,waterkin//non-binary,רוח מים

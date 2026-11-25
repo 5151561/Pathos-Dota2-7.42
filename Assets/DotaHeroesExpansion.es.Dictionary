@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,Giro de Hélice contraataque
 ExplosionName,waveform splash,Explosión de agua de Onda
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Una esfera condensada de agua de marea viviente lanzada como munición a distancia infinita desde una honda.
 ItemName,tidal orb,orbe de marea
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Innata (Forma de hoja): Obtén 1 acumulación cada 4 turnos sin recibir daño (hasta 12 acumulaciones). Cada acumulación otorga +1% de velocidad de movimiento y +2,5% de poder de golpe de agilidad y velocidad de ataque; persiste 4 turnos tras recibir daño."
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Innata (Flujo y Reflujo): La Agilidad otorga bonificación a velocidad de movimiento y alcance a distancia; la Fuerza otorga bonificación al alcance de hechizos y resistencia a ralentización. Persiste al transformarse.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Innata (Ejército de un hombre): mientras no haya aliados vivos a menos de 4 casillas (persiste 6 turnos al acercarse un aliado), Axe gana fuerza adicional igual al 50 % de su exceso de defensa (defensa - 10), aumentando el daño cuerpo a cuerpo."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Saltando entre enemigos cercanos en un torbellino de cortes invulnerables: inmune a todo daño y debilitaciones mientras taja a un enemigo cercano cada turno.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasiva (Danza de la hoja): Los ataques cuerpo a cuerpo, golpes de Omnislash y giros de Furia de la hoja tienen un 35% de probabilidad (según nivel 1-4 de Danza de la hoja) de asestar un golpe crítico de 1,4/1,6/1,8/2,0x de daño."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Pasiva (Hélice contraataque): cada 7 / 6 / 5 / 4 ataques recibidos (según el nivel de habilidad 1-4, incluidos los fallos) activa un giro carmesí del hacha en 3x3 que inflige 100 / 120 / 140 / 160 de daño puro (1d6+3 a 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Girando en una destructiva tormenta de acero: inmune a debilitaciones, 80% de reducción de daño mágico e inflige daño mágico a tu alrededor cada turno."
-PropertyName,blade dance,danza de la hoja
-PropertyName,blade fury,furia de la hoja
-PropertyName,bladeform,forma de hoja
-PropertyName,counter helix,Hélice contraataque
-PropertyName,ebb and flow,flujo y reflujo
-PropertyName,omnislash,omnislash
-PropertyName,one man army,Ejército de un hombre
 RaceName,waterkin//female,acuática
 RaceName,waterkin//male,acuático
 RaceName,waterkin//non-binary,acuático

@@ -25,30 +25,23 @@ namespace Pathos.DotaHeroes.Framework.UI
     public Colour Colour { get; init; } = Colour.Black;
     public Property HelpProperty { get; init; }
     public Spell HelpSpell { get; init; }
-
-    /// <summary>
-    /// 徽章标题：优先取 Property 的原生本地化名，缺失时回退到本地化 Key；统一大写（与原生 StatusIcon 风格一致）。
-    /// </summary>
-    public static string TitleFrom(Property Property, string FallbackKey)
-      => (Property != null
-        ? PathosEngineBridge.GetLocalizedName(Property)
-        : DotaLocalization.T(FallbackKey)).ToUpper();
+    public string HelpPassiveId { get; init; }
 
     /// <summary>徽章标题：本地化 Key 的大写文本。</summary>
     public static string Title(string Key) => DotaLocalization.T(Key).ToUpper();
 
     /// <summary>
-    /// 先天 / 被动 Property 徽章：标题取 Property 本地化名（回退 <paramref name="FallbackKey"/>），点击查看该 Property 说明。
+    /// 先天 / 被动徽章（零 Property）：标题取 <paramref name="TitleKey"/>，点击弹出 <see cref="DotaSpellHelpBridge"/> 注册的被动帮助面板。
     /// </summary>
-    public static DotaStatusBadge ForPassive(string Key, Glyph Glyph, Property Property, string FallbackKey, string Count, Colour Colour)
+    public static DotaStatusBadge ForPassive(string Key, Glyph Glyph, string PassiveId, string TitleKey, string Count, Colour Colour)
       => new()
       {
         Key = Key,
         Glyph = Glyph,
-        Text = TitleFrom(Property, FallbackKey),
+        Text = Title(TitleKey),
         Count = Count,
         Colour = Colour,
-        HelpProperty = Property
+        HelpPassiveId = PassiveId
       };
   }
 
@@ -64,6 +57,7 @@ namespace Pathos.DotaHeroes.Framework.UI
     private static readonly ConditionalWeakTable<object, Dictionary<string, object>> StageIconCaches = new();
     private static readonly ConditionalWeakTable<object, Property> IconHelpProperties = new();
     private static readonly ConditionalWeakTable<object, Spell> IconHelpSpells = new();
+    private static readonly ConditionalWeakTable<object, string> IconHelpPassiveIds = new();
 
     private static PropertyInfo StagePlayerProp;
     private static PropertyInfo StageShellProp;
@@ -227,7 +221,13 @@ namespace Pathos.DotaHeroes.Framework.UI
                 if (HelpQuery == null)
                   return;
 
-                if (IconHelpProperties.TryGetValue(CapturedIcon, out var Prop) && Prop != null && HelpQueryShowPropertyMethod != null)
+                if (IconHelpPassiveIds.TryGetValue(CapturedIcon, out var PassiveId) && !string.IsNullOrEmpty(PassiveId))
+                {
+                  var CurPlayer = StagePlayerProp?.GetValue(StageRef) as Player;
+                  var CurCh = CurPlayer?.Prime?.Character;
+                  DotaSpellHelpBridge.ShowPassiveHelp(HelpQuery, CurCh, PassiveId);
+                }
+                else if (IconHelpProperties.TryGetValue(CapturedIcon, out var Prop) && Prop != null && HelpQueryShowPropertyMethod != null)
                 {
                   HelpQueryShowPropertyMethod.Invoke(HelpQuery, new object[] { Prop });
                 }
@@ -254,14 +254,22 @@ namespace Pathos.DotaHeroes.Framework.UI
             Cache[BadgeKey] = IconObj;
           }
 
-          if (Badge.HelpProperty != null)
+          if (!string.IsNullOrEmpty(Badge.HelpPassiveId))
+          {
+            IconHelpPassiveIds.AddOrUpdate(IconObj, Badge.HelpPassiveId);
+            IconHelpProperties.Remove(IconObj);
+            IconHelpSpells.Remove(IconObj);
+          }
+          else if (Badge.HelpProperty != null)
           {
             IconHelpProperties.AddOrUpdate(IconObj, Badge.HelpProperty);
+            IconHelpPassiveIds.Remove(IconObj);
             IconHelpSpells.Remove(IconObj);
           }
           else if (Badge.HelpSpell != null)
           {
             IconHelpSpells.AddOrUpdate(IconObj, Badge.HelpSpell);
+            IconHelpPassiveIds.Remove(IconObj);
             IconHelpProperties.Remove(IconObj);
           }
 

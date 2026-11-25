@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,Rotirea Helixului de contraatac
 ExplosionName,waveform splash,Explozia de apă a Formei de undă
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"O sferă condensată din apă vie a mareei, lansată ca muniție infinită la distanță dintr-o praștie."
 ItemName,tidal orb,sfera mareelor
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Înnăscut (Forma Lamei): Primești 1 cumul la fiecare 4 ture fără a suferi daune (până la 12 cumuluri). Fiecare cumul oferă +1% viteză de mișcare și +2,5% putere de lovire pe Agilitate și viteză de atac; persistă 4 ture după primirea daunelor."
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Înnăscut (Flux și Reflux): Agilitatea oferă bonus la viteza de mișcare și raza de atac la distanță; Forța oferă bonus la raza vrăjilor și rezistență la încetinire. Persistă în timpul metamorfozei.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Înnăscută (Armata unui singur om): cât timp nu există aliați vii pe o rază de 4 pătrate (persistă 6 ture după apropierea unui aliat), Axe primește forță bonus egală cu 50% din apărarea excedentară (apărare - 10), crescând daunele corp la corp."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Sărind între inamicii apropiați într-un vârtej de lovituri invulnerabile: imun la orice daune și efecte negative în timp ce taie un inamic apropiat la fiecare tură.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasivă (Dansul Lamei): Atacurile corp la corp, loviturile Omnislash și rotațiile Furia Lamei au 35% șansă (în funcție de nivelul 1-4 al Dansului Lamei) să aplice o lovitură critică de 1,4/1,6/1,8/2,0x daune."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Pasivă (Helix de contraatac): la fiecare 7 / 6 / 5 / 4 atacuri primite (după nivelul abilității 1–4, inclusiv ratate) se declanșează o rotire stacojie a toporului 3x3 care provoacă 100 / 120 / 140 / 160 daune pure (1d6+3 până la 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Învârtindu-te într-o furtună distructivă de lame: imun la efecte negative, reducere de 80% a daunelor magice și provocând daune magice în jurul tău la fiecare tură."
-PropertyName,blade dance,dansul lamei
-PropertyName,blade fury,furia lamei
-PropertyName,bladeform,forma lamei
-PropertyName,counter helix,Helix de contraatac
-PropertyName,ebb and flow,flux și reflux
-PropertyName,omnislash,omnislash
-PropertyName,one man army,Armata unui singur om
 RaceName,waterkin//female,spirit al apei
 RaceName,waterkin//male,spirit al apei
 RaceName,waterkin//non-binary,spirit al apei

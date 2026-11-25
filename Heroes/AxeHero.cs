@@ -122,8 +122,6 @@ namespace Pathos.DotaHeroes.Heroes
     [ThreadStatic]
     private static bool IsInsideDefenceQuery;
 
-    private Property OneManArmyTalentProperty;
-    private Property CounterHelixTalentProperty;
     private DotaAbility CallAbility;
     private DotaAbility HungerAbility;
     private DotaAbility CullingAbility;
@@ -173,32 +171,20 @@ namespace Pathos.DotaHeroes.Heroes
       DotaVfx.Style(BerserkersCallExplosion, new DotaVfxStyle { FadeIn = 0.05f, FadeOutStart = 0.4f, ScaleFrom = 0.5f, ScaleTo = 1.0f });
       DotaVfx.Style(CounterHelixExplosion, new DotaVfxStyle { FadeIn = 0.1f, FadeOutStart = 0.45f });
 
-      // 2. 注册长效先天「一人之军」与被动「反击螺旋」Property（在原生天赋栏与百科可见，且支持点击状态栏查看说明）
-      OneManArmyTalentProperty = Ctx.RegisterPassiveProperty(
-        Name: "one man army",
-        Description: "Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",
-        Icon: OneManArmyGlyph);
-      CounterHelixTalentProperty = Ctx.RegisterPassiveProperty(
-        Name: "counter helix",
-        Description: "Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",
-        Icon: CounterHelixGlyph);
-
-      // 3. 注册 3 个主动技能外壳（Q / W / R）
+      // 2. 注册 3 个主动技能外壳（Q / W / R）与增益/减益 Modifier（先天「一人之军」与被动「反击螺旋」零 Property）
       RegisterAbilities(Ctx);
-
-      // 3.5 声明技能附带的增益/减益 Modifier
       RegisterModifiers();
 
-      // 4. 注册专属职业：斧王（axe）
-      var AxeClass = RegisterAxeClass(Ctx, MogulKhanGlyph, OneManArmyTalentProperty);
+      // 3. 注册专属职业：斧王（axe）
+      var AxeClass = RegisterAxeClass(Ctx, MogulKhanGlyph);
 
-      // 5. 注册预设英雄：Axe（官方兽人种族 + 斧王职业）
+      // 4. 注册预设英雄：Axe（官方兽人种族 + 斧王职业）
       Ctx.RegisterPresetHero("Axe", Ctx.Races.orc, AxeClass, Ctx.Genders.male, MogulKhanGlyph);
 
-      // 6. 注册技能加点表（Q/W/E/R + 7 级全属性黄点，力量主属性；E 反击螺旋 0→1 授予原生被动专长）
-      RegisterSkillBuild(Ctx, CallAbility.Spell, HungerAbility.Spell, CullingAbility.Spell, CounterHelixTalentProperty);
+      // 5. 注册技能加点表（Q/W/E/R + 7 级全属性黄点，力量主属性；E 反击螺旋由独立技能等级 0→4 驱动）
+      RegisterSkillBuild(Ctx, CallAbility.Spell, HungerAbility.Spell, CullingAbility.Spell);
 
-      // 7. 注册 DOTA2 7.42 四层天赋树（Lv 10/15/20/25 + Lv 27~30 双修）
+      // 6. 注册 DOTA2 7.42 四层天赋树（Lv 10/15/20/25 + Lv 27~30 双修）
       RegisterTalentTree(Ctx);
     }
 
@@ -236,7 +222,7 @@ namespace Pathos.DotaHeroes.Heroes
       });
     }
 
-    private void RegisterSkillBuild(DotaHeroContext Ctx, Spell CallSpell, Spell HungerSpell, Spell CullingSpell, Property CounterHelixTalent)
+    private void RegisterSkillBuild(DotaHeroContext Ctx, Spell CallSpell, Spell HungerSpell, Spell CullingSpell)
     {
       var Build = HeroSkillBuild.CreateStandard(
         ClassName: AxeClassName,
@@ -286,7 +272,6 @@ namespace Pathos.DotaHeroes.Heroes
           Hotkey: "E",
           Title: "Counter Helix",
           IconGlyph: CounterHelixGlyph,
-          PassiveProperty: CounterHelixTalent,
           DescribeLevel: Lv => Lv <= 0
             ? DotaLocalization.T("axe.skill.e.desc_0")
             : DotaLocalization.Format(
@@ -521,7 +506,7 @@ namespace Pathos.DotaHeroes.Heroes
         return DotaStatusBadge.ForPassive(
           "axe.one_man_army",
           OneManArmyGlyph,
-          OneManArmyTalentProperty,
+          "axe.one_man_army",
           "axe.status.one_man_army",
           Count: $"+{State.CachedOneManArmyBonusStr}",
           Colour: State.OneManArmyLingerTurns > 0 ? Colour.DarkOrange : Colour.DarkRed);
@@ -544,7 +529,7 @@ namespace Pathos.DotaHeroes.Heroes
         return DotaStatusBadge.ForPassive(
           "axe.counter_helix",
           CounterHelixGlyph,
-          CounterHelixTalentProperty,
+          "axe.counter_helix",
           "axe.status.helix",
           Count: $"{State.HelixHitCounter}/{Need}",
           Colour: State.HelixHitCounter >= Need - 1 ? Colour.DarkOrange : Colour.Black);
@@ -923,13 +908,16 @@ namespace Pathos.DotaHeroes.Heroes
       }
     }
 
-    /// <summary>先天「一人之军」与被动「反击螺旋」的 Property 帮助面板（实时数值 + 按等级明细）。</summary>
-    private static void RegisterPassiveHelpSpecs()
+    /// <summary>先天「一人之军」与被动「反击螺旋」的帮助面板（零 Property，点击状态栏徽章弹出）。</summary>
+    private void RegisterPassiveHelpSpecs()
     {
       // E：反击螺旋（被动，技能等级 1~4）
       DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
       {
-        PropertyName = "counter helix",
+        Id = "axe.counter_helix",
+        IconGlyph = CounterHelixGlyph,
+        TitleResolver = () => DotaLocalization.T("axe.skill.e.title"),
+        DescriptionResolver = () => DotaLocalization.T("axe.help.e.desc"),
         ResolveCurrentLevel = Ch => IsAxe(Ch) ? HeroSkillService.GetSkillLevel(Ch, SkillHelixId) : 0,
         BuildLiveStats = HelpCtx =>
         {
@@ -978,7 +966,10 @@ namespace Pathos.DotaHeroes.Heroes
       // 先天：一人之军（无等级）
       DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
       {
-        PropertyName = "one man army",
+        Id = "axe.one_man_army",
+        IconGlyph = OneManArmyGlyph,
+        TitleResolver = () => DotaLocalization.T("axe.status.one_man_army"),
+        DescriptionResolver = () => DotaLocalization.T("axe.help.oma.desc"),
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
@@ -1187,7 +1178,7 @@ namespace Pathos.DotaHeroes.Heroes
       });
     }
 
-    private static Class RegisterAxeClass(DotaHeroContext Ctx, Glyph AvatarGlyph, Property OneManArmyTalent)
+    private static Class RegisterAxeClass(DotaHeroContext Ctx, Glyph AvatarGlyph)
     {
       return Ctx.Classes.Add(C =>
       {
@@ -1209,7 +1200,6 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Attributes.intelligence,
           Ctx.Attributes.charisma);
 
-        C.AddFeat(1, OneManArmyTalent);
         C.AddFeat(4, Ctx.Properties.free_action);
         C.AddFeat(8, Ctx.Properties.clarity);
         C.AddFeat(12, Ctx.Properties.quickness);

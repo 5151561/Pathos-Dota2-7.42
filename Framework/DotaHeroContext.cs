@@ -97,37 +97,12 @@ namespace Pathos.DotaHeroes.Framework
       Form.SetScore(Attributes.charisma, Cha);
     }
 
-    /// <summary>
-    /// 注册「长效技能 / 先天技能 / 被动专长」Property：
-    /// 会通过 Class.AddFeat 展示在角色原生「天赋」栏与游戏内百科「天赋/特性」栏目中。
-    /// 注意：每次调用占用 1 个全局 Property 名额（Pathos PropertySet 为单个 Int64，官方已用 57 个，硬上限 64）。
-    /// </summary>
-    public Property RegisterPassiveProperty(string Name, string Description, Glyph Icon)
-    {
-      return Properties.Add(P =>
-      {
-        P.Name = Name;
-        P.Description = Description;
-        P.Glyph = Icon;
-      });
-    }
-
-    /// <summary>
-    /// 注册「短期主动技能状态（Transient-only）」Property（如剑刃风暴、无敌斩）：
-    /// 自动向 DotaPropertyVisibility 登记，避免在原生 TalentPanel（含大师模式）与百科「天赋/特性」中被误展示为永久天赋。
-    /// 注意：同样占用 1 个全局 Property 名额；新的带回合数增益/减益优先用 DotaModifierService（零 Property）。
-    /// </summary>
-    public Property RegisterSkillStatusProperty(string Name, string Description, Glyph Icon)
-    {
-      var Prop = Properties.Add(P =>
-      {
-        P.Name = Name;
-        P.Description = Description;
-        P.Glyph = Icon;
-      });
-      DotaPropertyVisibility.RegisterTransientOnlyProperty(Prop);
-      return Prop;
-    }
+    // 注意：Pathos 的 PropertySet 为单个 Int64（硬上限 64，官方已占 57）。
+    // 本扩展零自定义 Codex.Properties：
+    // - 被动 / 先天技能走 HeroSkillService + DotaSpellHelpBridge.RegisterPassive + DotaStatusBarBridge；
+    // - 带回合数的技能状态 / 增益减益走 DotaModifierService；
+    // - 天赋 / 技能等级 / 持久化整数走 DotaCharacterStorage。
+    // 因此此处刻意不提供 RegisterPassiveProperty / RegisterSkillStatusProperty，禁止调用 Ctx.Properties.Add。
 
     /// <summary>
     /// 注册单格自定义像素打击/斩击特效；必须再用 DotaVfx.Style 注册样式，播放用 DotaVfx.Strike / StrikeOn。

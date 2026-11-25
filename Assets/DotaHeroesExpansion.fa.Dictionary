@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,چرخش مارپیچ مقابله
 ExplosionName,waveform splash,انفجار آبی موج‌شکل
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,گوی فشرده‌ای از آب زنده جزرومد که به‌عنوان مهمات دوربرد بی‌پایان از قلاب‌سنگ شلیک می‌شود.
 ItemName,tidal orb,گوی جزرومد
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,ذاتی (شکل تیغه): هر 4 نوبت بدون دریافت آسیب 1 انباشت بگیرید (تا 12 انباشت). هر انباشت +1% سرعت حرکت و +2.5% قدرت ضربه چابکی و سرعت حمله می‌دهد؛ پس از دریافت آسیب تا 4 نوبت باقی می‌ماند.
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,ذاتی (جزر و مد): چابکی سرعت حرکت و برد حمله دوربرد را افزایش می‌دهد؛ قدرت برد جادوها و مقاومت در برابر کندی را بالا می‌برد. هنگام دگرگونی نیز حفظ می‌شود.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",ذاتی (ارتش یک‌نفره): تا زمانی که هم‌تیمی زنده‌ای در ۴ خانه نباشد (با نزدیک شدن هم‌تیمی ۶ نوبت باقی می‌ماند)، اکس قدرت اضافه‌ای برابر ۵۰٪ دفاع مازاد خود (دفاع - ۱۰) می‌گیرد که آسیب نبرد تن‌به‌تن را افزایش می‌دهد.
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,جهش میان دشمنان نزدیک در هاله‌ای از ضربات آسیب‌ناپذیر: مصون از هرگونه آسیب و اثر منفی هم‌زمان با بریدن یک دشمن نزدیک در هر نوبت.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).",غیرفعال (رقص تیغه): حملات تن‌به‌تن، ضربات آمنی‌اسلش و چرخش‌های خشم تیغه بسته به سطح 1 تا 4 رقص تیغه 35% شانس ضربه مرگبار با 1.4/1.6/1.8/2.0 برابر آسیب دارند.
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",غیرفعال (مارپیچ مقابله): به ازای هر ۷ / ۶ / ۵ / ۴ حمله دریافتی (بر اساس سطح مهارت ۱ تا ۴، شامل خطاها) یک چرخش تبر قرمز ۳×۳ فعال می‌شود که ۱۰۰ / ۱۲۰ / ۱۴۰ / ۱۶۰ آسیب ناب وارد می‌کند (1d6+3 تا 3d6).
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",چرخان در طوفانی ویرانگر از تیغه‌ها: مصون از اثرات منفی، 80% کاهش آسیب جادویی و وارد کردن آسیب جادویی به اطراف در هر نوبت.
-PropertyName,blade dance,رقص تیغه
-PropertyName,blade fury,خشم تیغه
-PropertyName,bladeform,شکل تیغه
-PropertyName,counter helix,مارپیچ مقابله
-PropertyName,ebb and flow,جزر و مد
-PropertyName,omnislash,آمنی‌اسلش
-PropertyName,one man army,ارتش یک‌نفره
 RaceName,waterkin//female,روح آب
 RaceName,waterkin//male,روح آب
 RaceName,waterkin//non-binary,روح آب

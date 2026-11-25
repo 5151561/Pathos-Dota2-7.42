@@ -241,11 +241,6 @@ namespace Pathos.DotaHeroes.Framework.Skills
             PathosEngineBridge.LearnSpell(Engine, Character, Spell);
         }
       }
-      else if (Slot.Kind == DotaSkillSlotKind.Passive && NextLv == 1 && Slot.PassiveProperty != null)
-      {
-        if (!PathosEngineBridge.HasAcquiredTalent(Character, Slot.PassiveProperty))
-          PathosEngineBridge.GainTalent(Engine, Character, Slot.PassiveProperty);
-      }
 
       try
       {

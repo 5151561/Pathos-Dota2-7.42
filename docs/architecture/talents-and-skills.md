@@ -17,9 +17,9 @@ API 声明写法速查见 [framework-api.md](framework-api.md)。
   - `0 → 1`：`PathosEngineBridge.LearnSpell` 首次学会（0 星）。
   - `1 → 2/3/4`（大招 `1 → 2/3`）：原生升星（`★ / ★★ / ★★★`，原生法术面板显示星级并降低蓝耗）；英雄代码再用 `Ability.StarMultiplier(ch)`（默认每星 +15%）或 `Ability.Level(ch)` 叠加数值，与 Pathos 学派熟练度（1~5 阶）双重成长。
   - `CreateActiveGroup` 支持一次加点同步多个法术（水人 E 两个方向、R 变形/解除）。
-- **被动技能（独立等级驱动）**：
-  - 不挂钩武器/学派熟练度。
-  - `0 → 1`：`PathosEngineBridge.GainTalent` 授予被动 Property（原生天赋栏可见）；`1 → 4` 由 `HeroSkillService.GetSkillLevel(ch, slotId)` 驱动数值（如主宰剑舞暴击倍率 `1.4× / 1.6× / 1.8× / 2.0×`）。
+- **被动技能（独立等级驱动，零 Property）**：
+  - 不挂钩武器/学派熟练度，也不占用 `Codex.Properties`。
+  - `1 → 4` 由 `HeroSkillService.GetSkillLevel(ch, slotId)` 驱动数值（如主宰剑舞暴击倍率 `1.4× / 1.6× / 1.8× / 2.0×`）。
 - **存档持久化**：技能等级写入 `DotaCharacterStorage`（`Character.Dialogue.Tag`），主动技能星级由原生 `Knowledge` 保存。**不注册任何 Property**。
 
 ### 0.2 组件分工
@@ -62,17 +62,17 @@ API 声明写法速查见 [framework-api.md](framework-api.md)。
 
 ---
 
-## 2. 被动 / 短期状态 Property 治理
+## 2. 零自定义 `Codex.Properties` 治理
 
-Pathos 的 `Codex.Properties` 默认会出现在**原生「天赋」面板（`TalentPanel`，含大师模式）**和**百科「天赋/特性」**中，并且**全局只有 64 个名额、目前已用满**（见 [framework-api.md §2.3](framework-api.md)）。
+Pathos 的 `PropertySet` 底层是单个 `Int64`（全局硬上限 64 个，官方已占 57 个）。**本扩展已全部迁移为零自定义 Property（0 占用，总计 57/64）**（见 [framework-api.md §2.3](framework-api.md)）：
 
-| 类别 | 示例 | 注册入口 | 原生天赋栏 / 百科 | 运行时表现 |
-| :--- | :--- | :--- | :--- | :--- |
-| **长效技能（先天 / 被动）** | 水人「潮涨潮落」、主宰「剑心犹在」「剑舞」、斧王「一人之军」「反击螺旋」 | `Ctx.RegisterPassiveProperty(...)` + `Class.AddFeat(1, prop)`（或作为 `CreatePassive` 的 `PassiveProperty`） | 可见 | 由 Hook 实时生效；动态层数接 `DotaStatusBarBridge` |
-| **短期主动技能状态** | 主宰「剑刃风暴」「无敌斩」 | `Ctx.RegisterSkillStatusProperty(...)` | 自动隐藏（`DotaPropertyVisibility`） | 施法期间 `ApplyTransient` 挂到角色，左上角原生倒计时图标 |
-| **带回合数的增益/减益（推荐）** | 斧王「战斗饥渴」「狂战士之吼」护甲 | `DotaModifierService.Define` + `Apply` | 不涉及（零 Property） | 框架递减、汇总数值、生成状态栏徽章 |
+| 类别 | 示例 | 实现方式 | 运行时表现 |
+| :--- | :--- | :--- | :--- |
+| **先天技能 / 被动技能** | 水人「潮涨潮落」、主宰「剑心犹在」「剑舞」、斧王「一人之军」「反击螺旋」 | `HeroSkillService`（被动等级）+ `DotaSpellHelpBridge.RegisterPassive` + `DotaStatusBadge.ForPassive` | 由 Hook 实时生效；动态层数显示在左上角状态栏，点击弹出原生帮助弹窗 |
+| **带回合数的技能状态 / 增益减益** | 斧王「狂战士之吼」「战斗饥渴」「淘汰战吼」、主宰「剑刃风暴」「无敌斩」 | `DotaModifierService.Define` + `Apply` | 框架递减、汇总护甲/速度、DoT、驱散与左上角状态栏徽章 |
+| **天赋 / 技能等级 / 持久化整数** | 四层天赋、技能加点、斧王淘汰永久护甲 | `DotaCharacterStorage`（`Character.Dialogue.Tag`） | 随存档完整序列化，零 Property |
 
-> 不要直接调 `Ctx.Properties.Add`。天赋、技能等级、计数器一律不用 Property（走 `DotaCharacterStorage`）。新需求优先选第三行；第一、二行每个都要消耗 1 个已经没有余量的名额。
+> 禁止调用 `Ctx.Properties.Add`，确保后续新增任意数量英雄都不受 64 位上限约束。
 
 ---
 
@@ -88,8 +88,8 @@ DotaStatusBarBridge.RegisterProvider("juggernaut.bladeform", JuggernautClassName
   if (State.Stacks <= 0)
     return null;
 
-  // 标题 = Property 本地化名（缺失时回退 Key）并大写；点击图标打开该 Property 的原生说明
-  return DotaStatusBadge.ForPassive("juggernaut.bladeform", BladeformGlyph, BladeformTalentProperty,
+  // 标题取 TitleKey 并大写；点击图标弹出 DotaSpellHelpBridge 注册的被动帮助弹窗（零 Property）
+  return DotaStatusBadge.ForPassive("juggernaut.bladeform", BladeformGlyph, "juggernaut.bladeform",
     "jugg.status.bladeform_fallback", Count: $"×{State.Stacks}",
     Colour: State.LingerTurns > 0 ? Colour.DarkOrange : Colour.Black);
 });
@@ -104,9 +104,9 @@ DotaStatusBarBridge.RegisterProvider("juggernaut.bladeform", JuggernautClassName
 
 ### 4.1 每回合持续技能（如剑刃风暴）
 
-1. 用 `DotaAbility.Register` 声明 `Targeting = Self`，`ConfigureApply` 里 `ApplyTransient(statusProp, Dice.Fixed(turns))`——或者更推荐用 `DotaModifierService` 承载持续状态。
-2. `OnCast`：施法瞬间逻辑（基础驱散、立刻结算第 1 跳），并把角色加入一个 `DotaCharacterFlagSet`（防止同一回合 `AfterExecuteCommand` 再结算一次）。
-3. `AfterExecuteCommand`：状态仍在时，先 `FlagSet.Remove(actor)` 跳过本回合，否则执行每回合 Tick。参考实现：主宰 `SkipNextBladeFuryTick`。
+1. 用 `DotaAbility.Register` 声明 `Targeting = Self`（外壳默认 `Apply.Nothing()`），再用 `DotaModifierService.Define` 声明状态 Modifier，把每回合逻辑写在 `OnTick`。
+2. `OnCast`：调用 `DotaModifierService.Apply` 施加持续状态（可同时写入 `MoveSpeedPct` / `Defence` 等），执行施法瞬间逻辑（如基础驱散、立刻结算第 1 跳），并把角色加入一个 `DotaCharacterFlagSet`（防止同一回合 `AfterExecuteCommand` 触发的 `OnTick` 再结算一次）。
+3. `OnTick`：先 `FlagSet.Remove(holder)` 跳过施法当回合，其余回合执行每回合 Tick，到期自动移除。参考实现：主宰 `BladeFuryModifier` 与 `SkipNextBladeFuryTick`。
 
 ### 4.2 多步演出技能（如无敌斩、波浪形态）：`DotaPresentation`
 

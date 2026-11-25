@@ -86,7 +86,6 @@ namespace Pathos.DotaHeroes.Heroes
     private static DotaAbility MorphAbility;
     private static DotaAbility MorphRevertAbility;
 
-    private Property EbbAndFlowTalentProperty;
     private Glyph MorphlingGlyph;
     private Glyph EbbAndFlowGlyph;
     private Glyph MorphGlyph;
@@ -125,13 +124,10 @@ namespace Pathos.DotaHeroes.Heroes
       DotaVfx.Style(WaveformSplashExplosion, new DotaVfxStyle { FadeIn = 0.05f, FadeOutStart = 0.4f, ScaleFrom = 0.55f, ScaleTo = 1.1f });
       DotaVfx.Style(AdaptiveStrikeImpactStrike, new DotaVfxStyle { FadeIn = 0.05f, FadeOutStart = 0.4f, ScaleFrom = 0.8f, ScaleTo = 1.2f });
 
-      // 2. 注册水人先天技能天赋：潮涨潮落（显示在角色天赋栏与左上角状态栏，实际动态效果由 Hook 实时驱动）
-      EbbAndFlowTalentProperty = RegisterEbbAndFlowTalent(Ctx, EbbAndFlowGlyph);
-
-      // 3. 注册水人专属无限远程普攻：潮汐水弹（tidal orb）
+      // 2. 注册水人专属无限远程普攻：潮汐水弹（tidal orb）；先天「潮涨潮落」零 Property，由 Hook 与状态栏驱动
       var TidalOrbItem = RegisterTidalOrbItem(Ctx, TidalOrbGlyph);
 
-      // 4. 注册水人全套专属技能（Q / W / E1 / E2 / R1 / R2）
+      // 3. 注册水人全套专属技能（Q / W / E1 / E2 / R1 / R2）
       //    （DotaAbility 自动生成 5 阶法术外壳、全射程选格与按法术名的施法分发）
       RegisterAbilities(Ctx, WaveformGlyph, AdaptiveStrikeGlyph, MorphAgilityGlyph, MorphStrengthGlyph, MorphGlyph, MorphRevertGlyph);
       var WaveformSpell = WaveformAbility.Spell;
@@ -141,17 +137,16 @@ namespace Pathos.DotaHeroes.Heroes
       var MorphSpell = MorphAbility.Spell;
       var MorphRevertSpell = MorphRevertAbility.Spell;
 
-      // 5. 注册专属种族：变体水灵（waterkin，含遇水回血回蓝与遇火蒸发反应）
+      // 4. 注册专属种族：变体水灵（waterkin，含遇水回血回蓝与遇火蒸发反应）
       var WaterkinRace = RegisterWaterkinRace(Ctx, MorphlingGlyph);
 
-      // 6. 注册水系环境专属交互（水药水吸收 + 喷泉汲取）
+      // 5. 注册水系环境专属交互（水药水吸收 + 喷泉汲取）
       RegisterWaterInteractions(Ctx);
 
-      // 7. 注册专属职业：变体精灵（morphling）
+      // 6. 注册专属职业：变体精灵（morphling）
       var MorphlingClass = RegisterMorphlingClass(
         Ctx,
         MorphlingGlyph,
-        EbbAndFlowTalentProperty,
         TidalOrbItem,
         WaveformSpell,
         AdaptiveStrikeSpell,
@@ -360,7 +355,7 @@ namespace Pathos.DotaHeroes.Heroes
         return DotaStatusBadge.ForPassive(
           "morphling.ebb_flow",
           EbbAndFlowGlyph ?? MorphlingGlyph,
-          EbbAndFlowTalentProperty,
+          "morphling.ebb_flow",
           "morph.status.ebb_fallback",
           Count: DotaLocalization.Format("morph.status.ebb_count", Dex, Str),
           Colour: BadgeColour);
@@ -379,7 +374,7 @@ namespace Pathos.DotaHeroes.Heroes
           Text = DotaStatusBadge.Title("morph.status.morphed"),
           Count = HasMorphTalent ? $"+{TalentMorphDefenceBonus} DEF" : string.Empty,
           Colour = HasMorphTalent ? Colour.DarkBlue : Colour.Black,
-          HelpProperty = EbbAndFlowTalentProperty
+          HelpSpell = MorphAbility.Spell
         };
       });
 
@@ -1237,12 +1232,15 @@ namespace Pathos.DotaHeroes.Heroes
       });
     }
 
-    /// <summary>先天「潮涨潮落」Property 帮助面板：按当前力敏实算移速 / 攻击距离 / 施法距离 / 减速抗性。</summary>
-    private static void RegisterPassiveHelpSpecs()
+    /// <summary>先天「潮涨潮落」帮助面板（零 Property，点击状态栏徽章弹出）：按当前力敏实算移速 / 攻击距离 / 施法距离 / 减速抗性。</summary>
+    private void RegisterPassiveHelpSpecs()
     {
       DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
       {
-        PropertyName = "ebb and flow",
+        Id = "morphling.ebb_flow",
+        IconGlyph = EbbAndFlowGlyph ?? MorphlingGlyph,
+        TitleResolver = () => DotaLocalization.T("morph.status.ebb_fallback"),
+        DescriptionResolver = () => DotaLocalization.T("morph.help.ebb.desc"),
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
@@ -1291,12 +1289,6 @@ namespace Pathos.DotaHeroes.Heroes
         }
       });
     }
-
-    private static Property RegisterEbbAndFlowTalent(DotaHeroContext Ctx, Glyph Icon)
-      => Ctx.RegisterPassiveProperty(
-        Name: "ebb and flow",
-        Description: "Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.",
-        Icon: Icon);
 
     private static Item RegisterTidalOrbItem(DotaHeroContext Ctx, Glyph Icon)
     {
@@ -1577,7 +1569,6 @@ namespace Pathos.DotaHeroes.Heroes
     private static Class RegisterMorphlingClass(
       DotaHeroContext Ctx,
       Glyph AvatarGlyph,
-      Property EbbAndFlowTalent,
       Item TidalOrbItem,
       Spell WaveformSpell,
       Spell AdaptiveStrikeSpell,
@@ -1606,8 +1597,6 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Attributes.wisdom,
           Ctx.Attributes.charisma);
 
-        // Lv 1 先天技能天赋：在角色天赋栏与选人职业专长中直观显示（且变形期间依然保留）
-        C.AddFeat(1, EbbAndFlowTalent);
         C.AddFeat(4, Ctx.Elements.water);
         C.AddFeat(6, Ctx.Properties.polymorph_control);
         C.AddFeat(8, Ctx.Properties.displacement);

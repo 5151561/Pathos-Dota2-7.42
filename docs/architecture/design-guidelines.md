@@ -112,39 +112,41 @@ Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等
 
 ## 6. 天赋树系统与「减冷却 → 减蓝耗」映射规范
 
-所有 DOTA2 英雄共享 `Framework/Talents/` 通用天赋框架与独立原生风格侧边面板（左下角「休息」按钮右侧的原生 `MenuButton` 或快捷键 `F2` 打开，原生 `TalentPanel` 与百科自动隐藏内部持久化标记；完整架构详见 [天赋树与长/短期技能状态体系](talents-and-skills.md)）：
+所有 DOTA2 英雄共享 `Framework/Talents/` 通用天赋框架与独立原生风格侧边面板（左下角「休息」按钮右侧的原生 `MenuButton` 或快捷键 `F2` 打开；完整架构详见 [天赋树与长/短期技能状态体系](talents-and-skills.md)）：
 
-1. **Pathos 节奏解锁阶梯（选定不可重置）**：
-   - **四层二选一**：`Lv 5 / 10 / 15 / 20` 依次解锁 T1 ~ T4。
-   - **双修补点**：`Lv 22 / 23 / 24 / 25` 依次解锁 T1 ~ T4 另一侧分支。
+1. **DOTA2 原版节奏解锁阶梯（选定不可重置）**：
+   - **四层二选一**：`Lv 10 / 15 / 20 / 25` 依次解锁 T1 ~ T4。
+   - **双修补点**：`Lv 27 / 28 / 29 / 30` 依次解锁 T1 ~ T4 另一侧分支。
 2. **减冷却（CDR）→ 减蓝耗统一换算**（`DotaMechanicsMapper.ComputeCooldownReductionRatio` + `MapCooldownReductionToManaCost`）：
    - Pathos 无技能冷却机制，凡 DOTA2 原版为**减冷却**的天赋，统一按减冷却百分比折算为**减蓝耗**：
      $$\text{CDR\%} = \frac{\Delta T}{T_{\text{ref}}},\qquad \text{FinalMana} = \max\Big(1,\ \text{Round}\big(\text{BaseMana} \times (1 - \text{CDR\%})\big)\Big)$$
    - **保护规则**：0 蓝耗技能保持 `0`；正蓝耗技能保底为 `1`；若原蓝耗 $> 1$ 且 $\text{CDR\%} > 0$，保证**至少减少 `1` 点蓝耗**；多来源乘算叠加封顶 `60%`。
    - 英雄只需在 `TalentNode.ManaReductions` 上声明 `SpellManaReductionRule`，`TalentService` 会通过 `DotaHookBus.RegisterSpellCostQuery` 自动接管 `Character.SpellCost`，施法扣蓝与 UI 显示蓝耗自动同步。
 3. **存档持久化**：
-   - 每个天赋节点注册为 `dota_talent_*` 内部 `Property`，学习时调用 `Engine.GainTalent` 写入 `Character.AcquiredTalentSet`，100% 跟随 Pathos 原生存档保存与加载。
+   - 已学天赋与技能加点等级统一由 [DotaCharacterStorage](../../Framework/DotaCharacterStorage.cs) 以紧凑文本写入 `Character.Dialogue.Tag`，100% 跟随 Pathos 原生存档保存与加载，**零 `Codex.Properties` 占用**。
 
 ---
 
 ## 7. 常见 DOTA2 机制在 Pathos 中的实现套路
 
+> 更完整的「需求 → API」速查见 [framework-api.md](framework-api.md)。
+
 | DOTA2 机制类型 | 推荐实现方式（优先复用 Framework 基建） | 现有参考 |
 | :--- | :--- | :--- |
-| **固定初始六维与蓝量** | `DotaMechanicsMapper.MapStartingStats` + `RegisterFixedStartingStats` | 主宰、变体精灵 |
-| **长效技能（先天 / 被动）** | `Ctx.RegisterPassiveProperty` + `Class.AddFeat(1, ...)` + `DotaHookBus` 实时驱动 | 水人「潮涨潮落」、主宰「剑心犹在」「剑舞」 |
-| **短期主动技能状态** | `Ctx.RegisterSkillStatusProperty`（自动从原生天赋栏与百科隐藏）+ `ApplyTransient` | 主宰「剑刃风暴」「无敌斩」 |
-| **左上角动态叠层徽章** | `DotaStatusBarBridge.RegisterProvider`（复用原生 `StatusIcon`，支持计数与点击查说明） | 主宰「剑心犹在」 |
-| **技能声明 / 全射程选格 / 点地施法** | `DotaAbility.Register`（外壳 + 选格 + 分发）+ `Cast.TryResolveHostileTarget` / `Cast.ResolveOpenPointTarget`（失败自动 `RefundSpellCost`） | 三位英雄全部主动技能 |
-| **被动加甲 / 减甲光环** | `RegisterDefenceQuery` + `DotaMechanicsMapper.MapArmorToDefence` | 框架内置支持 |
-| **概率暴击 / 吸血 / 法球** | `DotaDamage.RegisterCritSource`（`OnCrit` 内 `HealCharacter`）| 主宰「剑舞」（含 T4 暴击吸血） |
-| **持续光环 / 每回合转伤 / 治疗** | `AfterExecuteCommand` + `DotaCombatHelper.FindHostilesInRadius` / `IsFriendly` + `HealCharacter` | 主宰「剑刃风暴」「治疗守卫」 |
-| **基础驱散 / 减益免疫** | `DotaCombatHelper.DispelNegativeDebuffs` + `BeforeApplyTransient`（`DotaCombatHelper.IsNegativeDebuff`） | 主宰「剑刃风暴」、水人高力免疫减速 |
-| **多回合自动连斩 / 引导** | `ConditionalWeakTable` Session + `RegisterInvulnerableQuery` 无敌 + `PathosEngineBridge.QueueWaitDecision` | 主宰「无敌斩」 |
+| **固定初始六维与蓝量** | `DotaHeroProfile` + `Profile.RegisterStats()` + `Profile.ConfigureClass(...)` | 斧王、主宰、变体精灵 |
+| **长效技能（先天 / 被动）** | `DotaSkillSlot.CreatePassive` + `DotaSpellHelpBridge.RegisterPassive` + `DotaStatusBadge.ForPassive` + `DotaHookBus`（零 Property） | 水人「潮涨潮落」、主宰「剑心犹在」「剑舞」、斧王「一人之军」「反击螺旋」 |
+| **短期主动技能状态 / 增益减益** | `DotaModifierService.Define` + `Apply`（回合递减、护甲/移速/攻速、DoT、驱散与徽章，零 Property） | 斧王「狂战士之吼」「战斗饥渴」「淘汰战吼」、主宰「剑刃风暴」「无敌斩」 |
+| **左上角动态叠层徽章** | `DotaStatusBarBridge.RegisterProvider` + `DotaStatusBadge.ForPassive`（带回合数直接用 `DotaModifierSpec.Badge*`） | 主宰「剑心犹在」、斧王「一人之军」「淘汰之刃」 |
+| **技能声明 / 全射程选格 / 点地施法** | `DotaAbility.Register`（外壳 + 选格 + 分发）+ `Cast.TryResolveHostileTarget` / `Cast.ResolveOpenPointTarget`（失败自动返蓝） | 三位英雄全部主动技能 |
+| **被动加甲 / 减甲光环** | 带回合数走 `DotaModifier.Defence`；永久/动态光环走 `RegisterDefenceQuery` + `DotaMechanicsMapper.MapArmorToDefence` | 斧王「狂战士之吼」「淘汰之刃」 |
+| **概率暴击 / 吸血 / 魔抗** | `DotaDamage.RegisterCritSource`（`OnCrit` 内 `HealCharacter`）/ `DotaDamage.RegisterMagicResist` | 主宰「剑舞」（含 T4 暴击吸血）、「剑刃风暴」 |
+| **持续光环 / 每回合转伤 / 治疗** | 带回合状态用 `DotaModifierSpec.OnTick` / `DotDotaDps`；召唤物/无期限状态用 `AfterExecuteCommand` + `DotaCombatHelper` | 主宰「剑刃风暴」「治疗守卫」、斧王「战斗饥渴」 |
+| **基础驱散 / 减益免疫** | `DotaCombatHelper.DispelNegativeDebuffs` + `DotaModifierService.RegisterDebuffImmunity` + `BeforeApplyTransient` | 主宰「剑刃风暴」、水人高力免疫减速 |
+| **多段演出 / 连续斩击 / 持续旋风** | `DotaPresentation.Sequence(...).FreezeWorld(...).At(秒, ...)` / `DotaPresentation.Loop` + `RegisterInvulnerableQuery`（禁止 `QueueWaitDecision`） | 主宰「无敌斩」「剑刃风暴」、水人「波浪形态」 |
 | **召唤物精确召唤与消散** | `PathosEngineBridge.SummonAllyEntity` + `PathosEngineBridge.DespawnSummon` | 主宰「治疗守卫」 |
-| **自定义像素特效（VFX）** | `Ctx.RegisterStrikeVfx` / `RegisterBeamVfx` / `RegisterExplosion3x3Vfx` + `PathosEngineBridge.Story*` / `DotaCombatHelper.PlayBeamTrail` | 主宰全套技能、水人水爆 |
-| **永久属性转换** | `AfterCastSpell` 中 `SetPermanentAbilityScore`（同步 `CurrentForm` / `MaximumForm`）+ `SetMeter` | 水人「属性转换」 |
-| **角色私有运行时状态** | 使用 `ConditionalWeakTable<Character, TState>` 绑定角色实例，避免内存泄漏 | 主宰 `BladeformStates` / `WardStates` / `ActiveOmnislashSessions` |
+| **自定义像素特效（VFX）** | `Ctx.RegisterStrikeVfx` / `RegisterBeamVfx` / `RegisterExplosion3x3Vfx` + `DotaVfx.Style` + `DotaVfx.Strike/StrikeOn/Beam/BeamTrail/Explode` | 主宰、斧王、水人全套技能 |
+| **永久属性转换 / 生命联动** | `DotaStats.SetPermanent` + `DotaLife.AdjustMax` | 水人「属性转换」 |
+| **跨存档数值 & 角色私有运行时状态** | 跨存档用 `DotaCharacterStorage.Get/Set/AddCustomInt`；运行时用 `ConditionalWeakTable<Character, TState>` 或 `DotaCharacterFlagSet` | 斧王淘汰之刃永久护甲、主宰 `BladeformStates` / `SkipNextBladeFuryTick` |
 
 ---
 

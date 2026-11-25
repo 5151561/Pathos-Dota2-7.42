@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,Okret Kontraspirale
 ExplosionName,waveform splash,Vodena eksplozija Talasnog oblika
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Zgusnuta sfera žive plimske vode koja se ispaljuje iz praćke kao beskonačna dalekometna municija.
 ItemName,tidal orb,sfera plime
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Urođeno (Oblik sečiva): Stičite po 1 naslagu svaka 4 poteza bez primljene štete (do 12 naslaga). Svaka naslaga daje +1% brzine kretanja i +2,5% snage udarca od okretnosti i brzine napada; traje 4 poteza nakon primanja štete."
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Urođeno (Plima i oseka): Okretnost daje bonus brzinu kretanja i dalekometni domet napada; Snaga daje bonus domet čarolija i otpornost na usporavanje. Ostaje tokom preobražaja.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Urođena (Vojska od jednog čoveka): dok u krugu od 4 polja nema živih saveznika (traje još 6 poteza nakon približavanja saveznika), Axe dobija bonus snage jednak 50% njegovog viška odbrane (odbrana - 10), što povećava štetu iz blizine."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Skače između obližnjih neprijatelja u naletu neranjivih udaraca: imun na svu štetu i slabljenja dok svakog poteza seče obližnjeg neprijatelja.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasivno (Ples sečiva): Napadi iz blizine, udarci Omnislasha i okreti Besa sečiva imaju 35% šanse (prema nivou 1–4 Plesa sečiva) da zadaju kritičan udarac sa 1,4/1,6/1,8/2,0x štete."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Pasivna (Kontraspirala): na svakih 7 / 6 / 5 / 4 primljenih napada (po nivou veštine 1–4, uključujući promašene) pokreće se grimizni okret sekire 3x3 koji nanosi 100 / 120 / 140 / 160 čiste štete (1d6+3 do 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Okretanje u razornoj oluji sečiva: imunost na slabljenja, 80% smanjenja magijske štete i nanošenje magijske štete okolo svakog poteza."
-PropertyName,blade dance,ples sečiva
-PropertyName,blade fury,bes sečiva
-PropertyName,bladeform,oblik sečiva
-PropertyName,counter helix,Kontraspirala
-PropertyName,ebb and flow,plima i oseka
-PropertyName,omnislash,omnislash
-PropertyName,one man army,Vojska od jednog čoveka
 RaceName,waterkin//female,vodeni duh
 RaceName,waterkin//male,vodeni duh
 RaceName,waterkin//non-binary,vodeni duh

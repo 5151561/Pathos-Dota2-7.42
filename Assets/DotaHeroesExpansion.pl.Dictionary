@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,Obrót Kontrspirali
 ExplosionName,waveform splash,Wodny wybuch Fali
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Skondensowana kula żywej wody przypływu wystrzeliwana z procy jako nieskończona amunicja dystansowa.
 ItemName,tidal orb,kula przypływu
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Wrodzona (Forma ostrza): Zyskaj 1 ładunek co 4 tury bez otrzymania obrażeń (maks. 12 ładunków). Każdy ładunek daje +1% prędkości ruchu oraz +2,5% siły ciosów ze Zwinności i szybkości ataku; utrzymuje się przez 4 tury po otrzymaniu obrażeń."
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Wrodzona (Odpływ i przypływ): Zwinność zwiększa prędkość ruchu i zasięg ataków dystansowych; Siła zwiększa zasięg zaklęć i odporność na spowolnienie. Utrzymuje się podczas przemiany.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Wrodzona (Armia jednego człowieka): dopóki w promieniu 4 pól nie ma żywych sojuszników (utrzymuje się 6 tur po zbliżeniu sojusznika), Axe zyskuje premię do siły równą 50% nadwyżki obrony (obrona - 10), zwiększając obrażenia wręcz."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,"Przeskakuje między pobliskimi wrogami w smudze nietykalnych cięć: niewrażliwy na wszelkie obrażenia i osłabienia, co turę tnąc pobliskiego przeciwnika."
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Pasywna (Taniec ostrza): Ataki wręcz, cięcia Omnislasha i obroty Furii ostrza mają 35% szansy (zależnie od poziomu 1–4 Tańca ostrza) na trafienie krytyczne za 1,4/1,6/1,8/2,0x obrażeń."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Pasywna (Kontrspirala): co 7 / 6 / 5 / 4 otrzymane ataki (wg poziomu umiejętności 1–4, w tym chybione) wyzwalają szkarłatny obrót topora 3x3, zadający 100 / 120 / 140 / 160 obrażeń czystych (1d6+3 do 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Wirowanie w niszczycielskiej burzy ostrzy: niewrażliwość na osłabienia, 80% redukcji obrażeń magicznych i zadawanie obrażeń magicznych wokół ciebie co turę."
-PropertyName,blade dance,taniec ostrza
-PropertyName,blade fury,furia ostrza
-PropertyName,bladeform,forma ostrza
-PropertyName,counter helix,Kontrspirala
-PropertyName,ebb and flow,odpływ i przypływ
-PropertyName,omnislash,omnislash
-PropertyName,one man army,Armia jednego człowieka
 RaceName,waterkin//female,istota wodna
 RaceName,waterkin//male,istota wodna
 RaceName,waterkin//non-binary,istota wodna

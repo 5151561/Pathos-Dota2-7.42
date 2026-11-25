@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,Rotazione di Elica del contrattacco
 ExplosionName,waveform splash,Esplosione d'acqua di Onda
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,Una sfera condensata di acqua di marea vivente lanciata come munizione infinita da una fionda.
 ItemName,tidal orb,sfera delle maree
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,"Innata (Forma di Lama): Ottieni 1 carica ogni 4 turni senza subire danni (fino a 12 cariche). Ogni carica conferisce +1% velocità di movimento e +2,5% potenza di colpo su Agilità e velocità d'attacco; persiste per 4 turni dopo aver subito danni."
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,Innata (Flusso e Riflusso): L'Agilità aumenta la velocità di movimento e la gittata a distanza; la Forza aumenta la gittata degli incantesimi e la resistenza ai rallentamenti. Persiste durante la metamorfosi.
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.","Innata (Esercito di un uomo solo): finché non ci sono alleati vivi entro 4 caselle (persiste 6 turni quando un alleato si avvicina), Axe ottiene forza bonus pari al 50% della sua difesa in eccesso (difesa - 10), aumentando il danno in mischia."
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,Balza tra i nemici vicini in una scia di fendenti invulnerabili: immune a tutti i danni e malus mentre colpisce un nemico vicino ogni turno.
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).","Passiva (Danza della Lama): Gli attacchi in mischia, i colpi di Omnitaglio e i giri di Furia della Lama hanno il 35% di probabilità (in base al livello 1-4 di Danza della Lama) di infliggere un colpo critico da 1,4/1,6/1,8/2,0x danni."
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).","Passiva (Elica del contrattacco): ogni 7 / 6 / 5 / 4 attacchi subiti (in base al livello 1-4, mancati inclusi) scatta una rotazione cremisi dell'ascia 3x3 che infligge 100 / 120 / 140 / 160 di danno puro (1d6+3 a 3d6)."
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.","Roteando in una tempesta distruttiva di lame: immune ai malus, 80% di riduzione dei danni magici e infligge danni magici intorno a te ogni turno."
-PropertyName,blade dance,danza della lama
-PropertyName,blade fury,furia della lama
-PropertyName,bladeform,forma di lama
-PropertyName,counter helix,Elica del contrattacco
-PropertyName,ebb and flow,flusso e riflusso
-PropertyName,omnislash,omnitaglio
-PropertyName,one man army,Esercito di un uomo solo
 RaceName,waterkin//female,spirito acquatico
 RaceName,waterkin//male,spirito acquatico
 RaceName,waterkin//non-binary,spirito acquatico

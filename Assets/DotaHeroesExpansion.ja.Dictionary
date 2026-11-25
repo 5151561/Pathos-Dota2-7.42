@@ -25,20 +25,6 @@ ExplosionName,counter helix spin,カウンターヘリックス回転斬
 ExplosionName,waveform splash,ウェーブフォーム水爆
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,スリングの無限弾薬として放たれる、生きた潮汐水の凝縮弾。
 ItemName,tidal orb,潮汐の水弾
-PropertyDescription,Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.,天賦（剣の型）：ダメージを受けずに 4 ターン経過するごとに 1 スタック獲得（最大 12 スタック）。1 スタックごとに移動速度 +1%、敏捷系斬撃威力・攻撃速度 +2.5% を付与し、被弾後も 4 ターン持続する。
-PropertyDescription,Innate (Ebb & Flow): Agility grants bonus movement speed and ranged attack range; Strength grants bonus spell cast range and slow resistance. Persists while morphed.,天賦（干満の流転）：敏捷は移動速度と遠距離攻撃射程を、筋力は詠唱距離と減速耐性を強化する。変身中も効果は維持される。
-PropertyDescription,"Innate (One Man Army): While no living allies are within 4 tiles (lingers 6 turns when an ally approaches), Axe gains bonus Strength equal to 50% of his excess Defence (Defence - 10), increasing melee attack damage.",先天スキル（一人軍隊）：4 マス以内に生存する味方がいない間（味方が接近しても 6 ターン持続）、アックスは超過防御（防御 - 10）の 50% に相当する筋力ボーナスを獲得し、近接攻撃ダメージが上昇する。
-PropertyDescription,Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.,無敵の連撃で周囲の敵の間を高速で飛び回る状態：毎ターン近くの敵を斬りつけ、あらゆるダメージと弱体効果を無効化する。
-PropertyDescription,"Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).",パッシブ（ブレイドダンス）：近接攻撃、オムニスラッシュの斬撃、ブレイドフューリーの回転攻撃が 35% の確率（ブレイドダンス Lv 1～4 に依存）で 1.4/1.6/1.8/2.0 倍のクリティカルヒットになる。
-PropertyDescription,"Passive (Counter Helix): Every 7 / 6 / 5 / 4 incoming attacks (by Counter Helix skill level 1-4, including missed attacks) triggers a 3x3 crimson axe spin dealing 100 / 120 / 140 / 160 Pure damage (1d6+3 to 3d6).",パッシブ（カウンターヘリックス）：被弾（外れ含む）7 / 6 / 5 / 4 回ごと（スキルレベル 1〜4）に、3x3 の猩紅の斧の回転が発動し、純粋ダメージ 100 / 120 / 140 / 160（1d6+3〜3d6）を与える。
-PropertyDescription,"Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",破壊の刃嵐となって回転中：弱体効果を無効化し、魔法ダメージを 80% 軽減して、毎ターン周囲の敵に魔法ダメージを与える。
-PropertyName,blade dance,ブレイドダンス
-PropertyName,blade fury,ブレイドフューリー
-PropertyName,bladeform,剣の型
-PropertyName,counter helix,カウンターヘリックス
-PropertyName,ebb and flow,干満の流転
-PropertyName,omnislash,オムニスラッシュ
-PropertyName,one man army,一人軍隊
 RaceName,waterkin//female,水霊
 RaceName,waterkin//male,水霊
 RaceName,waterkin//non-binary,水霊

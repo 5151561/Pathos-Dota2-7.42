@@ -113,9 +113,8 @@ namespace Pathos.DotaHeroes.Heroes
     private static DotaAbility HealingWardAbility;
     private static DotaAbility OmnislashAbility;
 
-    private Property BladeformTalentProperty;
-    private Property BladeFuryStatusProperty;
-    private Property OmnislashStatusProperty;
+    private DotaModifierSpec BladeFuryModifier;
+    private DotaModifierSpec OmnislashModifier;
     private Entity HealingWardEntity;
     private Glyph JuggernautGlyph;
     private Glyph BladeformGlyph;
@@ -191,47 +190,28 @@ namespace Pathos.DotaHeroes.Heroes
       DotaVfx.Style(BladeFuryExplosion, new DotaVfxStyle { FadeIn = 0.2f, FadeOutStart = 0.5f, PeakOpacity = 0.8f });
       DotaVfx.Style(HealingWardPulseStrike, new DotaVfxStyle { FadeIn = 0.15f, FadeOutStart = 0.45f, PeakOpacity = 0.85f, ScaleFrom = 0.8f, ScaleTo = 1.05f });
 
-      // 2. 注册长效天赋（先天「剑心犹在」/ 被动「剑舞」）与短期主动技能状态（剑刃风暴 / 无敌斩，自动在原生天赋面板与百科隐藏）
-      BladeformTalentProperty = Ctx.RegisterPassiveProperty(
-        Name: "bladeform",
-        Description: "Innate (Bladeform): Gain 1 stack every 4 turns without taking damage (up to 12 stacks). Each stack grants +1% movement speed and +2.5% agility strike power and attack speed; lingers 4 turns after taking damage.",
-        Icon: BladeformGlyph);
-      var BladeDanceTalent = Ctx.RegisterPassiveProperty(
-        Name: "blade dance",
-        Description: "Passive (Blade Dance): Melee attacks, Omnislash strikes, and Blade Fury spins have a 35% chance to critically strike for 1.4x / 1.6x / 1.8x / 2.0x damage (by Blade Dance skill level 1-4).",
-        Icon: BladeDanceGlyph);
-      BladeFuryStatusProperty = Ctx.RegisterSkillStatusProperty(
-        Name: "blade fury",
-        Description: "Spinning in a destructive storm of blades: immune to debuffs, 80% magical damage reduction, and dealing magical damage around you each turn.",
-        Icon: BladeFuryGlyph);
-      OmnislashStatusProperty = Ctx.RegisterSkillStatusProperty(
-        Name: "omnislash",
-        Description: "Leaping between nearby enemies in a blur of invulnerable strikes: immune to all damage and debuffs while slashing a nearby foe each turn.",
-        Icon: OmnislashGlyph);
-
-      // 3. 注册治疗守卫召唤物实体（使用透明背景的木雕翡翠火焰图腾贴图）
+      // 2. 注册治疗守卫召唤物实体（使用透明背景的木雕翡翠火焰图腾贴图）；先天「剑心犹在」/ 被动「剑舞」/ 状态 Modifier 均为零 Property
       HealingWardEntity = RegisterHealingWardEntity(Ctx, HealingWardTotemGlyph);
 
-      // 4. 注册主宰主动技能（Q / W / R）
+      // 3. 注册主宰主动技能（Q / W / R）与状态 Modifier（剑刃风暴 / 无敌斩）
       RegisterAbilities(Ctx, BladeFuryGlyph, HealingWardGlyph, OmnislashGlyph);
+      RegisterModifiers(Ctx);
       var BladeFurySpell = BladeFuryAbility.Spell;
       var HealingWardSpell = HealingWardAbility.Spell;
       var OmnislashSpell = OmnislashAbility.Spell;
 
-      // 5. 注册专属职业：主宰（juggernaut）
+      // 4. 注册专属职业：主宰（juggernaut）
       var JuggernautClass = RegisterJuggernautClass(
         Ctx,
         JuggernautGlyph,
-        BladeformTalentProperty,
-        BladeDanceTalent,
         BladeFurySpell,
         HealingWardSpell,
         OmnislashSpell);
 
-      // 6. 注册预设英雄：Juggernaut（人类种族 + 主宰职业）
+      // 5. 注册预设英雄：Juggernaut（人类种族 + 主宰职业）
       Ctx.RegisterPresetHero("Juggernaut", Ctx.Races.human, JuggernautClass, Ctx.Genders.male, JuggernautGlyph);
 
-      // 7. 注册主宰技能加点表（Q/W/E/R + 7 级全属性黄点，主动升星与学派熟练度双重成长，剑舞被动独立升级）
+      // 6. 注册主宰技能加点表（Q/W/E/R + 7 级全属性黄点，主动升星与学派熟练度双重成长，剑舞被动独立升级）
       RegisterSkillBuild(
         Ctx,
         JuggernautGlyph,
@@ -241,7 +221,6 @@ namespace Pathos.DotaHeroes.Heroes
         OmnislashGlyph,
         BladeFurySpell,
         HealingWardSpell,
-        BladeDanceTalent,
         OmnislashSpell);
 
       // 8. 注册主宰 4 层天赋树（DOTA2 原版 Lv 10/15/20/25 + Lv 27~30 双修，含减冷却 → 减蓝耗声明式映射）
@@ -257,7 +236,6 @@ namespace Pathos.DotaHeroes.Heroes
       Glyph OmnislashGlyph,
       Spell BladeFurySpell,
       Spell HealingWardSpell,
-      Property BladeDanceTalent,
       Spell OmnislashSpell)
     {
       var Build = HeroSkillBuild.CreateStandard(
@@ -307,7 +285,6 @@ namespace Pathos.DotaHeroes.Heroes
           Hotkey: "E",
           Title: "Blade Dance",
           IconGlyph: BladeDanceGlyph,
-          PassiveProperty: BladeDanceTalent,
           DescribeLevel: Lv => Lv <= 0
             ? DotaLocalization.T("jugg.skill.e.desc_0")
             : DotaLocalization.Format(
@@ -409,7 +386,7 @@ namespace Pathos.DotaHeroes.Heroes
         return DotaStatusBadge.ForPassive(
           "juggernaut.bladeform",
           BladeformGlyph,
-          BladeformTalentProperty,
+          "juggernaut.bladeform",
           "jugg.status.bladeform_fallback",
           Count: $"×{State.Stacks}",
           Colour: State.LingerTurns > 0 ? Colour.DarkOrange : Colour.Black);
@@ -423,11 +400,9 @@ namespace Pathos.DotaHeroes.Heroes
       DotaHookBus.RegisterInvulnerableQuery("juggernaut.omnislash_invulnerable", IsInOmnislash);
 
       // 0.5 剑刃风暴期间免疫一切减益 Modifier（如战斗饥渴等 Hook 实现的减益；原生 Transient 减益由下方 BeforeApplyTransient 拦截）
-      DotaModifierService.RegisterDebuffImmunity(
-        "juggernaut.blade_fury_debuff_immunity",
-        Ch => BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Ch, BladeFuryStatusProperty));
+      DotaModifierService.RegisterDebuffImmunity("juggernaut.blade_fury_debuff_immunity", IsInBladeFury);
 
-      // 2. 行动完成钩子：驱动先天「剑心犹在」叠层/粘滞、剑刃风暴每回合转伤、治疗守卫每回合光环回血
+      // 2. 行动完成钩子：驱动先天「剑心犹在」叠层/粘滞、治疗守卫每回合光环回血（剑刃风暴每回合转伤由 BladeFuryModifier.OnTick 驱动）
       DotaHookBus.RegisterAfterExecuteCommand("juggernaut.turn_ticks", Args =>
       {
         var Actor = Args.Character;
@@ -437,69 +412,37 @@ namespace Pathos.DotaHeroes.Heroes
         if (IsJuggernaut(Actor))
           TickBladeform(Args.Engine, Actor);
 
-        if (BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Actor, BladeFuryStatusProperty))
-        {
-          if (SkipNextBladeFuryTick.Remove(Actor))
-          {
-            // 刚施放剑刃风暴的当回合已在 AfterCastSpell 中触发过首次旋转，跳过重复结算
-          }
-          else
-          {
-            TriggerBladeFuryPulse(Ctx, Args.Engine, Actor);
-          }
-        }
-
         if (IsHealingWard(Actor))
           TickHealingWard(Ctx, Args.Engine, Actor);
 
         // 无敌斩连斩由 DotaPresentation 演出时间轴按真实时间逐斩推进（见 HandleOmnislashCast），不再依赖每回合 Wait
       });
 
-      // 3. 状态免疫与满级剑刃风暴持续时间加成钩子
+      // 3. 状态免疫钩子（剑刃风暴 / 无敌斩期间拦截原生负面 Transient）
       DotaHookBus.RegisterBeforeApplyTransient("juggernaut.blade_fury_debuff_immunity", Args =>
       {
         if (Args.Target == null || Args.Property == null)
           return;
 
-        // 满级（Lv 4 / ★★★）剑刃风暴额外 +2 回合持续时间
-        if (Args.Property == BladeFuryStatusProperty &&
-            IsJuggernaut(Args.Target) &&
-            BladeFuryAbility.Level(Args.Target) >= 4)
-        {
-          int BaseTurns = Math.Max(1, (int)MathF.Round(Args.Duration.Average()));
-          Args.Duration = Dice.Fixed(BaseTurns + 2);
-          return;
-        }
-
         if (!DotaCombatHelper.IsNegativeDebuff(Ctx, Args.Property))
           return;
 
-        if ((BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Args.Target, BladeFuryStatusProperty)) ||
-            IsInOmnislash(Args.Target))
+        if (IsInBladeFury(Args.Target) || IsInOmnislash(Args.Target))
           Args.Cancel = true;
       });
 
-      // 4. 速度钩子：先天技能「剑心犹在」提供移动速度（每层 +1%）与攻击速度（每层 +2.5%），以及 T2 剑刃风暴移速天赋（+15%）
+      // 4. 速度钩子：先天技能「剑心犹在」提供移动速度（每层 +1%）与攻击速度（每层 +2.5%）（T2 剑刃风暴移速天赋由 BladeFuryModifier.MoveSpeedPct 提供）
       DotaHookBus.RegisterSpeedQuery("juggernaut.bladeform_speed", Args =>
       {
         if (!IsJuggernaut(Args.Character))
           return;
 
-        float Bonus = 0.0f;
         var State = GetBladeformState(Args.Character);
-        if (State.Stacks > 0)
-          Bonus += State.Stacks * (Args.Attacking ? 0.025f : 0.01f);
+        if (State.Stacks <= 0)
+          return;
 
-        if (!Args.Attacking &&
-            BladeFuryStatusProperty != null &&
-            PathosEngineBridge.HasTransient(Args.Character, BladeFuryStatusProperty) &&
-            TalentService.HasTalent(Args.Character, TalentT2BladeFurySpeed))
-        {
-          Bonus += 0.15f;
-        }
-
-        if (Bonus > 0.0f)
-          Args.Speed = Speed.FromRate(Args.Speed.GetRate() * (1.0f + Bonus));
+        float Bonus = State.Stacks * (Args.Attacking ? 0.025f : 0.01f);
+        Args.Speed = Speed.FromRate(Args.Speed.GetRate() * (1.0f + Bonus));
       });
 
       // 5. 伤害前置钩子（Normal 阶段）：剑刃风暴期间普攻置零、剑心犹在敏捷增伤
@@ -514,9 +457,7 @@ namespace Pathos.DotaHeroes.Heroes
         bool IsOmnislash = Args.Info.IsFrom(OmnislashSpellName);
 
         // (a) 剑刃风暴期间普通物理普攻不造成常规伤害
-        if (IsBasicAttack &&
-            BladeFuryStatusProperty != null &&
-            PathosEngineBridge.HasTransient(Attacker, BladeFuryStatusProperty))
+        if (IsBasicAttack && IsInBladeFury(Attacker))
         {
           Args.Cancel = true;
           return;
@@ -532,8 +473,7 @@ namespace Pathos.DotaHeroes.Heroes
       });
 
       // 5.1 剑刃风暴：80% 魔法抗性（只作用于魔法/未知伤害，纯粹与物理伤害不减免）
-      DotaDamage.RegisterMagicResist("juggernaut.blade_fury", Args =>
-        BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Args.Defender, BladeFuryStatusProperty) ? 0.80f : 0.0f);
+      DotaDamage.RegisterMagicResist("juggernaut.blade_fury", Args => IsInBladeFury(Args.Defender) ? 0.80f : 0.0f);
 
       // 5.2 被动「剑舞」：由独立技能等级（1~4 级：35% 概率，1.4x/1.6x/1.8x/2.0x）驱动，可暴击伤害（普攻、无敌斩、剑刃风暴旋风）触发致命一击（T3 右天赋 +0.15x）
       DotaDamage.RegisterCritSource("juggernaut.blade_dance", Args =>
@@ -652,6 +592,11 @@ namespace Pathos.DotaHeroes.Heroes
       if (Caster == null)
         return;
 
+      // 施加剑刃风暴状态 Modifier（DOTA2 全等级 5 秒 = 10 回合，Champion 12 回合；满级 ★★★ 额外 +2 回合）
+      int DurationTurns = GetBladeFuryDurationByTier(Cast.Tier) + GetBladeFuryExtraTurns(Caster);
+      float SpeedBonus = TalentService.HasTalent(Caster, TalentT2BladeFurySpeed) ? 0.15f : 0.0f;
+      DotaModifierService.Apply(BladeFuryModifier, Caster, Caster, DurationTurns, M => M.MoveSpeedPct = SpeedBonus);
+
       // 基础驱散自身常见负面状态
       DotaCombatHelper.DispelNegativeDebuffs(Ctx, Args.Engine, Caster);
 
@@ -659,7 +604,7 @@ namespace Pathos.DotaHeroes.Heroes
       if (Caster.Square != null)
         PathosEngineBridge.StoryEmitting(Args.Engine, Caster.Square, Ctx.Sonics.sever, Audibility: 8);
 
-      // 施法当回合立即结算一次旋转伤害，并标记跳过同一指令的 Postfix 重复结算
+      // 施法当回合立即结算一次旋转伤害，并标记跳过同一指令的 Modifier OnTick 重复结算
       SkipNextBladeFuryTick.Add(Caster);
       TriggerBladeFuryPulse(Ctx, Args.Engine, Caster);
 
@@ -672,7 +617,7 @@ namespace Pathos.DotaHeroes.Heroes
           Caster,
           BladeFuryLoopKey,
           BladeFuryTickSeconds,
-          Ch => BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Ch, BladeFuryStatusProperty),
+          IsInBladeFury,
           (Engine, Ch) => DotaVfx.StrikeOn(Engine, Ch, BladeFuryWhirlStrike, BladeFuryWhirlSeconds));
       }
     }
@@ -821,9 +766,9 @@ namespace Pathos.DotaHeroes.Heroes
       var Engine = Args.Engine;
 
       // 剑刃风暴与无敌斩互斥：旋转中开大会立即结束剑刃风暴（旋风演出 Loop 随状态消失自动停止）
-      if (BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Caster, BladeFuryStatusProperty))
+      if (IsInBladeFury(Caster))
       {
-        PathosEngineBridge.RemoveTransient(Engine, Caster, Caster, BladeFuryStatusProperty);
+        DotaModifierService.Remove(Engine, Caster, BladeFuryModifier);
         SkipNextBladeFuryTick.Remove(Caster);
       }
 
@@ -837,8 +782,8 @@ namespace Pathos.DotaHeroes.Heroes
         WeaponDice = Omni.WeaponDice
       };
       ActiveOmnislashSessions.AddOrUpdate(Caster, Session);
-      if (OmnislashStatusProperty != null)
-        PathosEngineBridge.ApplyTransient(Engine, Caster, Caster, OmnislashStatusProperty, Dice.Fixed(Session.TotalSlashes + 1));
+      if (OmnislashModifier != null)
+        DotaModifierService.Apply(OmnislashModifier, Caster, Caster, Session.TotalSlashes + 1);
 
       // 演出节奏：把 DOTA2 原版持续时间（3/3.25/3.5 秒）平均分配到每一斩（夹在 0.2~0.42 秒之间），
       // 播放期间冻结世界，每斩只放行 1 回合逻辑时间 —— 与旧版「每斩自动 Wait 1 回合」的回合消耗完全一致，
@@ -1013,8 +958,8 @@ namespace Pathos.DotaHeroes.Heroes
 
       ActiveOmnislashSessions.Remove(Caster);
 
-      if (OmnislashStatusProperty != null && PathosEngineBridge.HasTransient(Caster, OmnislashStatusProperty))
-        PathosEngineBridge.RemoveTransient(Engine, Caster, Caster, OmnislashStatusProperty);
+      if (OmnislashModifier != null)
+        DotaModifierService.Remove(Engine, Caster, OmnislashModifier);
 
       if (Session != null && Session.SlashesDone > 0 && !Caster.Deceased)
       {
@@ -1026,6 +971,9 @@ namespace Pathos.DotaHeroes.Heroes
           DotaLocalization.Format("jugg.log.omni_finished", Session.SlashesDone));
       }
     }
+
+    private bool IsInBladeFury(Character Character)
+      => BladeFuryModifier != null && DotaModifierService.Has(Character, BladeFuryModifier);
 
     private static bool IsInOmnislash(Character Character)
     {
@@ -1421,13 +1369,16 @@ namespace Pathos.DotaHeroes.Heroes
       });
     }
 
-    /// <summary>被动「剑舞」与先天「剑心犹在」的 Property 帮助面板（实时数值 + 按等级明细）。</summary>
-    private static void RegisterPassiveHelpSpecs()
+    /// <summary>被动「剑舞」与先天「剑心犹在」的帮助面板（零 Property，点击状态栏徽章弹出）。</summary>
+    private void RegisterPassiveHelpSpecs()
     {
       // E：剑舞（被动，技能等级 1~4）
       DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
       {
-        PropertyName = "blade dance",
+        Id = "juggernaut.blade_dance",
+        IconGlyph = BladeDanceGlyph,
+        TitleResolver = () => DotaLocalization.T("jugg.skill.e.title"),
+        DescriptionResolver = () => DotaLocalization.T("jugg.help.e.desc"),
         ResolveCurrentLevel = Ch => IsJuggernaut(Ch) ? HeroSkillService.GetSkillLevel(Ch, SkillBladeDanceId) : 0,
         BuildLiveStats = HelpCtx =>
         {
@@ -1486,7 +1437,10 @@ namespace Pathos.DotaHeroes.Heroes
       // 先天：剑心犹在（无等级）
       DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
       {
-        PropertyName = "bladeform",
+        Id = "juggernaut.bladeform",
+        IconGlyph = BladeformGlyph,
+        TitleResolver = () => DotaLocalization.T("jugg.status.bladeform_fallback"),
+        DescriptionResolver = () => DotaLocalization.T("jugg.help.bf.desc"),
         BuildLiveStats = HelpCtx =>
         {
           var Ch = HelpCtx.Character;
@@ -1586,7 +1540,7 @@ namespace Pathos.DotaHeroes.Heroes
 
     private void RegisterAbilities(DotaHeroContext Ctx, Glyph BladeFuryIcon, Glyph HealingWardIcon, Glyph OmnislashIcon)
     {
-      // Q：剑刃风暴（自身施放，声明式施加原生 blade fury Transient：DOTA2 全等级 5 秒，Champion 对应 +1 秒 -> 6 秒）
+      // Q：剑刃风暴（自身施放，状态与持续回合由 HandleBladeFuryCast 通过 DotaModifierService 施加）
       BladeFuryAbility = DotaAbility.Register(Ctx, new DotaAbilitySpec
       {
         SpellName = BladeFurySpellName,
@@ -1598,7 +1552,6 @@ namespace Pathos.DotaHeroes.Heroes
         ManaCost = BladeFuryManaCost,
         Targeting = DotaAbilityTargeting.Self,
         SkillSlotId = SkillBladeFuryId,
-        ConfigureApply = (Tier, Apply) => Apply.ApplyTransient(BladeFuryStatusProperty, Dice.Fixed(GetBladeFuryDurationByTier(Tier))),
         OnCast = Cast => HandleBladeFuryCast(Ctx, Cast)
       });
 
@@ -1639,11 +1592,46 @@ namespace Pathos.DotaHeroes.Heroes
         OnCast = Cast => HandleOmnislashCast(Ctx, Cast)
       });
     }
+
+    private void RegisterModifiers(DotaHeroContext Ctx)
+    {
+      BladeFuryModifier = DotaModifierService.Define(new DotaModifierSpec
+      {
+        Key = "juggernaut.blade_fury",
+        IsDebuff = false,
+        IsDispellable = false,
+        Stacking = DotaModifierStacking.Replace,
+        BadgeGlyph = BladeFuryGlyph,
+        BadgeTitle = () => DotaLocalization.T("jugg.skill.q.title"),
+        BadgeColour = Colour.DarkOrange,
+        HelpSpell = BladeFuryAbility.Spell,
+        OnTick = (Engine, Holder, _) =>
+        {
+          if (SkipNextBladeFuryTick.Remove(Holder))
+            return;
+          TriggerBladeFuryPulse(Ctx, Engine, Holder);
+        }
+      });
+
+      OmnislashModifier = DotaModifierService.Define(new DotaModifierSpec
+      {
+        Key = "juggernaut.omnislash",
+        IsDebuff = false,
+        IsDispellable = false,
+        Stacking = DotaModifierStacking.Replace,
+        BadgeGlyph = OmnislashGlyph,
+        BadgeTitle = () => DotaLocalization.T("jugg.skill.r.title"),
+        BadgeColour = Colour.DarkRed,
+        BadgeCount = M => M.Source != null && ActiveOmnislashSessions.TryGetValue(M.Source, out var Session)
+          ? $"×{Session.RemainingSlashes}"
+          : string.Empty,
+        HelpSpell = OmnislashAbility.Spell
+      });
+    }
+
     private static Class RegisterJuggernautClass(
       DotaHeroContext Ctx,
       Glyph AvatarGlyph,
-      Property BladeformTalent,
-      Property BladeDanceTalent,
       Spell BladeFurySpell,
       Spell HealingWardSpell,
       Spell OmnislashSpell)
@@ -1668,7 +1656,6 @@ namespace Pathos.DotaHeroes.Heroes
           Ctx.Attributes.intelligence,
           Ctx.Attributes.charisma);
 
-        C.AddFeat(1, BladeformTalent);
         C.AddFeat(4, Ctx.Properties.free_action);
         C.AddFeat(8, Ctx.Properties.displacement);
         C.AddFeat(12, Ctx.Properties.quickness);

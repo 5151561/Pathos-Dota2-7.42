@@ -73,7 +73,6 @@ namespace Pathos.DotaHeroes.Framework.Skills
       IReadOnlyList<int> UnlockLevels,
       Glyph IconGlyph = null,
       IReadOnlyList<Spell> Spells = null,
-      Property PassiveProperty = null,
       Func<int, string> DescribeLevel = null,
       Action<object, Character, int> OnUpgrade = null,
       Func<string> TitleResolver = null,
@@ -94,7 +93,6 @@ namespace Pathos.DotaHeroes.Framework.Skills
       this.UnlockLevels = UnlockLevels ?? BuildDefaultUnlockLevels(MaxLevel);
       this.IconGlyph = IconGlyph;
       this.Spells = Spells ?? Array.Empty<Spell>();
-      this.PassiveProperty = PassiveProperty;
       this.DescribeLevel = DescribeLevel;
       this.OnUpgrade = OnUpgrade;
       this.PrimaryAttribute = PrimaryAttribute;
@@ -109,7 +107,6 @@ namespace Pathos.DotaHeroes.Framework.Skills
     public IReadOnlyList<int> UnlockLevels { get; }
     public Glyph IconGlyph { get; }
     public IReadOnlyList<Spell> Spells { get; }
-    public Property PassiveProperty { get; }
     public Func<int, string> DescribeLevel { get; }
     public Action<object, Character, int> OnUpgrade { get; }
     public DotaPrimaryAttribute PrimaryAttribute { get; }
@@ -172,7 +169,6 @@ namespace Pathos.DotaHeroes.Framework.Skills
         UnlockLevels: IsUltimate ? UltimateUnlockLevels : BasicUnlockLevels,
         IconGlyph: IconGlyph,
         Spells: Spells,
-        PassiveProperty: null,
         DescribeLevel: DescribeLevel,
         OnUpgrade: OnUpgrade,
         TitleResolver: TitleResolver,
@@ -184,7 +180,6 @@ namespace Pathos.DotaHeroes.Framework.Skills
       string Hotkey,
       string Title,
       Glyph IconGlyph,
-      Property PassiveProperty,
       Func<int, string> DescribeLevel = null,
       bool IsUltimate = false,
       Action<object, Character, int> OnUpgrade = null,
@@ -200,7 +195,6 @@ namespace Pathos.DotaHeroes.Framework.Skills
         UnlockLevels: IsUltimate ? UltimateUnlockLevels : BasicUnlockLevels,
         IconGlyph: IconGlyph,
         Spells: null,
-        PassiveProperty: PassiveProperty,
         DescribeLevel: DescribeLevel,
         OnUpgrade: OnUpgrade,
         TitleResolver: TitleResolver,
