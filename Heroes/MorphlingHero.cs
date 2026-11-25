@@ -212,13 +212,13 @@ namespace Pathos.DotaHeroes.Heroes
             : DotaLocalization.Format(
                 "morph.skill.q.desc_lv",
                 $"{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}",
-                Lv - 1,
+                GetWaveformExtraRangeForLevel(Lv),
                 Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
           TitleResolver: () => DotaLocalization.T("morph.skill.q.title"),
           Stats: new[]
           {
             DotaSkillStat.Of("ui.stat.damage_mult", Lv => Lv > 0 ? $"×{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}" : null),
-            DotaSkillStat.Of("ui.stat.bonus_range", Lv => Lv > 0 ? "+" + DotaHelpFormat.Tiles(Lv - 1) : null)
+            DotaSkillStat.Of("ui.stat.bonus_range", Lv => Lv > 0 ? "+" + DotaHelpFormat.Tiles(GetWaveformExtraRangeForLevel(Lv)) : null)
           }),
         SlotW: DotaSkillSlot.CreateActive(
           Id: SkillAdaptiveStrikeId,
@@ -584,8 +584,9 @@ namespace Pathos.DotaHeroes.Heroes
         }
       }
 
+      // DOTA2 7.42a：波浪形态只对路径上 width = 200（半宽 ≈ 1 格）的敌人造成伤害，落点没有额外的大范围水爆
       for (int Step = 0; Step < LandStep; Step++)
-        CollectAround(Path[Step], 1, Step);
+        CollectAround(Path[Step], Radius, Step);
       CollectAround(DestSquare, Radius, LandStep);
       if (ClickedSquare != null && ClickedSquare != DestSquare)
         CollectAround(ClickedSquare, 1, LandStep);
@@ -646,13 +647,10 @@ namespace Pathos.DotaHeroes.Heroes
     }
 
     /// <summary>
-    /// 波浪形态每格飞行时间（秒）：DOTA2 7.42a 施法距离 700/775/850/925 ÷ 速度 1250，再按本阶基础射程格数平均。
+    /// 波浪形态每格飞行时间（秒）：DOTA2 7.42a 速度 1250 码/秒，按 175 码/格 → 每格 0.14 秒（初始 4 格约 0.56 秒）。
     /// </summary>
     private static float GetWaveformSecondsPerTile(int Tier)
-    {
-      float DotaSeconds = WaveformDotaCastRange[WaveformIndex(Tier)] / WaveformDotaSpeed;
-      return DotaSeconds / Math.Max(1, WaveformAbility.BaseRange(Tier));
-    }
+      => DotaUnitsPerTile / WaveformDotaSpeed;
 
     private static Square FindNearestOpenSquare(Square Center, int MaxSearchRadius)
     {
@@ -858,7 +856,11 @@ namespace Pathos.DotaHeroes.Heroes
       => WaveformAbility.StarMultiplier(Character);
 
     private static int GetWaveformExtraRange(Character Character)
-      => WaveformAbility.StarSteps(Character);
+      => GetWaveformExtraRangeForLevel(WaveformAbility.Level(Character));
+
+    /// <summary>波浪形态升星射程：每升 1 星 +1 格（Lv 1~4 → +0 / +1 / +2 / +3 格）。</summary>
+    private static int GetWaveformExtraRangeForLevel(int Lv)
+      => Math.Max(0, Lv - 1);
 
     private static float GetAdaptiveStrikeStarDamageMultiplier(Character Character)
       => AdaptiveStrikeAbility.StarMultiplier(Character);
@@ -880,11 +882,13 @@ namespace Pathos.DotaHeroes.Heroes
 
     // DOTA2 7.42a 官方数据：Waveform speed 1250，cast range 700/775/850/925（Champion 阶沿用 925）
     private const float WaveformDotaSpeed = 1250.0f;
-    private static readonly float[] WaveformDotaCastRange = { 700.0f, 775.0f, 850.0f, 925.0f, 925.0f };
+    // 距离换算 175 码/格（与淘汰之刃、无敌斩跳斩一致）：初始射程 700 码 → 4 格
+    private const float DotaUnitsPerTile = 175.0f;
     private const string WaveformSequenceKey = "morphling.waveform";
 
     private static readonly float[] WaveformDotaDamages = { 75.0f, 150.0f, 225.0f, 300.0f, 360.0f };
-    private static readonly int[] WaveformRadii = { 2, 2, 2, 3, 3 };
+    // DOTA2 7.42a width = 200（各级相同）→ 波宽半径 1 格（3 格宽浪头），落点不再有 2~3 格大范围水爆
+    private static readonly int[] WaveformRadii = { 1, 1, 1, 1, 1 };
     private static readonly int[] WaveformEvasionTurns = { 3, 4, 4, 5, 6 };
 
     // DOTA2 7.42 变体打击核实数值：基础 50/70/90/110（Champion 130）；敏捷倍率底限 0.35×、上限随熟练度 0.90/1.10/1.30/1.50/1.70×；最长眩晕 1.4/1.8/2.2/2.6s（7.42a，Champion 外推 3.0s）
@@ -1395,8 +1399,8 @@ namespace Pathos.DotaHeroes.Heroes
         Precept = new Precept(Purpose.Teleport),
         ManaCost = WaveformManaCost,
         Targeting = DotaAbilityTargeting.PointAny,
-        Range = DotaTable.Of(5, 6, 7, 9, 11),
-        RangeBonus = Ch => GetStrRangeBonus(Ch) + WaveformAbility.StarSteps(Ch) + GetWaveformTalentRangeBonus(Ch),
+        Range = DotaTable.Of(4, 5, 6, 8, 10), // 初始射程按 DOTA2 7.42a 700 码 ÷ 175 码/格 = 4 格，随熟练度成长
+        RangeBonus = Ch => GetStrRangeBonus(Ch) + GetWaveformExtraRange(Ch) + GetWaveformTalentRangeBonus(Ch),
         SkillSlotId = SkillWaveformId,
         OnCast = Cast => ExecuteWaveform(Ctx, Cast)
       });

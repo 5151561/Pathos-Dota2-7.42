@@ -91,6 +91,9 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly int CullingBuffBaseTurns = DotaMechanicsMapper.MapDurationTurns(6.0f);    // 12 回合
     private static readonly int CullingBuffTalentExtraTurns = DotaMechanicsMapper.MapDurationTurns(3.0f); // +6 回合
     private const float CullingBuffMoveSpeedRatio = 0.25f;
+    // DOTA2 7.42a：cast range 175（≈ 1 格），charge_speed 1200 → 每格冲锋 175 / 1200 ≈ 0.15 秒
+    private const string CullingSequenceKey = "axe.culling_blade";
+    private const float CullingChargeSecondsPerTile = 175.0f / 1200.0f;
     private static readonly float[] CullingBuffDotaArmor = { 10.0f, 15.0f, 20.0f }; // DOTA2 7.42a armor_bonus
     private static readonly int[] CullingEliteArmorTenths = { 10, 15, 20 }; // +1.0 / +1.5 / +2.0 DOTA2 护甲
     private static readonly int[] CullingCreepArmorTenths = { 2, 3, 4 };    // +0.2 / +0.3 / +0.4 DOTA2 护甲
@@ -689,13 +692,45 @@ namespace Pathos.DotaHeroes.Heroes
 
       var TargetSq = Target.Square;
       string TargetName = DotaCombatHelper.GetDisplayName(Target);
-      if (TargetSq != null)
+
+      // DOTA2 7.42a：淘汰之刃 cast range 175 + charge_speed 1200 —— 斧王先冲到目标身边再劈，而不是隔空斩。
+      // 不相邻时冲锋到目标周围 1 格空地（逻辑位置立即落位，贴图按冲锋速度飞过去）；无落脚点则视为空放返蓝。
+      var FromSq = Caster.Square;
+      var LandSq = DotaCombatHelper.FindOpenAdjacentSquare(Caster, TargetSq);
+      if (LandSq == null)
       {
-        // 前扑挥斧 + 自上而下的重劈斧光（由大到小「砸」下去，0.45 秒衰减）
-        PathosEngineBridge.StoryCancelCharacter(Args.Engine, Caster);
-        PathosEngineBridge.StoryAttacking(Args.Engine, DotaPresentation.Seconds(0.22f), Caster, Caster.Square.AsDirection(TargetSq));
-        DotaVfx.Strike(Args.Engine, TargetSq, CullingBladeStrike, 0.45f);
+        Cast.RefundAndLog("axe.log.culling_no_target");
+        return;
       }
+
+      float ChargeSeconds = 0.0f;
+      if (LandSq != FromSq)
+      {
+        ChargeSeconds = FromSq.AsRange(LandSq) * CullingChargeSecondsPerTile;
+        PathosEngineBridge.DashCharacter(Args.Engine, Caster, LandSq);
+        PathosEngineBridge.StoryFlinging(Args.Engine, DotaPresentation.Seconds(ChargeSeconds), FromSq, LandSq, Caster);
+      }
+
+      var StrikeDir = LandSq.AsDirection(TargetSq);
+      bool Executed = false;
+
+      // 冲锋落地后再挥斧：前扑挥斧 + 自上而下的重劈斧光（由大到小「砸」下去，0.45 秒衰减）；斩杀成功追加「斩」字与顿帧
+      DotaPresentation.Sequence(Args.Engine, Caster, CullingSequenceKey)
+        .FreezeWorld()
+        .At(ChargeSeconds, SeqCtx =>
+        {
+          if (Caster.Deceased || TargetSq == null)
+            return;
+          PathosEngineBridge.StoryCancelCharacter(SeqCtx.Engine, Caster);
+          PathosEngineBridge.StoryAttacking(SeqCtx.Engine, DotaPresentation.Seconds(0.22f), Caster, StrikeDir);
+          DotaVfx.Strike(SeqCtx.Engine, TargetSq, CullingBladeStrike, 0.45f);
+          if (Executed)
+          {
+            PathosEngineBridge.StoryCaption(SeqCtx.Engine, TargetSq, Colour.Crimson, DotaLocalization.T("axe.caption.culled"), Delayed: false);
+            DotaPresentation.HitStop(SeqCtx.Engine, Caster, 0.22f);
+          }
+        })
+        .Play();
 
       int CurrentHp = Target.Life?.Points ?? 0;
       if (CurrentHp <= Threshold)
@@ -705,7 +740,7 @@ namespace Pathos.DotaHeroes.Heroes
         if (!Killed || !Target.Deceased)
         {
           // 兜底：若目标仍未倒下，施加巨额纯粹斩击
-          DotaDamage.Strike(Args.Engine, Caster, Target, Args.Direction, Math.Max(999, CurrentHp + 50), DotaDamageInfo.Pure(CullingBladeSpellName));
+          DotaDamage.Strike(Args.Engine, Caster, Target, StrikeDir, Math.Max(999, CurrentHp + 50), DotaDamageInfo.Pure(CullingBladeSpellName));
         }
 
         // 100% 返还法力（对应 DOTA2 斩杀刷新冷却，支持连斩！）
@@ -736,11 +771,8 @@ namespace Pathos.DotaHeroes.Heroes
         int NewTotalTenths = DotaCharacterStorage.AddCustomInt(Caster, StorageCullingArmorTenthsKey, DeltaTenths);
         int PermDef = DotaMechanicsMapper.MapUncappedArmorToDefence(NewTotalTenths / 10.0f);
 
-        if (TargetSq != null)
-          PathosEngineBridge.StoryCaption(Args.Engine, TargetSq, Colour.Crimson, DotaLocalization.T("axe.caption.culled"), Delayed: false);
-
-        // 斩杀成功：短暂顿帧，让「斩」字与斧光有落地的分量感
-        DotaPresentation.HitStop(Args.Engine, Caster, 0.22f);
+        // 「斩」字与顿帧随冲锋落地的挥斧一起播放（见上方演出时间轴）
+        Executed = true;
 
         RefreshOneManArmy(Args.Engine, Caster);
 
@@ -758,7 +790,7 @@ namespace Pathos.DotaHeroes.Heroes
           + (TalentService.HasTalent(Caster, TalentT4CullingDamage) ? CullingTalentBonusDotaDamage : 0.0f);
         Dice DmgDice = DotaMechanicsMapper.MapSkillDamageDice(DotaDmg, DieFaces: 6);
         int Rolled = DotaCombatHelper.RollDice(DmgDice);
-        DotaDamage.Strike(Args.Engine, Caster, Target, Args.Direction, Rolled, DotaDamageInfo.Pure(CullingBladeSpellName));
+        DotaDamage.Strike(Args.Engine, Caster, Target, StrikeDir, Rolled, DotaDamageInfo.Pure(CullingBladeSpellName));
 
         PathosEngineBridge.WriteInternalLog(
           Args.Engine,

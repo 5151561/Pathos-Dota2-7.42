@@ -135,6 +135,9 @@ namespace Pathos.DotaHeroes.Heroes
     private const string OmnislashSequenceKey = "juggernaut.omnislash";
     private const string BladeFuryLoopKey = "juggernaut.blade_fury_whirl";
     private static readonly float[] OmnislashDotaDurationSeconds = { 3.0f, 3.25f, 3.5f };
+    // DOTA2 7.42a：omni_slash_radius 425（≈ 2 格，按 175 码/格）；无敌斩期间 200 码高空视野（≈ 1 格，穿墙）
+    private const int OmnislashBounceRadius = 2;
+    private const int OmnislashFlyingVisionRadius = 1;
     private const float OmnislashMinSlashInterval = 0.2f;   // 再快就看不清单刀
     private const float OmnislashMaxSlashInterval = 0.42f;  // 斩数少时也不拖沓
     private const float OmnislashDashSeconds = 0.08f;       // 两刀之间的瞬步飞行
@@ -817,6 +820,13 @@ namespace Pathos.DotaHeroes.Heroes
       var Omni = ComputeOmnislash(Ctx, Args.Engine, Caster, Cast.Tier);
       var Engine = Args.Engine;
 
+      // 剑刃风暴与无敌斩互斥：旋转中开大会立即结束剑刃风暴（旋风演出 Loop 随状态消失自动停止）
+      if (BladeFuryStatusProperty != null && PathosEngineBridge.HasTransient(Caster, BladeFuryStatusProperty))
+      {
+        PathosEngineBridge.RemoveTransient(Engine, Caster, Caster, BladeFuryStatusProperty);
+        SkipNextBladeFuryTick.Remove(Caster);
+      }
+
       var Session = new OmnislashSession
       {
         RemainingSlashes = Omni.TotalSlashes,
@@ -861,7 +871,7 @@ namespace Pathos.DotaHeroes.Heroes
 
           var Target = SeqCtx.StepIndex == 0 && InitialTarget != null && !InitialTarget.Deceased && InitialTarget.Square?.Map == Caster.Square.Map
             ? InitialTarget
-            : DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3);
+            : PickOmnislashBounceTarget(Caster);
           if (Target == null)
           {
             SeqCtx.Stop();
@@ -870,12 +880,46 @@ namespace Pathos.DotaHeroes.Heroes
 
           ExecuteSingleOmnislashStep(Ctx, SeqCtx, Caster, Session, Target);
 
-          if (Session.RemainingSlashes <= 0 || DotaCombatHelper.PickRandomNearbyHostile(Caster, Radius: 3) == null)
+          if (Session.RemainingSlashes <= 0 || PickOmnislashBounceTarget(Caster) == null)
             SeqCtx.Stop();
         });
       }
 
       Sequence.Play();
+    }
+
+    /// <summary>
+    /// 无敌斩跳斩选目标：DOTA2 7.42a omni_slash_radius = 425（≈ 2 格），且只能跳向「看得见」的敌人；
+    /// 无敌斩期间主宰自身只有 200 码高空视野（≈ 1 格，可穿墙）。因此：
+    /// 紧邻 1 格内的敌人无视墙体均可跳斩；2 格内的敌人必须视线不被墙体阻挡；更远的一律不跳，绝不满屏乱窜。
+    /// </summary>
+    private static Character PickOmnislashBounceTarget(Character Caster)
+    {
+      if (Caster?.Square == null)
+        return null;
+
+      var Candidates = new List<Character>();
+      foreach (var Enemy in DotaCombatHelper.FindHostilesInRadius(Caster, Caster.Square, OmnislashBounceRadius))
+      {
+        if (Enemy?.Square == null || Enemy.Deceased)
+          continue;
+        if (Caster.Square.AsRange(Enemy.Square) <= OmnislashFlyingVisionRadius || HasClearLineOfSight(Caster.Square, Enemy.Square))
+          Candidates.Add(Enemy);
+      }
+
+      return Candidates.Count == 0 ? null : Candidates[Random.Shared.Next(Candidates.Count)];
+    }
+
+    /// <summary>两格之间（不含首尾）没有阻挡视线的墙体 / 实心格。</summary>
+    private static bool HasClearLineOfSight(Square From, Square To)
+    {
+      var Line = DotaVfx.LinePath(From, To, OmnislashBounceRadius + 2);
+      for (int I = 1; I < Line.Count - 1; I++)
+      {
+        if (Line[I] == null || Line[I].IsVoid() || Line[I].IsBlocked(Vision: true))
+          return false;
+      }
+      return true;
     }
 
     /// <summary>
@@ -1313,7 +1357,7 @@ namespace Pathos.DotaHeroes.Heroes
             (DotaLocalization.T("jugg.help.r.key_cast_jump"), DotaLocalization.Format(
               "jugg.help.r.val_cast_jump",
               DotaHelpColor.Control(DotaHelpFormat.Tiles(CastRange)),
-              DotaHelpColor.Control(DotaHelpFormat.Tiles(3)))),
+              DotaHelpColor.Control(DotaHelpFormat.Tiles(OmnislashBounceRadius)))),
             (DotaLocalization.T("jugg.help.r.key_slashes"), HasSlashTalent
               ? DotaLocalization.Format(
                   "jugg.help.r.val_slashes_talent",
@@ -1346,7 +1390,7 @@ namespace Pathos.DotaHeroes.Heroes
             DotaHelpColor.Physical(DotaLocalization.T("jugg.help.r.tag_weapon_dice")),
             DotaHelpColor.Stat(DotaLocalization.T("jugg.help.r.tag_stat_mod")),
             DotaHelpColor.Skill(DotaLocalization.T("jugg.help.r.tag_skill_atk")),
-            DotaHelpColor.Control(DotaHelpFormat.Tiles(3))),
+            DotaHelpColor.Control(DotaHelpFormat.Tiles(OmnislashBounceRadius))),
           DotaLocalization.Format(
             "jugg.help.r.mech_2",
             DotaHelpColor.Stat(DotaLocalization.T("jugg.help.word.dex")),
