@@ -210,7 +210,14 @@ namespace Pathos.DotaHeroes.Framework
 
     /// <summary>施法者当前实际射程 = 熟练度基础射程 + <see cref="DotaAbilitySpec.RangeBonus"/>。</summary>
     public int Range(Character Character)
-      => BaseRange(Tier(Character)) + (Character != null && Spec.RangeBonus != null ? Spec.RangeBonus(Character) : 0);
+      => RangeAt(Character, Tier(Character));
+
+    /// <summary>
+    /// 施法者在指定熟练度阶数下的射程 = 该阶基础射程 + 当前加成（升星 / 属性 / 天赋）。
+    /// 帮助面板熟练度表用它展示「按当前星级」的各阶射程，当前阶与 <see cref="Range"/> 一致；Character 为 null（百科）时只含基础射程。
+    /// </summary>
+    public int RangeAt(Character Character, int Tier)
+      => BaseRange(Tier) + (Character != null && Spec.RangeBonus != null ? Spec.RangeBonus(Character) : 0);
 
     private static void EnsureDispatch()
     {

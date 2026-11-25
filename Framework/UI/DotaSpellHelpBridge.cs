@@ -43,6 +43,32 @@ namespace Pathos.DotaHeroes.Framework.UI
   }
 
   /// <summary>
+  /// 被动 / 先天 Property 帮助面板渲染上下文（原生 HelpContext.CompileProperty 不传角色，
+  /// Character 取自当前冒险的主控玩家；主菜单百科中为 null）。
+  /// </summary>
+  public sealed class DotaPassiveHelpContext
+  {
+    public Character Character { get; init; }
+    public Property Property { get; init; }
+    public object Engine { get; init; }
+  }
+
+  /// <summary>
+  /// 单个被动 / 先天 Property 的帮助面板定义：在原生描述后追加「当前实时面板」「技能机制」与按技能等级的数值明细。
+  /// </summary>
+  public sealed class DotaPassiveHelpSpec
+  {
+    public string PropertyName { get; init; }
+    /// <summary>当前技能等级（0 = 未学，不高亮任何等级）；为空则不高亮。</summary>
+    public Func<Character, int> ResolveCurrentLevel { get; init; }
+    /// <summary>实时数值行；返回 null / 空表示该角色不适用（如非本英雄）。</summary>
+    public Func<DotaPassiveHelpContext, IReadOnlyList<(string Key, string Value)>> BuildLiveStats { get; init; }
+    public Func<DotaPassiveHelpContext, IReadOnlyList<string>> BuildMechanicsNotes { get; init; }
+    /// <summary>按技能等级的明细（Tier 字段即等级 1..N）；先天技能可为空。</summary>
+    public Func<DotaPassiveHelpContext, IReadOnlyList<DotaSpellHelpTier>> BuildLevels { get; init; }
+  }
+
+  /// <summary>
   /// 技能帮助面板语义着色工具：
   /// 按数值来源为同一行内的不同数字着以高对比度语义色，帮助玩家一眼区分伤害/属性/技能/天赋/被动/治疗/蓝耗来源。
   /// </summary>
@@ -129,6 +155,9 @@ namespace Pathos.DotaHeroes.Framework.UI
     private static readonly ConcurrentDictionary<string, DotaSpellHelpSpec> Specs =
       new(StringComparer.OrdinalIgnoreCase);
 
+    private static readonly ConcurrentDictionary<string, DotaPassiveHelpSpec> PassiveSpecs =
+      new(StringComparer.OrdinalIgnoreCase);
+
     private static FieldInfo HelpContextShellField;
     private static PropertyInfo ShellEngineProp;
 
@@ -184,6 +213,34 @@ namespace Pathos.DotaHeroes.Framework.UI
         return;
 
       Specs[Spec.SpellName] = Spec;
+    }
+
+    /// <summary>
+    /// 注册被动 / 先天 Property 的帮助面板（按 Property.Name 匹配，覆盖原生天赋栏、技能面板被动与百科中的 Property 帮助）。
+    /// </summary>
+    public static void RegisterPassive(DotaPassiveHelpSpec Spec)
+    {
+      if (Spec == null || string.IsNullOrWhiteSpace(Spec.PropertyName))
+        return;
+
+      PassiveSpecs[Spec.PropertyName] = Spec;
+    }
+
+    /// <summary>按技能等级 1..<paramref name="MaxLevel"/> 构建被动明细（标题后缀 + 单条说明）。</summary>
+    public static IReadOnlyList<DotaSpellHelpTier> Levels(int MaxLevel, Func<int, string> HeaderSuffix, Func<int, string> Bullet)
+    {
+      var List = new List<DotaSpellHelpTier>(MaxLevel);
+      for (int Lv = 1; Lv <= MaxLevel; Lv++)
+      {
+        string Line = Bullet?.Invoke(Lv);
+        List.Add(new DotaSpellHelpTier
+        {
+          Tier = Lv,
+          HeaderSuffix = HeaderSuffix?.Invoke(Lv) ?? string.Empty,
+          Bullets = string.IsNullOrWhiteSpace(Line) ? Array.Empty<string>() : new[] { Line }
+        });
+      }
+      return List;
     }
 
     /// <summary>熟练度阶数（1 Proficient .. 5 Champion）。</summary>
@@ -325,6 +382,15 @@ namespace Pathos.DotaHeroes.Framework.UI
           typeof(DotaSpellHelpBridge),
           Postfix: nameof(CompileSpellPostfix),
           Tag: "SpellHelp");
+
+        PathosClientReflection.PatchSafe(
+          Harmony,
+          HelpContextType,
+          "CompileProperty",
+          new[] { typeof(Property) },
+          typeof(DotaSpellHelpBridge),
+          Postfix: nameof(CompilePropertyPostfix),
+          Tag: "PassiveHelp");
 
         if (HelpRenderType != null && HelpPropertyType != null && HelpBlockType != null && HelpSearchType != null)
         {
@@ -677,6 +743,127 @@ namespace Pathos.DotaHeroes.Framework.UI
       {
         HookBootstrap.WriteError($"DotaSpellHelpBridge.CompileSpellPostfix failed for '{Spell.Name}': {Ex}");
       }
+    }
+
+    private static void CompilePropertyPostfix(object __instance, Property Property, ref object __result)
+    {
+      if (__result == null || Property == null || string.IsNullOrEmpty(Property.Name))
+        return;
+
+      if (!PassiveSpecs.TryGetValue(Property.Name, out var Spec))
+        return;
+
+      try
+      {
+        object Shell = HelpContextShellField?.GetValue(__instance);
+        object Engine = Shell != null ? ShellEngineProp?.GetValue(Shell) : null;
+
+        var HelpCtx = new DotaPassiveHelpContext
+        {
+          Character = ResolveMainCharacter(Engine),
+          Property = Property,
+          Engine = Engine
+        };
+
+        // 1. 原生条目（标题 / 图标 / 描述）全部保留，其后追加「当前实时面板」
+        if (HelpCtx.Character != null && Spec.BuildLiveStats != null)
+        {
+          var LiveRows = Spec.BuildLiveStats(HelpCtx);
+          if (LiveRows != null && LiveRows.Count > 0)
+          {
+            InvokeHighlight(__result, LayoutSectionPrefix + DotaLocalization.T("help.section.live_stats"), Colour.Gold);
+            foreach (var (Key, Value) in LiveRows)
+            {
+              if (!string.IsNullOrEmpty(Key) && !string.IsNullOrEmpty(Value))
+                InvokeProperty(__result, LayoutLiveRowPrefix + Key, Value);
+            }
+          }
+        }
+
+        // 2. 技能机制
+        var Notes = Spec.BuildMechanicsNotes?.Invoke(HelpCtx);
+        if (Notes != null && Notes.Count > 0)
+        {
+          InvokeProperty(__result, LayoutTierHdrPrefix + DotaLocalization.T("help.section.mechanics"), DotaLocalization.T("help.section.all_levels"));
+          foreach (var Note in Notes)
+          {
+            if (!string.IsNullOrWhiteSpace(Note))
+              InvokeInformation(__result, $"{LayoutBulletPrefix}· {Note}");
+          }
+        }
+
+        // 3. 按技能等级的数值明细（当前等级橙色高亮）
+        var Levels = Spec.BuildLevels?.Invoke(HelpCtx);
+        if (Levels == null || Levels.Count == 0)
+          return;
+
+        int CurrentLevel = HelpCtx.Character != null && Spec.ResolveCurrentLevel != null
+          ? Spec.ResolveCurrentLevel(HelpCtx.Character)
+          : 0;
+
+        foreach (var Level in Levels)
+        {
+          if (Level == null)
+            continue;
+
+          string LevelName = DotaLocalization.Format("help.level.n", Level.Tier);
+          string Suffix = Level.HeaderSuffix ?? string.Empty;
+
+          if (CurrentLevel > 0 && Level.Tier == CurrentLevel)
+          {
+            string HighlightHeader = string.IsNullOrEmpty(Suffix)
+              ? DotaLocalization.Format("help.tier.current_no_suffix", LevelName)
+              : DotaLocalization.Format("help.tier.current_with_suffix", LevelName, Suffix);
+            InvokeHighlight(__result, LayoutSectionPrefix + HighlightHeader, Colour.DarkOrange);
+          }
+          else
+          {
+            InvokeProperty(__result, LayoutTierHdrPrefix + LevelName, string.IsNullOrEmpty(Suffix) ? DotaLocalization.T("help.tier.effect_fallback") : Suffix);
+          }
+
+          if (Level.Bullets != null)
+          {
+            foreach (var Bullet in Level.Bullets)
+            {
+              if (!string.IsNullOrWhiteSpace(Bullet))
+                InvokeInformation(__result, $"{LayoutBulletPrefix}· {Bullet}");
+            }
+          }
+        }
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"DotaSpellHelpBridge.CompilePropertyPostfix failed for '{Property.Name}': {Ex}");
+      }
+    }
+
+    private static PropertyInfo EngineAdventureProp;
+
+    /// <summary>取当前冒险第一个玩家的主控角色（单人地牢即玩家英雄）；主菜单百科等无冒险场景返回 null。</summary>
+    private static Character ResolveMainCharacter(object Engine)
+    {
+      if (Engine == null)
+        return null;
+
+      try
+      {
+        EngineAdventureProp ??= Engine.GetType().GetProperty("Adventure", PathosClientReflection.AnyInstance);
+        if (EngineAdventureProp?.GetValue(Engine) is not Adventure Adventure || Adventure.PlayerList == null)
+          return null;
+
+        foreach (var Player in Adventure.PlayerList)
+        {
+          var Character = Player?.Main?.Character;
+          if (Character != null)
+            return Character;
+        }
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteDebug($"DotaSpellHelpBridge.ResolveMainCharacter failed: {Ex.Message}");
+      }
+
+      return null;
     }
 
     private static int ComputeHeaderKeepCount(IList ItemList)

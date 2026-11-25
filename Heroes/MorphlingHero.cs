@@ -594,9 +594,7 @@ namespace Pathos.DotaHeroes.Heroes
           continue;
 
         int Rolled = DotaCombatHelper.RollDice(BaseDice);
-        int FinalDmg = StarMult > 1.001f
-          ? Math.Max(Rolled + 1, (int)MathF.Round(Rolled * StarMult))
-          : Rolled;
+        int FinalDmg = ScaleWaveformRoll(Rolled, StarMult);
         var HitDir = DestSquare.AsDirection(Enemy.Square);
         DotaDamage.Harm(Args.Engine, Caster, Enemy, HitDir, Ctx.Elements.water, Dice.Fixed(FinalDmg), DotaDamageInfo.Magical(WaveformSpellName));
       }
@@ -834,6 +832,23 @@ namespace Pathos.DotaHeroes.Heroes
     /// <summary>Q 波浪形态基础水伤骰（DOTA2 75/150/225/300/360 → K_dmg = 15）。</summary>
     private static Dice GetWaveformDice(int Tier) => DotaMechanicsMapper.MapSkillDamageDice(WaveformDotaDamages[WaveformIndex(Tier)]);
 
+    /// <summary>Q 单次掷骰按升星倍率放大（升星时至少 +1），施法结算与帮助面板共用。</summary>
+    private static int ScaleWaveformRoll(int Rolled, float StarMult)
+      => StarMult > 1.001f ? Math.Max(Rolled + 1, (int)MathF.Round(Rolled * StarMult)) : Rolled;
+
+    /// <summary>Q 水波伤害文本：未升星为「骰（最小~最大）」，升星后为「骰 ×倍率（放大后最小~最大）」。</summary>
+    private static string FormatWaveformDamage(Dice BaseDice, float StarMult)
+    {
+      if (StarMult <= 1.001f)
+        return DotaSpellHelpBridge.FormatDiceWithRange(BaseDice);
+
+      return DotaLocalization.Format(
+        "help.dice_range",
+        $"{DotaSpellHelpBridge.FormatDiceNotation(BaseDice)} ×{StarMult:0.00}",
+        ScaleWaveformRoll(DotaSpellHelpBridge.GetDiceMin(BaseDice), StarMult),
+        ScaleWaveformRoll(DotaSpellHelpBridge.GetDiceMax(BaseDice), StarMult));
+    }
+
     private static int GetWaveformRadius(int Tier) => WaveformRadii[WaveformIndex(Tier)];
 
     private static int GetWaveformEvasionTurns(int Tier) => WaveformEvasionTurns[WaveformIndex(Tier)];
@@ -904,7 +919,7 @@ namespace Pathos.DotaHeroes.Heroes
             (DotaLocalization.T("morph.help.q.key_range"), RangeDetail),
             (DotaLocalization.T("morph.help.q.key_dmg"), DotaLocalization.Format(
               "morph.help.q.val_dmg",
-              DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(WaveDice)),
+              DotaHelpColor.Magic(FormatWaveformDamage(WaveDice, StarMult)),
               DotaHelpColor.Magic($"{WaveDice.Average() * StarMult:0.#}"),
               StarDmgNote,
               DotaHelpColor.Control(DotaHelpFormat.Tiles(Radius)))),
@@ -917,11 +932,12 @@ namespace Pathos.DotaHeroes.Heroes
         {
           DotaLocalization.Format("morph.help.q.mech_1", DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
-          Tier => DotaHelpFormat.CastRangeSuffix(WaveformAbility.BaseRange(Tier)),
+        // 各阶射程与伤害含当前力量 / 升星 / 天赋加成（当前阶与实时面板一致；百科无角色时为基础值）
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(WaveformAbility.RangeAt(HelpCtx.Character, Tier)),
           Tier => DotaLocalization.Format(
             "morph.help.q.tier_bullet",
-            DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(GetWaveformDice(Tier))),
+            DotaHelpColor.Magic(FormatWaveformDamage(GetWaveformDice(Tier), GetWaveformStarDamageMultiplier(HelpCtx.Character))),
             DotaHelpColor.Control(DotaHelpFormat.Tiles(GetWaveformRadius(Tier))),
             DotaHelpColor.Control(DotaHelpFormat.Turns(GetWaveformEvasionTurns(Tier)))))
       });
@@ -984,12 +1000,26 @@ namespace Pathos.DotaHeroes.Heroes
             DotaHelpColor.Stat(DotaLocalization.T("morph.help.w.tag_agi_scale")),
             DotaHelpColor.Control(DotaLocalization.T("morph.help.w.tag_str_stun")))
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
-          Tier => DotaHelpFormat.CastRangeSuffix(AdaptiveStrikeAbility.BaseRange(Tier)),
-          Tier => DotaLocalization.Format(
-            "morph.help.w.tier_bullet",
-            DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(GetAdaptiveStrikeBaseDice(Tier))),
-            DotaHelpColor.Control(DotaHelpFormat.Turns($"1~{GetAdaptiveStrikeBaseMaxStunTurns(Tier)}"))))
+        // 游戏内：各阶总伤与眩晕按当前力敏 / 升星实算（当前阶与实时面板一致）；百科无角色时列基础值
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(AdaptiveStrikeAbility.RangeAt(HelpCtx.Character, Tier)),
+          Tier =>
+          {
+            if (HelpCtx.Character == null)
+              return DotaLocalization.Format(
+                "morph.help.w.tier_bullet",
+                DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(GetAdaptiveStrikeBaseDice(Tier))),
+                DotaHelpColor.Control(DotaHelpFormat.Turns($"1~{GetAdaptiveStrikeBaseMaxStunTurns(Tier)}")));
+
+            var Strike = ComputeAdaptiveStrike(HelpCtx.Character, Tier);
+            int Min = DotaSpellHelpBridge.GetDiceMin(Strike.BaseDice) + Strike.BonusDamage;
+            int Max = DotaSpellHelpBridge.GetDiceMax(Strike.BaseDice) + Strike.BonusDamage;
+            return DotaLocalization.Format(
+              "morph.help.w.tier_bullet_full",
+              DotaHelpColor.Magic($"{Min}~{Max}"),
+              DotaHelpColor.Control(DotaHelpFormat.Turns(Strike.FinalStun)),
+              DotaHelpColor.Control(DotaHelpFormat.Turns(Strike.MaxStun)));
+          })
       });
 
       // 3. E1：属性转换·敏捷
@@ -1026,12 +1056,17 @@ namespace Pathos.DotaHeroes.Heroes
         {
           DotaLocalization.Format("morph.help.e1.mech_1", MinAttributeScore, DotaLife.MinMaxLife)
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+        // 各阶单次转换步进含当前升星加成（每星 +1，当前阶与实时面板一致）
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
           _ => DotaLocalization.T("morph.help.self_zero_mana"),
-          Tier => DotaLocalization.Format(
-            "morph.help.e1.tier_bullet",
-            DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Tier)),
-            DotaHelpColor.Physical($"-{Tier * DotaMechanicsMapper.HpPerStrengthPoint} HP")))
+          Tier =>
+          {
+            int Step = Tier + GetAttributeShiftExtraStep(HelpCtx.Character);
+            return DotaLocalization.Format(
+              "morph.help.e1.tier_bullet",
+              DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Step)),
+              DotaHelpColor.Physical($"-{Step * DotaMechanicsMapper.HpPerStrengthPoint} HP"));
+          })
       });
 
       // 4. E2：属性转换·力量
@@ -1068,12 +1103,17 @@ namespace Pathos.DotaHeroes.Heroes
         {
           DotaLocalization.Format("morph.help.e2.mech_1", MinAttributeScore)
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
+        // 各阶单次转换步进含当前升星加成（每星 +1，当前阶与实时面板一致）
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
           _ => DotaLocalization.T("morph.help.self_zero_mana"),
-          Tier => DotaLocalization.Format(
-            "morph.help.e2.tier_bullet",
-            DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Tier)),
-            DotaHelpColor.Heal($"+{Tier * DotaMechanicsMapper.HpPerStrengthPoint} HP")))
+          Tier =>
+          {
+            int Step = Tier + GetAttributeShiftExtraStep(HelpCtx.Character);
+            return DotaLocalization.Format(
+              "morph.help.e2.tier_bullet",
+              DotaHelpColor.Stat(DotaLocalization.Format("morph.help.e.pts_val", Step)),
+              DotaHelpColor.Heal($"+{Step * DotaMechanicsMapper.HpPerStrengthPoint} HP"));
+          })
       });
 
       // 5. R1：变形
@@ -1109,11 +1149,12 @@ namespace Pathos.DotaHeroes.Heroes
         {
           DotaLocalization.Format("morph.help.r.mech_1", DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name")))
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
-          Tier => DotaHelpFormat.CastRangeSuffix(MorphAbility.BaseRange(Tier)),
+        // 各阶射程含当前力量 / 升星加成（当前阶与实时面板一致；百科无角色时为基础射程）
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(MorphAbility.RangeAt(HelpCtx.Character, Tier)),
           Tier => DotaLocalization.Format(
-            "morph.help.r.tier_bullet",
-            DotaHelpColor.Control(DotaHelpFormat.Tiles(MorphAbility.BaseRange(Tier))),
+            "morph.help.r.tier_bullet_full",
+            DotaHelpColor.Control(DotaHelpFormat.Tiles(MorphAbility.RangeAt(HelpCtx.Character, Tier))),
             DotaHelpColor.Passive(DotaLocalization.T("morph.help.ebb_name"))))
       });
     }

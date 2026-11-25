@@ -330,6 +330,8 @@ Ctx.Classes.Add(C =>
 | `DotaHelpFormat.ActualMana(ch, ability)` | 真实蓝耗：`PathosEngineBridge.GetSpellManaCost` → 原生 `Character.SpellCost`（含天赋减耗），与实际扣蓝一致；**禁止**在面板中手动重算 `MapCooldownReductionToManaCost` |
 | `DotaSpellHelpBridge.Tiers(tier => header, tier => bullet)` | 生成 5 阶熟练度明细（单条说明的常见形态） |
 | `DotaSpellHelpBridge.Tiers(tier => new DotaSpellHelpTier { ... })` | 多条说明的通用形态（`Tier` 字段自动填写） |
+| `BuildTiers = HelpCtx => ...` + `Ability.RangeAt(ch, tier)` | 熟练度表**必须**按当前角色实算：每阶数值传入 `HelpCtx.Character` 走与施法相同的 `ComputeXxx(ch, tier)`（含升星、天赋、属性），射程用 `RangeAt`；当前阶与实时面板完全一致，百科（Character 为 null）自动退化为 1 级基础值 |
+| `DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec { ... })` | 被动 / 先天 Property 帮助（补丁 `HelpContext.CompileProperty`）：保留原生描述，追加实时面板（角色取当前冒险主控玩家）、机制与 `Levels(max, ...)` 按技能等级明细 |
 | `DotaCombatHelper.GetDisplayName(ch, fallbackKey = "ui.target_fallback")` | 战斗日志目标名：`Character.Name` → 本地化实体名 → 回退词 |
 
 **施法与面板同源**：凡帮助面板展示的数值与施法结算使用同一公式（如斧王战斗饥渴 DPS、主宰剑刃风暴旋转骰 / 无敌斩斩数与单斩构成、水人变体打击爆发与眩晕），必须抽成英雄内一个 `ComputeXxx(ch, tier)` 方法供两处调用（示例：`AxeHero.ComputeCall` / `ComputeHungerDps`、`JuggernautHero.ComputeBladeFurySpin` / `ComputeOmnislash`、`MorphlingHero.ComputeAdaptiveStrike`），避免改了施法忘了面板。

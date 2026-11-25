@@ -869,9 +869,17 @@ namespace Pathos.DotaHeroes.Heroes
           DotaLocalization.T("axe.help.q.mech_1"),
           DotaLocalization.T("axe.help.q.mech_2")
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
-          Tier => DotaLocalization.Format("axe.help.q.tier_suffix", GetCallTierExtraTurns(Tier)),
-          Tier => DotaLocalization.Format("axe.help.q.tier_bullet", GetCallTierExtraTurns(Tier)))
+        // 各阶数值按当前技能等级（升星）与天赋实算（当前阶与实时面板一致；百科无角色时按 1 级）
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
+          _ => DotaLocalization.T("ui.help.self_cast"),
+          Tier =>
+          {
+            var Call = ComputeCall(HelpCtx.Character, Tier);
+            return DotaLocalization.Format(
+              "axe.help.q.tier_bullet_full",
+              DotaHelpColor.Control(DotaHelpFormat.Turns(Call.DurationTurns)),
+              DotaHelpColor.Skill($"+{Call.BonusDefence}"));
+          })
       });
 
       // W：战斗饥渴帮助面板
@@ -884,7 +892,7 @@ namespace Pathos.DotaHeroes.Heroes
           var Ch = HelpCtx.Character;
           int Range = HungerAbility.Range(Ch);
           float EffDps = ComputeHungerDps(Ch, HungerAbility.Tier(Ch));
-          int EstTotal = Math.Max(1, (int)MathF.Round((EffDps * 12.0f) / DotaMechanicsMapper.DamageScale));
+          int EstTotal = EstimateHungerTotal(EffDps);
           float Slow = GetHungerSlowRatio(HungerAbility.Level(Ch, 4)) * 100.0f;
 
           return new (string Key, string Value)[]
@@ -899,9 +907,15 @@ namespace Pathos.DotaHeroes.Heroes
           DotaLocalization.T("axe.help.w.mech_1"),
           DotaLocalization.T("axe.help.w.mech_2")
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
-          Tier => DotaHelpFormat.CastRangeSuffix(HungerAbility.BaseRange(Tier)),
-          Tier => DotaLocalization.Format("axe.help.w.tier_bullet", (Tier - 1) * 8))
+        // 各阶数值按当前技能等级（升星）与天赋实算（当前阶与实时面板一致；百科无角色时按 1 级）
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(HungerAbility.RangeAt(HelpCtx.Character, Tier)),
+          Tier =>
+          {
+            float TierDps = ComputeHungerDps(HelpCtx.Character, Tier);
+            return DotaHelpColor.Physical(DotaLocalization.Format(
+              "axe.help.w.val_dot", $"{TierDps:0.#}", EstimateHungerTotal(TierDps), BattleHungerDurationTurns));
+          })
       });
 
       // R：淘汰之刃帮助面板
@@ -932,9 +946,12 @@ namespace Pathos.DotaHeroes.Heroes
           DotaLocalization.T("axe.help.r.mech_1"),
           DotaLocalization.T("axe.help.r.mech_2")
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
-          Tier => DotaHelpFormat.CastRangeSuffix(CullingAbility.BaseRange(Tier)),
-          Tier => DotaLocalization.Format("axe.help.r.tier_bullet", GetCullingMasteryBonusHp(Tier)))
+        // 各阶斩杀线按当前技能等级（升星）与天赋实算（当前阶与实时面板一致；百科无角色时按 1 级）
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(CullingAbility.RangeAt(HelpCtx.Character, Tier)),
+          Tier => DotaHelpColor.Physical(DotaLocalization.Format(
+            "axe.help.r.val_threshold",
+            GetCullingEffectiveThreshold(HelpCtx.Character, CullingAbility.Level(HelpCtx.Character, 3), Tier))))
       });
     }
 
@@ -1093,6 +1110,10 @@ namespace Pathos.DotaHeroes.Heroes
       float StarAndTierMult = HungerAbility.StarMultiplier(Caster) * (1.0f + (Tier - 1) * 0.08f);
       return BaseDps * StarAndTierMult;
     }
+
+    /// <summary>W 战斗饥渴全程纯伤估算（12 秒 DPS 折算 Pathos 伤害）。</summary>
+    private static int EstimateHungerTotal(float EffDps)
+      => Math.Max(1, (int)MathF.Round((EffDps * 12.0f) / DotaMechanicsMapper.DamageScale));
 
     /// <summary>R 淘汰之刃战吼持续回合（T1 右天赋 +6 回合）。</summary>
     private static int GetCullingBuffTurns(Character Caster)

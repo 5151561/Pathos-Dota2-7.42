@@ -360,6 +360,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 0.3 注册主宰 3 个主动技能的帮助面板数值与 5 阶熟练度详情（含游戏内实时面板预览）
       RegisterSpellHelpSpecs(Ctx);
+      RegisterPassiveHelpSpecs();
 
       // 0.4 注册无敌斩「无敌/不可选中」引擎级保护（免疫敌方攻击命中、狂犬病/病痛、地面陷阱、敌方/环境法术与负面状态）
       DotaHookBus.RegisterInvulnerableQuery("juggernaut.omnislash_invulnerable", IsInOmnislash);
@@ -965,8 +966,11 @@ namespace Pathos.DotaHeroes.Heroes
     /// 合并为每回合 1 次结算（0.5s），并按敏捷与剑心犹在攻速频率缩放（还原 7.36+/7.42 攻速缩短跳伤间隔），再乘升星倍率。
     /// </summary>
     private static BladeFurySpinStats ComputeBladeFurySpin(Character Caster)
+      => ComputeBladeFurySpin(Caster, BladeFuryAbility.Tier(Caster));
+
+    /// <summary>指定熟练度阶数下的剑刃风暴旋转伤害（帮助面板各阶按当前属性/升星/天赋计算）。</summary>
+    private static BladeFurySpinStats ComputeBladeFurySpin(Character Caster, int Tier)
     {
-      int Tier = BladeFuryAbility.Tier(Caster);
       int Dex = DotaStats.Dex(Caster);
       int BladeformStacks = IsJuggernaut(Caster) ? GetBladeformState(Caster).Stacks : 0;
 
@@ -1094,12 +1098,12 @@ namespace Pathos.DotaHeroes.Heroes
             DotaHelpColor.Passive(DotaLocalization.T("jugg.help.word.bladeform")),
             DotaHelpColor.Passive(DotaLocalization.T("jugg.help.word.blade_dance_crit")))
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
-          Tier => DotaLocalization.Format("jugg.help.q.tier_suffix", GetBladeFuryDurationByTier(Tier)),
+        // 各阶数值按当前升星 / 属性 / 天赋实算（当前阶与实时面板一致；百科无角色时为基础值）
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
+          Tier => DotaLocalization.Format("jugg.help.q.tier_suffix", GetBladeFuryDurationByTier(Tier) + GetBladeFuryExtraTurns(HelpCtx.Character)),
           Tier => DotaLocalization.Format(
-            "jugg.help.q.tier_bullet",
-            DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(
-              DotaMechanicsMapper.MapDotDamageDicePerTurn(BladeFuryDotaDps[Tier - 1], DieFaces: 4)))))
+            "jugg.help.q.tier_bullet_full",
+            DotaHelpColor.Magic(DotaSpellHelpBridge.FormatDiceWithRange(ComputeBladeFurySpin(HelpCtx.Character, Tier).SpinDice))))
       });
 
       // 2. W：治疗守卫
@@ -1142,6 +1146,7 @@ namespace Pathos.DotaHeroes.Heroes
               DotaHelpColor.Heal(DotaLocalization.Format("jugg.help.hp_per_turn", SelfHealPerTurn)),
               DotaHelpColor.Heal(DotaLocalization.Format("jugg.help.hp_total", SelfHealPerTurn * Duration))))
           };
+
           return Rows;
         },
         BuildMechanicsNotes = _ => new[]
@@ -1151,12 +1156,13 @@ namespace Pathos.DotaHeroes.Heroes
             DotaHelpColor.Control(DotaHelpFormat.Tiles(2)),
             DotaHelpColor.Heal("1 HP"))
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
-          Tier => DotaHelpFormat.CastRangeSuffix(HealingWardAbility.BaseRange(Tier)),
+        // 各阶数值含当前升星加成（当前阶与实时面板一致；百科无角色时为基础值）
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(HealingWardAbility.RangeAt(HelpCtx.Character, Tier)),
           Tier => DotaLocalization.Format(
             "jugg.help.w.tier_bullet",
-            DotaHelpColor.Control(DotaHelpFormat.Turns(GetHealingWardDurationByTier(Tier))),
-            DotaHelpColor.Heal(DotaLocalization.Format("jugg.help.w.pct_max_hp", $"{GetHealingWardHealPctByTier(Tier) * 100:0.##}"))))
+            DotaHelpColor.Control(DotaHelpFormat.Turns(GetHealingWardDuration(HelpCtx.Character, Tier))),
+            DotaHelpColor.Heal(DotaLocalization.Format("jugg.help.w.pct_max_hp", $"{GetHealingWardHealPct(HelpCtx.Character, Tier) * 100:0.##}"))))
       });
 
       // 3. R：无敌斩
@@ -1238,6 +1244,7 @@ namespace Pathos.DotaHeroes.Heroes
               DotaHelpColor.Passive(DotaLocalization.Format("jugg.help.q.blade_dance_pct", $"{CritChance * 100:0}")),
               CritMultText))
           };
+
           return Rows;
         },
         BuildMechanicsNotes = _ => new[]
@@ -1258,12 +1265,139 @@ namespace Pathos.DotaHeroes.Heroes
             DotaHelpColor.Passive(DotaLocalization.T("jugg.help.word.blade_dance_crit")),
             DotaHelpColor.Passive(DotaLocalization.T("jugg.help.word.bladeform")))
         },
-        BuildTiers = _ => DotaSpellHelpBridge.Tiers(
-          Tier => DotaHelpFormat.CastRangeSuffix(OmnislashAbility.BaseRange(Tier)),
-          Tier => DotaLocalization.Format(
-            "jugg.help.r.tier_bullet",
-            DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.slashes_val", $"{Math.Clamp(4 + Tier, 5, 12)}~12")),
-            DotaHelpColor.Skill($"+{GetOmnislashTierBonusDamage(Tier)}")))
+        // 游戏内：各阶斩数与额外攻击力按当前敏捷 / 升星 / 天赋实算（当前阶与实时面板一致）；百科无角色时列基础区间
+        BuildTiers = HelpCtx => DotaSpellHelpBridge.Tiers(
+          Tier => DotaHelpFormat.CastRangeSuffix(OmnislashAbility.RangeAt(HelpCtx.Character, Tier)),
+          Tier =>
+          {
+            if (HelpCtx.Character == null)
+              return DotaLocalization.Format(
+                "jugg.help.r.tier_bullet",
+                DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.slashes_val", $"{Math.Clamp(4 + Tier, 5, 12)}~12")),
+                DotaHelpColor.Skill($"+{GetOmnislashTierBonusDamage(Tier)}"));
+
+            var Omni = ComputeOmnislash(Ctx, HelpCtx.Engine, HelpCtx.Character, Tier);
+            return DotaLocalization.Format(
+              "jugg.help.r.tier_bullet_full",
+              DotaHelpColor.Skill(DotaLocalization.Format("jugg.help.slashes_val", Omni.TotalSlashes)),
+              DotaHelpColor.Skill($"+{Omni.OmniBonusDamage}"));
+          })
+      });
+    }
+
+    /// <summary>被动「剑舞」与先天「剑心犹在」的 Property 帮助面板（实时数值 + 按等级明细）。</summary>
+    private static void RegisterPassiveHelpSpecs()
+    {
+      // E：剑舞（被动，技能等级 1~4）
+      DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
+      {
+        PropertyName = "blade dance",
+        ResolveCurrentLevel = Ch => IsJuggernaut(Ch) ? HeroSkillService.GetSkillLevel(Ch, SkillBladeDanceId) : 0,
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          if (!IsJuggernaut(Ch))
+            return null;
+
+          int Level = HeroSkillService.GetSkillLevel(Ch, SkillBladeDanceId);
+          var Rows = new List<(string, string)>
+          {
+            (DotaLocalization.T("ui.help.key_skill_level"), Level > 0
+              ? DotaHelpColor.Skill(DotaLocalization.Format("ui.help.val_skill_level", Level, 4))
+              : DotaLocalization.T("ui.help.not_learned"))
+          };
+          if (Level <= 0)
+            return Rows;
+
+          float Chance = GetBladeDanceCritChance(Ch);
+          float Mult = GetBladeDanceCritMultiplier(Ch);
+          bool HasCritTalent = TalentService.HasTalent(Ch, TalentT3BladeDanceCrit);
+          string MultText = HasCritTalent
+            ? DotaHelpColor.Talent($"{Mult:0.##}×") + DotaLocalization.Format("ui.common.paren_item", DotaHelpColor.Talent(DotaLocalization.T("jugg.help.e.t3_tag")))
+            : DotaHelpColor.Passive($"{Mult:0.##}×");
+
+          Rows.Add((DotaLocalization.T("jugg.help.e.key_crit"), DotaLocalization.Format(
+            "jugg.help.e.val_crit",
+            DotaHelpColor.Passive($"{Chance * 100:0}%"),
+            MultText)));
+          Rows.Add((DotaLocalization.T("jugg.help.e.key_expected"), DotaLocalization.Format(
+            "jugg.help.e.val_expected",
+            DotaHelpColor.Physical($"×{1.0f + Chance * (Mult - 1.0f):0.###}"))));
+          if (TalentService.HasTalent(Ch, TalentT4BladeDanceLifesteal))
+            Rows.Add((DotaLocalization.T("jugg.help.e.key_lifesteal"), DotaLocalization.Format(
+              "jugg.help.e.val_lifesteal",
+              DotaHelpColor.Heal("40%"),
+              DotaHelpColor.Talent(DotaLocalization.T("jugg.help.e.t4_tag")))));
+          return Rows;
+        },
+        BuildMechanicsNotes = _ => new[]
+        {
+          DotaLocalization.Format(
+            "jugg.help.e.mech_1",
+            DotaHelpColor.Skill(DotaLocalization.T("jugg.skill.r.title")),
+            DotaHelpColor.Skill(DotaLocalization.T("jugg.skill.q.title"))),
+          DotaLocalization.T("jugg.help.e.mech_2")
+        },
+        BuildLevels = _ => DotaSpellHelpBridge.Levels(
+          4,
+          Lv => DotaLocalization.Format("jugg.help.e.level_suffix", $"{GetBladeDanceCritChanceByLevel(Lv) * 100:0}"),
+          Lv => DotaLocalization.Format(
+            "jugg.help.e.val_crit",
+            DotaHelpColor.Passive($"{GetBladeDanceCritChanceByLevel(Lv) * 100:0}%"),
+            DotaHelpColor.Passive("1.8×")))
+      });
+
+      // 先天：剑心犹在（无等级）
+      DotaSpellHelpBridge.RegisterPassive(new DotaPassiveHelpSpec
+      {
+        PropertyName = "bladeform",
+        BuildLiveStats = HelpCtx =>
+        {
+          var Ch = HelpCtx.Character;
+          if (!IsJuggernaut(Ch))
+            return null;
+
+          var State = GetBladeformState(Ch);
+          bool HasIntervalTalent = TalentService.HasTalent(Ch, TalentT1BladeformInterval);
+          int Interval = HasIntervalTalent ? Math.Max(1, BladeformIntervalTurns / 2) : BladeformIntervalTurns;
+
+          string LingerNote = State.LingerTurns > 0
+            ? DotaLocalization.Format("jugg.help.bf.linger_note", DotaHelpColor.Control(DotaHelpFormat.Turns(State.LingerTurns)))
+            : string.Empty;
+          string TalentNote = HasIntervalTalent
+            ? DotaLocalization.Format("ui.common.paren_item", DotaHelpColor.Talent(DotaLocalization.T("jugg.help.bf.t1_tag")))
+            : string.Empty;
+
+          return new List<(string, string)>
+          {
+            (DotaLocalization.T("jugg.help.bf.key_stacks"), DotaLocalization.Format(
+              "jugg.help.bf.val_stacks",
+              DotaHelpColor.Passive($"{State.Stacks}"),
+              BladeformMaxStacks,
+              LingerNote)),
+            (DotaLocalization.T("jugg.help.bf.key_gain"), DotaLocalization.Format(
+              "jugg.help.bf.val_gain",
+              DotaHelpColor.Control(DotaHelpFormat.Turns(Interval)),
+              TalentNote)),
+            (DotaLocalization.T("jugg.help.bf.key_bonus"), DotaLocalization.Format(
+              "jugg.help.bf.val_bonus",
+              DotaHelpColor.Control($"+{State.Stacks * 1.0f:0.#}%"),
+              DotaHelpColor.Stat($"+{State.Stacks * 2.5f:0.#}%"),
+              DotaHelpColor.Physical($"+{GetBladeformBonusDamage(Ch)}")))
+          };
+        },
+        BuildMechanicsNotes = _ => new[]
+        {
+          DotaLocalization.Format(
+            "jugg.help.bf.mech_per_stack",
+            DotaHelpColor.Control("+1%"),
+            DotaHelpColor.Stat("+2.5%"),
+            DotaHelpColor.Physical(DotaLocalization.T("jugg.help.bf.dex_2_5_pct"))),
+          DotaLocalization.Format(
+            "jugg.help.bf.mech_linger",
+            DotaHelpColor.Control(DotaHelpFormat.Turns(BladeformLingerTurns)),
+            BladeformMaxStacks)
+        }
       });
     }
 
