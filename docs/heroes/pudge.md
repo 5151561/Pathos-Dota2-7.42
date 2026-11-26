@@ -164,7 +164,7 @@
 
 | 用途 | 源文件 |
 | :--- | :--- |
-| 英雄形象 | `../index/npc_dota_hero_pudge.png`、`../crops/npc_dota_hero_pudge.png`（动态立绘 `npc_dota_hero_pudge.webm`） |
+| 英雄形象 | 全身透明立绘 `https://cdn.cloudflare.steamstatic.com/apps/dota2/videos/dota_react/heroes/renders/pudge.png`（1440×1440）；`../index/npc_dota_hero_pudge.png`（面部裁切） |
 | 肉钩 / 腐烂 / 肉盾 / 肢解图标 | `pudge_meat_hook.png` / `pudge_rot.png` / `pudge_flesh_heap.png` / `pudge_dismember.png` |
 | 腐肉堆积 | 官方无专属图标（页面用通用 `dota2static/facets/innate_icon.png`），需自绘 |
 | 演示视频 | `pudge_meat_hook.mp4`、`pudge_rot.mp4`、`pudge_dismember.mp4`；肉盾 `dota2static/file/88759d5f-6d7c-4a96-93bb-2bcef1c1bde7.mp4` |
@@ -174,7 +174,7 @@
 已对照 Pathos 安装目录的 `*.Atlas` / `Pathos.Codex` / 字典核对重名：`pudge`、`meat hook`、`flesh heap`、`meat shield`、`dismember` 无冲突；**`rot` 是官方 Glyph / Codex 条目**，腐烂的法术名与贴图改用 `pudge rot`。
 
 - **角色与技能图标（6 张）**：官方原图按 4×4 盒式平均缩成 32×32 网格，再最近邻 ×4 放大
-  - `pudge.png`：官方透明底立绘（`crops/`）裁上半身，32 网格像素化 + 1 像素暗色描边。**注意**：现有英雄是全身像素小人，这张只是半身像素化立绘，后续可换成手绘全身像
+  - `pudge.png`：官方全身透明立绘（`heroes/renders/pudge.png`）按 Alpha 包围盒裁切，等比缩放进 128×128（底部对齐、水平居中），Alpha 二值化去半透明边，与 `yurnero.png` 同风格
   - `flesh heap.png`：官方无先天图标，取 `index/` 立绘的面部方形裁切
   - `meat hook.png` / `pudge rot.png` / `meat shield.png` / `dismember.png`：官方技能图标
 - **VFX（17 张，[tools/VfxGen](../../tools/VfxGen/Program.cs) 生成）**：

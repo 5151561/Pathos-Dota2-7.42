@@ -125,9 +125,11 @@ namespace Pathos.DotaHeroes.Framework.Talents
         HelpCatalogueRecordListField = HelpCatalogueType?.GetField("RecordList", AnyInstance);
         HelpRecordNameProp = HelpRecordType?.GetProperty("Name", AnyInstance);
 
-        // 1. StagePanel.InternalRefresh：同步左下角按钮与左侧面板状态
-        PatchSafe(Harmony, StagePanelType, "InternalRefresh", Type.EmptyTypes,
-          postfix: nameof(StageInternalRefreshPostfix));
+        // 1. StagePanel.RefreshPanels：同步左下角按钮与左侧面板状态
+        //    注意不能挂 InternalRefresh：引擎只在 Game.Refresh()（升级等少数事件）里调它，
+        //    进游戏/每回合的刷新走 Compose(RequiresRefresh) → RefreshPanels，挂错会导致开局不显示按钮。
+        PatchSafe(Harmony, StagePanelType, "RefreshPanels", Type.EmptyTypes,
+          postfix: nameof(StageRefreshPanelsPostfix));
 
         // 2. StagePanel.ArrangeLeft：窗口尺寸变化时同步按钮水平偏移，始终紧贴「休息」按钮右侧
         PatchSafe(Harmony, StagePanelType, "ArrangeLeft", Type.EmptyTypes,
@@ -195,7 +197,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
         Tag: "TalentUI");
     }
 
-    private static void StageInternalRefreshPostfix(object __instance)
+    private static void StageRefreshPanelsPostfix(object __instance)
     {
       if (__instance == null)
         return;
@@ -207,7 +209,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
       }
       catch (Exception Ex)
       {
-        HookBootstrap.WriteError($"StageInternalRefreshPostfix failed: {Ex}");
+        HookBootstrap.WriteError($"StageRefreshPanelsPostfix failed: {Ex}");
       }
     }
 
@@ -537,6 +539,8 @@ namespace Pathos.DotaHeroes.Framework.Talents
       public void Refresh()
       {
         EnsureMenuButtonAttached();
+        if (MenuButtonObj == null)
+          return;
 
         var Character = GetActiveCharacter(StagePanel);
         HeroSkillBuild SkillBuild = null;
@@ -627,6 +631,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
       public void OpenPanel()
       {
+        EnsureMenuButtonAttached();
         var Character = GetActiveCharacter(StagePanel);
         HeroSkillBuild SkillBuild = null;
         HeroTalentTree Tree = null;
@@ -650,8 +655,8 @@ namespace Pathos.DotaHeroes.Framework.Talents
         Surface.Window.AllowInput(SidePanelFrame);
 
         UpdateLayoutMetrics();
-        MenuButtonIsCheckedProp?.SetValue(MenuButtonObj, true);
-        MenuButtonIsHighlightedProp?.SetValue(MenuButtonObj, false);
+        if (MenuButtonObj != null) MenuButtonIsCheckedProp?.SetValue(MenuButtonObj, true);
+        if (MenuButtonObj != null) MenuButtonIsHighlightedProp?.SetValue(MenuButtonObj, false);
         RebuildPanelContent(Character, SkillBuild, Tree);
       }
 
@@ -667,7 +672,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
           StageRemoveModalityPanelMethod?.Invoke(StagePanel, new object[] { SidePanelFrame });
         }
 
-        MenuButtonIsCheckedProp?.SetValue(MenuButtonObj, false);
+        if (MenuButtonObj != null) MenuButtonIsCheckedProp?.SetValue(MenuButtonObj, false);
       }
 
       public void OnNativeLeftPanelsChanged()
@@ -1387,7 +1392,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         if (HeroSkillService.TryUpgradeSkill(Engine, Character, Slot))
         {
-          Refresh();
+          // RefreshPanels 的 postfix 会回调 Refresh()，无需手动重复
           StageRefreshPanelsMethod?.Invoke(StagePanel, null);
         }
       }
@@ -1415,7 +1420,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         if (TalentService.TryLearnTalent(Engine, Character, Tier, Branch))
         {
-          Refresh();
+          // RefreshPanels 的 postfix 会回调 Refresh()，无需手动重复
           StageRefreshPanelsMethod?.Invoke(StagePanel, null);
         }
       }
