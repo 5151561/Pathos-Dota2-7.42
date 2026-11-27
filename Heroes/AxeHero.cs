@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Inv;
 using Pathos.DotaHeroes.Framework;
+using Pathos.DotaHeroes.Framework.Aghanim;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Localization;
 using Pathos.DotaHeroes.Framework.Presentation;
@@ -80,10 +81,13 @@ namespace Pathos.DotaHeroes.Heroes
     private const float HungerTalentBonusDps = 8.0f;
     private const float HungerTalentMsPerTarget = 0.08f;
 
-    // E：反击螺旋（7.42：7/6/5/4 次受击触发含 Miss，100/120/140/160 纯伤，T3 左 +40 纯伤）
+    // E：反击螺旋（7.42：7/6/5/4 次受击触发含 Miss，100/120/140/160 纯伤，T3 左 +40 纯伤；神杖：普攻计次 + 叠层减伤 12%×5 层，持续 7s=14 回合）
     private static readonly int[] HelixAttackThresholds = { 7, 6, 5, 4 };
     private static readonly float[] HelixDotaDamage = { 100.0f, 120.0f, 140.0f, 160.0f };
     private const float HelixTalentBonusDotaDamage = 40.0f;
+    private static readonly int HelixScepterDebuffTurns = DotaMechanicsMapper.MapDurationTurns(7.0f); // 14 回合
+    private const float HelixScepterDamageReductionPerStack = 0.12f;
+    private const int HelixScepterMaxStacks = 5;
 
     // R：淘汰之刃（7.42：275/375/475 斩杀线与纯伤，T4 左 +150，战吼 6s +25% 移速 +10/15/20 护甲（7.42a），T1 右 +3s）
     private static readonly float[] CullingDotaThresholds = { 275.0f, 375.0f, 475.0f };
@@ -95,8 +99,7 @@ namespace Pathos.DotaHeroes.Heroes
     private const string CullingSequenceKey = "axe.culling_blade";
     private const float CullingChargeSecondsPerTile = 175.0f / 1200.0f;
     private static readonly float[] CullingBuffDotaArmor = { 10.0f, 15.0f, 20.0f }; // DOTA2 7.42a armor_bonus
-    private static readonly int[] CullingEliteArmorTenths = { 10, 15, 20 }; // +1.0 / +1.5 / +2.0 DOTA2 护甲
-    private static readonly int[] CullingCreepArmorTenths = { 2, 3, 4 };    // +0.2 / +0.3 / +0.4 DOTA2 护甲
+    private static readonly int[] CullingEliteArmorTenths = { 10, 15, 20 }; // +1.0 / +1.5 / +2.0 DOTA2 护甲（仅唯一/守卫或等级≥斧王的怪物）
 
     // T3 右天赋：7.42 +15 力量按 1:5 后期标尺 -> +3 STR/CON 与 +18 HP（HP 按 DotaMechanicsMapper.HpPerStrengthPoint 联动）
     private const int TalentStrengthBonus = 3;
@@ -118,6 +121,7 @@ namespace Pathos.DotaHeroes.Heroes
     private DotaModifierSpec CallArmorModifier;     // Q：狂战士之吼自身高甲
     private DotaModifierSpec BattleHungerModifier;  // W：战斗饥渴（纯粹 DoT + 减速，可驱散减益）
     private DotaModifierSpec CullingBuffModifier;   // R：淘汰之刃战吼（+移速 +护甲，自身与友军）
+    private DotaModifierSpec HelixScepterModifier;  // E 神杖：反击螺旋减攻 debuff（12%/层，上限 5 层，14 回合）
 
     [ThreadStatic]
     private static bool IsInsideDefenceQuery;
@@ -186,6 +190,9 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 6. 注册 DOTA2 7.42 四层天赋树（Lv 10/15/20/25 + Lv 27~30 双修）
       RegisterTalentTree(Ctx);
+
+      // 7. 注册 DOTA2 7.42 阿哈利姆神杖（反击螺旋）与魔晶（狂战士之吼 + 战斗饥渴）升级
+      RegisterAghanimUpgrades();
     }
 
     private void RegisterModifiers()
@@ -219,6 +226,52 @@ namespace Pathos.DotaHeroes.Heroes
         IsDebuff = false,
         IsDispellable = true,
         Stacking = DotaModifierStacking.KeepStrongest
+      });
+
+      HelixScepterModifier = DotaModifierService.Define(new DotaModifierSpec
+      {
+        Key = "axe.counter_helix_scepter",
+        IsDebuff = true,
+        IsDispellable = true,
+        Stacking = DotaModifierStacking.Replace,
+        RemoveOnSourceDeath = true
+      });
+    }
+
+    private void RegisterAghanimUpgrades()
+    {
+      AghanimRegistry.Register(new HeroAghanimSpec
+      {
+        ClassName = AxeClassName,
+        Scepter = new AghanimUpgradeSpec
+        {
+          AffectedPassiveId = "axe.counter_helix",
+          IconGlyph = CounterHelixGlyph,
+          TitleResolver = () => DotaLocalization.T("axe.aghanim.scepter.title"),
+          SummaryResolver = () => DotaLocalization.T("axe.aghanim.scepter.summary"),
+          BuildDetailBullets = _ => new[]
+          {
+            DotaLocalization.T("axe.aghanim.scepter.b1"),
+            DotaLocalization.Format(
+              "axe.aghanim.scepter.b2",
+              DotaHelpColor.Control("12%"),
+              DotaHelpColor.Control($"{HelixScepterMaxStacks}"),
+              DotaHelpColor.Control("60%"),
+              DotaHelpColor.Control(DotaHelpFormat.Turns(HelixScepterDebuffTurns)))
+          }
+        },
+        Shard = new AghanimUpgradeSpec
+        {
+          AffectedSpellName = BerserkersCallSpellName,
+          IconGlyph = BerserkersCallGlyph,
+          TitleResolver = () => DotaLocalization.T("axe.aghanim.shard.title"),
+          SummaryResolver = () => DotaLocalization.T("axe.aghanim.shard.summary"),
+          BuildDetailBullets = _ => new[]
+          {
+            DotaLocalization.T("axe.aghanim.shard.b1"),
+            DotaLocalization.T("axe.aghanim.shard.b2")
+          }
+        }
       });
     }
 
@@ -414,7 +467,28 @@ namespace Pathos.DotaHeroes.Heroes
 
         if (Target != null && IsAxe(Target) && DotaCombatHelper.IsHostile(Target, Attacker))
           AdvanceCounterHelix(Args.Engine, Target);
+
+        // 7.42 神杖：斧王自己的近战攻击也会计入反击螺旋触发计数
+        if (Target != null && IsAxe(Attacker) && AghanimService.HasScepter(Attacker) && DotaCombatHelper.IsHostile(Attacker, Target))
+          AdvanceCounterHelix(Args.Engine, Attacker);
       });
+
+      // 5.5 E 反击螺旋神杖减伤：带有反击螺旋神杖减益的敌人对斧王造成的攻击伤害每层降低 12%（上限 5 层 = 60%）
+      DotaHookBus.RegisterBeforeDamage("axe.helix_scepter_dr", Args =>
+      {
+        if (Args.Attacker == null || Args.Defender == null || Args.DamagePoints <= 0 || !IsAxe(Args.Defender))
+          return;
+
+        if (Args.Info != null && Args.Info.Type != DotaDamageType.Physical && Args.Info.Origin != DotaDamageOrigin.BasicAttack && Args.Info.Origin != DotaDamageOrigin.Unclassified)
+          return;
+
+        var Debuff = DotaModifierService.Get(Args.Attacker, HelixScepterModifier);
+        if (Debuff == null || Debuff.Stacks <= 0)
+          return;
+
+        float Reduction = Math.Min(0.60f, Debuff.Stacks * HelixScepterDamageReductionPerStack);
+        Args.DamagePoints = Math.Max(1, (int)MathF.Round(Args.DamagePoints * (1.0f - Reduction)));
+      }, DotaHookPriority.Reduction);
 
       // 6. E 反击螺旋（非近战普攻的受击计次）：近战普攻已在 AfterAttack 中计数（含 Miss），
       //    此处补计远程投射物等无法归类的原生攻击，以及带 Attack 标记的脚本攻击（如敌方无敌斩斩击）；
@@ -601,6 +675,8 @@ namespace Pathos.DotaHeroes.Heroes
       DotaPresentation.HitStop(Args.Engine, Caster, 0.12f);
 
       var Hostiles = DotaCombatHelper.FindHostilesInRadius(Caster, Caster.Square, Radius);
+      bool HasShard = AghanimService.HasShard(Caster);
+      int HungerTier = HasShard ? HungerAbility.Tier(Caster) : 0;
       foreach (var Enemy in Hostiles)
       {
         DotaTauntService.ApplyTaunt(
@@ -611,6 +687,10 @@ namespace Pathos.DotaHeroes.Heroes
           DurationTurns,
           SourceKey: "axe.berserkers_call",
           OnFallbackAttack: (Engine, Taunter, _) => AdvanceCounterHelix(Engine, Taunter));
+
+        // 7.42 魔晶：狂战士之吼自动对作用下所有敌人施加战斗饥渴
+        if (HasShard)
+          ApplyBattleHungerToTarget(Args.Engine, Caster, Enemy, HungerTier, DealFirstTick: false, LogCast: false);
       }
 
       RefreshOneManArmy(Args.Engine, Caster);
@@ -632,34 +712,64 @@ namespace Pathos.DotaHeroes.Heroes
       if (!Cast.TryResolveHostileTarget(out var Target, "axe.log.hunger_no_target"))
         return;
 
-      float EffectiveDps = ComputeHungerDps(Caster, Cast.Tier);
-      float Slow = GetHungerSlowRatio(HungerAbility.Level(Caster, 4));
+      ApplyBattleHungerToTarget(Args.Engine, Caster, Target, Cast.Tier, DealFirstTick: true, LogCast: true, Direction: Args.Direction);
+    }
+
+    private void ApplyBattleHungerToTarget(
+      object Engine,
+      Character Caster,
+      Character Target,
+      int Tier,
+      bool DealFirstTick,
+      bool LogCast,
+      Direction Direction = default)
+    {
+      if (Caster == null || Target == null || Target.Deceased)
+        return;
+
+      float EffectiveDps = ComputeHungerDps(Caster, Tier);
+      int HungerLv = Math.Max(1, HungerAbility.Level(Caster, 4));
+      float Slow = GetHungerSlowRatio(HungerLv);
+      bool CanStack = AghanimService.HasShard(Caster);
 
       if (Target.Square != null)
-        PathosEngineBridge.StoryStriking(Args.Engine, Delay.HalfSecond, Target.Square, BattleHungerStrike);
+        PathosEngineBridge.StoryStriking(Engine, Delay.HalfSecond, Target.Square, BattleHungerStrike);
+
+      var Existing = DotaModifierService.Get(Target, BattleHungerModifier);
+      int NextStacks = CanStack && Existing != null && Existing.Source == Caster ? Existing.Stacks + 1 : 1;
+      float TotalDps = CanStack && Existing != null && Existing.Source == Caster ? Existing.DotDotaDps + EffectiveDps : EffectiveDps;
+      float TotalSlow = CanStack && Existing != null && Existing.Source == Caster
+        ? Math.Min(0.65f, MathF.Abs(Existing.MoveSpeedPct) + Slow)
+        : Slow;
 
       var Hunger = DotaModifierService.Apply(BattleHungerModifier, Caster, Target, BattleHungerDurationTurns, M =>
       {
-        M.DotDotaDps = EffectiveDps;
-        M.MoveSpeedPct = -Slow;
+        M.Stacks = NextStacks;
+        M.DotDotaDps = TotalDps;
+        M.MoveSpeedPct = -TotalSlow;
       });
 
       if (Hunger == null)
       {
-        // 目标减益免疫 / 无敌：饥渴未生效
-        PathosEngineBridge.WriteInternalLog(Args.Engine, Caster, BattleHungerGlyph, DotaLocalization.Format("axe.log.hunger_immune", DotaCombatHelper.GetDisplayName(Target)));
+        if (LogCast)
+          PathosEngineBridge.WriteInternalLog(Engine, Caster, BattleHungerGlyph, DotaLocalization.Format("axe.log.hunger_immune", DotaCombatHelper.GetDisplayName(Target)));
         return;
       }
 
-      // 施法当回合立即结算 1 次保底纯伤，确保即时反馈
-      int FirstDmg = Math.Max(1, (int)MathF.Round((EffectiveDps / DotaMechanicsMapper.TurnsPerSecond) / DotaMechanicsMapper.DamageScale));
-      DotaDamage.Strike(Args.Engine, Caster, Target, Args.Direction, FirstDmg, DotaDamageInfo.Pure(BattleHungerSpellName, DotaDamageFlags.Spell | DotaDamageFlags.DoT));
+      if (DealFirstTick)
+      {
+        int FirstDmg = Math.Max(1, (int)MathF.Round((EffectiveDps / DotaMechanicsMapper.TurnsPerSecond) / DotaMechanicsMapper.DamageScale));
+        DotaDamage.Strike(Engine, Caster, Target, Direction, FirstDmg, DotaDamageInfo.Pure(BattleHungerSpellName, DotaDamageFlags.Spell | DotaDamageFlags.DoT));
+      }
 
-      PathosEngineBridge.WriteInternalLog(
-        Args.Engine,
-        Caster,
-        BattleHungerGlyph,
-        DotaLocalization.Format("axe.log.hunger_cast", DotaCombatHelper.GetDisplayName(Target), BattleHungerDurationTurns, $"{Slow * 100.0f:0}"));
+      if (LogCast)
+      {
+        PathosEngineBridge.WriteInternalLog(
+          Engine,
+          Caster,
+          BattleHungerGlyph,
+          DotaLocalization.Format("axe.log.hunger_cast", DotaCombatHelper.GetDisplayName(Target), BattleHungerDurationTurns, $"{TotalSlow * 100.0f:0}"));
+      }
     }
 
     private void HandleCullingBladeCast(DotaAbilityCast Cast)
@@ -751,11 +861,18 @@ namespace Pathos.DotaHeroes.Heroes
             ApplyCullingBuff(Ally);
         }
 
-        // 叠加永久护甲（精英/Boss/唯一怪 +1.0/1.5/2.0 甲，普通小怪 +0.2/0.3/0.4 甲，存档持久化，无上限多段递减）
-        bool IsElite = Target.Entity != null && (Target.Entity.Level >= 5 || Target.Entity.IsUnique);
-        int DeltaTenths = IsElite ? CullingEliteArmorTenths[SkillLv - 1] : CullingCreepArmorTenths[SkillLv - 1];
-        int NewTotalTenths = DotaCharacterStorage.AddCustomInt(Caster, StorageCullingArmorTenthsKey, DeltaTenths);
-        int PermDef = DotaMechanicsMapper.MapUncappedArmorToDefence(NewTotalTenths / 10.0f);
+        // 叠加永久护甲（对齐帕吉「腐肉堆积」英雄级/同级门槛：唯一怪、守卫或等级 ≥ 斧王的怪物 +1.0/1.5/2.0 甲，低级小怪不叠甲）
+        bool GrantsPermanentArmor = Target.Entity == null
+          || Target.Entity.IsUnique
+          || Target.Entity.IsGuardian
+          || Target.Entity.Level >= Caster.Level;
+        int DeltaTenths = GrantsPermanentArmor ? CullingEliteArmorTenths[SkillLv - 1] : 0;
+        int PermDef = 0;
+        if (DeltaTenths > 0)
+        {
+          int NewTotalTenths = DotaCharacterStorage.AddCustomInt(Caster, StorageCullingArmorTenthsKey, DeltaTenths);
+          PermDef = DotaMechanicsMapper.MapUncappedArmorToDefence(NewTotalTenths / 10.0f);
+        }
 
         // 「斩」字与顿帧随冲锋落地的挥斧一起播放（见上方演出时间轴）
         Executed = true;
@@ -766,7 +883,9 @@ namespace Pathos.DotaHeroes.Heroes
           Args.Engine,
           Caster,
           CullingBladeGlyph,
-          DotaLocalization.Format("axe.log.culling_execute", TargetName, $"{DeltaTenths / 10.0f:0.#}", PermDef, BuffTurns));
+          DeltaTenths > 0
+            ? DotaLocalization.Format("axe.log.culling_execute", TargetName, $"{DeltaTenths / 10.0f:0.#}", PermDef, BuffTurns)
+            : DotaLocalization.Format("axe.log.culling_execute_no_armor", TargetName, BuffTurns));
       }
       else
       {
@@ -887,6 +1006,7 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 纯粹伤害、非攻击（不会触发暴击，也不会被敌方「受到攻击」类被动计数）
       var HelixInfo = DotaDamageInfo.Pure("counter helix", DotaDamageFlags.None);
+      bool HasScepter = AghanimService.HasScepter(Axe);
       foreach (var Enemy in Hostiles)
       {
         if (Enemy == null || Enemy.Deceased)
@@ -897,6 +1017,14 @@ namespace Pathos.DotaHeroes.Heroes
         TotalHits++;
         var Dir = Axe.Square.AsDirection(Enemy.Square);
         DotaDamage.Strike(Engine, Axe, Enemy, Dir, Rolled, HelixInfo);
+
+        // 7.42 神杖：反击螺旋命中敌人施加可叠加减伤 debuff（每层 -12% 攻击伤害，上限 5 层，持续 14 回合）
+        if (HasScepter && !Enemy.Deceased)
+        {
+          var Existing = DotaModifierService.Get(Enemy, HelixScepterModifier);
+          int NextStacks = Math.Min(HelixScepterMaxStacks, (Existing?.Stacks ?? 0) + 1);
+          DotaModifierService.Apply(HelixScepterModifier, Axe, Enemy, HelixScepterDebuffTurns, M => M.Stacks = NextStacks);
+        }
       }
 
       if (TotalHits > 0)

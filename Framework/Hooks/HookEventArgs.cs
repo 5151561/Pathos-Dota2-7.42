@@ -93,18 +93,24 @@ namespace Pathos.DotaHeroes.Framework.Hooks
   /// </summary>
   public sealed class KillEventArgs
   {
-    public KillEventArgs(object Engine, Character Attacker, Character Defender, string Cause)
+    public KillEventArgs(object Engine, Character Attacker, Character Defender, string Cause, Square DefenderSquare = null)
     {
       this.Engine = Engine;
       this.Attacker = Attacker;
       this.Defender = Defender;
       this.Cause = Cause;
+      this.DefenderSquare = DefenderSquare ?? Defender?.Square;
     }
 
     public object Engine { get; }
     public Character Attacker { get; }
     public Character Defender { get; }
     public string Cause { get; }
+
+    /// <summary>
+    /// 死亡单位在 KillCharacter 执行前所在的格子（Postfix 阶段 Defender.Square 可能已被引擎清空）。
+    /// </summary>
+    public Square DefenderSquare { get; }
   }
 
   /// <summary>
@@ -379,5 +385,49 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     public bool HasAnyBonus =>
       BonusStr != 0 || BonusDex != 0 || BonusCon != 0 ||
       BonusInt != 0 || BonusWis != 0 || BonusCha != 0;
+  }
+
+  /// <summary>
+  /// 物品使用事件上下文（对应 Pathos.Director.UseAsset）。
+  /// 在 BeforeUseAsset 中可将 Cancel 设为 true 以拦截使用并保留物品不消耗。
+  /// </summary>
+  public sealed class AssetUseEventArgs
+  {
+    public AssetUseEventArgs(object Engine, object Director, Character Character, Asset Asset, Motion Motion)
+    {
+      this.Engine = Engine;
+      this.Director = Director;
+      this.Character = Character;
+      this.Asset = Asset;
+      this.Motion = Motion;
+    }
+
+    public object Engine { get; }
+    public object Director { get; }
+    public Character Character { get; }
+    public Asset Asset { get; }
+    public Motion Motion { get; }
+    public bool Cancel { get; set; }
+  }
+
+  /// <summary>
+  /// 生命治疗事件上下文（对应 Pathos.Engine.HealCharacter）。
+  /// 在 BeforeHeal 中可修改 Amount（如减疗效果）或将 Cancel 设为 true 取消本次治疗。
+  /// </summary>
+  public sealed class HealEventArgs
+  {
+    public HealEventArgs(object Engine, Character Source, Character Target, int Amount)
+    {
+      this.Engine = Engine;
+      this.Source = Source;
+      this.Target = Target;
+      this.Amount = Amount;
+    }
+
+    public object Engine { get; }
+    public Character Source { get; }
+    public Character Target { get; }
+    public int Amount { get; set; }
+    public bool Cancel { get; set; }
   }
 }

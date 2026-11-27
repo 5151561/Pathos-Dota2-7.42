@@ -17,6 +17,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly Type LogType = EngineAsm.GetType("Pathos.Log");
     private static readonly Type CastSpellCommandType = EngineAsm.GetType("Pathos.CastSpellCommand");
     private static readonly Type AttackCommandType = EngineAsm.GetType("Pathos.AttackCommand");
+    private static readonly Type UseAssetCommandType = EngineAsm.GetType("Pathos.UseAssetCommand");
     private static readonly Type GeneratorType = EngineAsm.GetType("Pathos.Generator");
     private static readonly Type MasteryType = EngineAsm.GetType("Pathos.Mastery");
     private static readonly Type KnowledgeType = EngineAsm.GetType("Pathos.Knowledge");
@@ -196,6 +197,27 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     private static readonly PropertyInfo AttackCmdDirectionProp =
       AttackCommandType?.GetProperty("Direction", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo UseAssetCmdAssetProp =
+      UseAssetCommandType?.GetProperty("Asset", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo UseAssetCmdMotionProp =
+      UseAssetCommandType?.GetProperty("Motion", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly PropertyInfo EngineGeneratorProp =
+      EngineType?.GetProperty("Generator", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+    private static readonly MethodInfo GeneratorPlaceSpecificAssetMethod =
+      GeneratorType?.GetMethod("PlaceSpecificAsset", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Square), typeof(Item), typeof(int?) }, null);
+
+    private static readonly MethodInfo EngineLoseCarriedAssetMethod =
+      EngineType?.GetMethod("LoseCarriedAsset", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Asset) }, null);
+
+    private static readonly MethodInfo EngineRemoveEquipmentAssetMethod =
+      EngineType?.GetMethod("RemoveEquipmentAsset", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Character), typeof(Equipment), typeof(int) }, null);
 
     private static readonly ConstructorInfo AttackCmdDirectionCtor =
       AttackCommandType?.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
@@ -1375,6 +1397,161 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       catch { }
 
       return Spell.Description ?? string.Empty;
+    }
+
+    public static Asset GetUseAssetCommandAsset(object Command)
+      => Command != null && UseAssetCmdAssetProp != null
+        ? UseAssetCmdAssetProp.GetValue(Command) as Asset
+        : null;
+
+    public static Motion GetUseAssetCommandMotion(object Command)
+      => Command != null && UseAssetCmdMotionProp != null
+        ? UseAssetCmdMotionProp.GetValue(Command) as Motion
+        : null;
+
+    /// <summary>
+    /// 检查角色当前是否正在穿戴/手持指定物品（仅检查装备槽，放在背包中的物品不计入）。
+    /// </summary>
+    public static bool HasEquippedItem(Character Character, Item Item)
+    {
+      if (Character?.Inventory == null || Item == null)
+        return false;
+
+      foreach (var Asset in Character.Inventory.GetEquippedAssets())
+      {
+        if (Asset != null && Asset.Item == Item)
+          return true;
+      }
+
+      return false;
+    }
+
+    /// <summary>
+    /// 检查角色在装备槽或随身背包中是否拥有指定物品。
+    /// </summary>
+    public static bool HasOwnedItem(Character Character, Item Item)
+    {
+      if (Character?.Inventory == null || Item == null)
+        return false;
+
+      if (HasEquippedItem(Character, Item))
+        return true;
+
+      var Carried = Character.Inventory.GetCarriedAssets();
+      if (Carried != null)
+      {
+        foreach (var Asset in Carried)
+        {
+          if (Asset != null && Asset.Item == Item)
+            return true;
+        }
+      }
+
+      return false;
+    }
+
+    /// <summary>
+    /// 从角色身上消耗 1 件指定物品（优先消耗背包中的，若仅装备在身上则卸下并销毁）。
+    /// </summary>
+    public static bool ConsumeOwnedItem(object Engine, Character Character, Item Item)
+    {
+      if (Engine == null || Character?.Inventory == null || Item == null)
+        return false;
+
+      // 1. 优先从背包消耗
+      var Carried = Character.Inventory.GetCarriedAssets();
+      if (Carried != null)
+      {
+        foreach (var Asset in Carried)
+        {
+          if (Asset != null && Asset.Item == Item)
+          {
+            EngineLoseCarriedAssetMethod?.Invoke(Engine, new object[] { Character, Asset });
+            return true;
+          }
+        }
+      }
+
+      // 2. 否则从装备槽卸下并移除
+      foreach (var Eq in Character.Inventory.GetEquipments())
+      {
+        if (Eq?.Asset != null && Eq.Asset.Item == Item)
+        {
+          if (EngineRemoveEquipmentAssetMethod != null)
+          {
+            EngineRemoveEquipmentAssetMethod.Invoke(Engine, new object[] { Character, Eq, 1 });
+            return true;
+          }
+          return false;
+        }
+      }
+
+      return false;
+    }
+
+    /// <summary>
+    /// 在指定格子生成并放置 1 件指定物品（用于 Boss 额外掉落）。
+    /// </summary>
+    public static bool DropItemAt(object Engine, Square Square, Item Item)
+    {
+      if (Engine == null || Square == null || Item == null || EngineGeneratorProp == null || GeneratorPlaceSpecificAssetMethod == null)
+        return false;
+
+      try
+      {
+        var Generator = EngineGeneratorProp.GetValue(Engine);
+        if (Generator == null)
+          return false;
+
+        GeneratorPlaceSpecificAssetMethod.Invoke(Generator, new object[] { Square, Item, (int?)1 });
+        return true;
+      }
+      catch (Exception Ex)
+      {
+        HookBootstrap.WriteError($"PathosEngineBridge.DropItemAt failed: {Ex}");
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// 调整角色最大法力值（与 DotaLife.AdjustMax 对称，支持 KeepRatio / RaiseBoth / ClampCurrent）。
+    /// </summary>
+    public static void AdjustMaxMana(Character Character, int Delta, DotaLifeAdjustMode Mode)
+    {
+      var Mana = Character?.Mana;
+      if (Mana == null || Delta == 0)
+        return;
+
+      int OldTotal = Mana.Total;
+      int OldPoints = Mana.Points;
+      int NewTotal;
+      int NewPoints;
+
+      switch (Mode)
+      {
+        case DotaLifeAdjustMode.KeepRatio:
+        {
+          NewTotal = Math.Max(0, OldTotal + Delta);
+          float Ratio = OldTotal > 0 ? Math.Clamp((float)OldPoints / OldTotal, 0.0f, 1.0f) : 1.0f;
+          NewPoints = NewTotal <= 0 ? 0 : Math.Clamp((int)MathF.Round(NewTotal * Ratio), 0, NewTotal);
+          break;
+        }
+
+        case DotaLifeAdjustMode.RaiseBoth:
+          NewTotal = Math.Max(0, OldTotal + Delta);
+          NewPoints = Math.Clamp(OldPoints + Delta, 0, NewTotal);
+          break;
+
+        case DotaLifeAdjustMode.ClampCurrent:
+          NewTotal = Math.Max(0, OldTotal + Delta);
+          NewPoints = Math.Clamp(OldPoints, 0, NewTotal);
+          break;
+
+        default:
+          return;
+      }
+
+      SetMeter(Mana, NewPoints, NewTotal);
     }
 
     private static Ability FindAbility(Form Form, string AttributeName)

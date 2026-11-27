@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Pathos.DotaHeroes.Framework;
+using Pathos.DotaHeroes.Framework.Aghanim;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Heroes;
 
@@ -18,6 +19,9 @@ namespace Pathos
       HookBootstrap.EnsureInitialized();
 
       var Context = new DotaHeroContext(Campaign);
+
+      // 初始化阿哈利姆神杖 / 福佑 / 魔晶共享物品与框架服务（在英雄注册前完成）
+      AghanimService.Initialize(Context);
 
       var HeroRegistry = new List<IDotaHeroDefinition>
       {

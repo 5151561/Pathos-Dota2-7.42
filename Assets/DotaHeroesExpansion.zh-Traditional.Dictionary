@@ -31,6 +31,12 @@ ExplosionName,counter helix spin,反擊螺旋血刃旋斬
 ExplosionName,pudge rot cloud,腐爛毒霧
 ExplosionName,waveform splash,波浪形態水爆
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,由活水潮汐凝聚的遠程水彈，可作為彈弓無限彈藥發射。
+ItemDescription,"An arcane synthesis scroll. Reading it consumes an Aghanim's Scepter you wield or carry, permanently granting its hero ability upgrade while freeing your weapon slot (without the scepter's raw stats).",神秘的融合卷軸。閱讀時會消耗你手持或攜帶的阿哈利姆神杖，永久保留其英雄技能升級並騰出武器槽（不再提供實體神杖的基礎屬性）。
+ItemDescription,"The scepter of a wizard with demigod-like powers. Wielding it in a weapon hand grants +2 to all attributes, +12 max life, +9 max mana, and upgrades a DOTA2 hero's signature ability.",擁有半神之力的法師權杖。手持裝備在主手或副手武器槽時提供全六維 +2、最大生命 +12、最大法力 +9，並強化 DOTA2 英雄的招牌技能。
+ItemDescription,"With origins known only to a single wizard, fragments of this impossible crystal are nearly as coveted as the renowned scepter itself. Rubbing it permanently consumes the shard to unlock a DOTA2 hero's Aghanim's Shard upgrade.",起源僅有一位法師知曉的神秘晶石碎片，其珍稀程度直逼阿哈利姆神杖。擦拭後會永久消耗該魔晶，解鎖 DOTA2 英雄的阿哈利姆魔晶升級。
+ItemName,aghanims blessing,阿哈利姆福佑
+ItemName,aghanims scepter,阿哈利姆神杖
+ItemName,aghanims shard,阿哈利姆魔晶
 ItemName,tidal orb,潮汐水彈
 RaceName,waterkin//female,變體水靈
 RaceName,waterkin//male,變體水靈

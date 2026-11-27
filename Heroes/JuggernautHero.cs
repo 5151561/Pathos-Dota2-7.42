@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Inv;
 using Pathos.DotaHeroes.Framework;
+using Pathos.DotaHeroes.Framework.Aghanim;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Localization;
 using Pathos.DotaHeroes.Framework.Presentation;
@@ -89,6 +90,7 @@ namespace Pathos.DotaHeroes.Heroes
       public Character Owner;
       public int RemainingTurns;
       public float HealPercent;
+      public int ExtraHitsRemaining;
     }
 
     private sealed class OmnislashSession
@@ -108,6 +110,9 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static readonly DotaCharacterFlagSet ActiveOmnislashCasters = new();
     private static readonly DotaCharacterFlagSet SkipNextBladeFuryTick = new();
+    private static readonly DotaCharacterFlagSet BladeFuryManualAttackedThisTurn = new();
+    private const float ScepterBladeFuryAttackDamageRatio = 0.75f;
+    private const float ShardHealingWardBonusHealPerTurn = 0.0075f; // 7.42 魔晶 +1.5%/秒 -> +0.75%/回合
 
     private static DotaAbility BladeFuryAbility;
     private static DotaAbility HealingWardAbility;
@@ -225,6 +230,41 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 8. 注册主宰 4 层天赋树（DOTA2 原版 Lv 10/15/20/25 + Lv 27~30 双修，含减冷却 → 减蓝耗声明式映射）
       RegisterTalentTree(Ctx, JuggernautGlyph);
+
+      // 9. 注册主宰 DOTA2 7.42 阿哈利姆神杖（剑刃风暴）与魔晶（治疗守卫）升级
+      RegisterAghanimUpgrades(HealingWardGlyph);
+    }
+
+    private void RegisterAghanimUpgrades(Glyph HealingWardGlyph)
+    {
+      AghanimRegistry.Register(new HeroAghanimSpec
+      {
+        ClassName = JuggernautClassName,
+        Scepter = new AghanimUpgradeSpec
+        {
+          AffectedSpellName = BladeFurySpellName,
+          IconGlyph = BladeFuryGlyph,
+          TitleResolver = () => DotaLocalization.T("jugg.aghanim.scepter.title"),
+          SummaryResolver = () => DotaLocalization.T("jugg.aghanim.scepter.summary"),
+          BuildDetailBullets = _ => new[]
+          {
+            DotaLocalization.Format("jugg.aghanim.scepter.b1", DotaHelpColor.Physical("75%")),
+            DotaLocalization.Format("jugg.aghanim.scepter.b2", DotaHelpColor.Physical("75%"))
+          }
+        },
+        Shard = new AghanimUpgradeSpec
+        {
+          AffectedSpellName = HealingWardSpellName,
+          IconGlyph = HealingWardGlyph,
+          TitleResolver = () => DotaLocalization.T("jugg.aghanim.shard.title"),
+          SummaryResolver = () => DotaLocalization.T("jugg.aghanim.shard.summary"),
+          BuildDetailBullets = _ => new[]
+          {
+            DotaLocalization.Format("jugg.aghanim.shard.b1", DotaHelpColor.Heal("+0.75%")),
+            DotaLocalization.T("jugg.aghanim.shard.b2")
+          }
+        }
+      });
     }
 
     private static void RegisterSkillBuild(
@@ -446,10 +486,28 @@ namespace Pathos.DotaHeroes.Heroes
         Args.Speed = Speed.FromRate(Args.Speed.GetRate() * (1.0f + Bonus));
       });
 
-      // 5. 伤害前置钩子（Normal 阶段）：剑刃风暴期间普攻置零、剑心犹在敏捷增伤
+      // 4.5 追踪剑刃风暴期间本回合是否已手动普攻（供神杖移动自动挥砍避免双砍）
+      DotaHookBus.RegisterBeforeAttack("juggernaut.blade_fury_track_attack", Args =>
+      {
+        if (Args.Character != null && IsInBladeFury(Args.Character))
+          BladeFuryManualAttackedThisTurn.Add(Args.Character);
+      });
+
+      // 5. 伤害前置钩子（Normal 阶段）：剑刃风暴期间普攻置零（神杖改为 75% 伤害）、剑心犹在敏捷增伤、治疗守卫魔晶耐受护盾
       //    无敌斩无敌由 InvulnerableQuery 在引擎层拦截；剑刃风暴 80% 魔抗与剑舞暴击走 DotaDamage 管线（见下方 5.1 / 5.2）
       DotaHookBus.RegisterBeforeDamage("juggernaut.damage_modifiers", Args =>
       {
+        // (0) 7.42 魔晶：治疗守卫拥有 1 层额外受击耐受护盾（至少承受 2 次攻击才被摧毁）
+        if (Args.Defender != null && Args.DamagePoints > 0 && IsHealingWard(Args.Defender) &&
+            WardStates.TryGetValue(Args.Defender, out var WardState) && WardState.ExtraHitsRemaining > 0)
+        {
+          WardState.ExtraHitsRemaining--;
+          Args.Cancel = true;
+          if (Args.Defender.Square != null)
+            PathosEngineBridge.StoryCaption(Args.Engine, Args.Defender.Square, Colour.LimeGreen, DotaLocalization.T("jugg.caption.ward_guard"), Delayed: false);
+          return;
+        }
+
         var Attacker = Args.Attacker;
         if (Attacker == null || Args.Defender == Attacker || Args.DamagePoints <= 0 || Args.Info == null)
           return;
@@ -457,11 +515,16 @@ namespace Pathos.DotaHeroes.Heroes
         bool IsBasicAttack = Args.Info.Origin == DotaDamageOrigin.BasicAttack;
         bool IsOmnislash = Args.Info.IsFrom(OmnislashSpellName);
 
-        // (a) 剑刃风暴期间普通物理普攻不造成常规伤害
+        // (a) 剑刃风暴期间普通物理普攻：无神杖时置零；7.42 神杖允许正常普攻并造成 75% 伤害
         if (IsBasicAttack && IsInBladeFury(Attacker))
         {
-          Args.Cancel = true;
-          return;
+          if (!AghanimService.HasScepter(Attacker))
+          {
+            Args.Cancel = true;
+            return;
+          }
+
+          Args.DamagePoints = Math.Max(1, (int)MathF.Round(Args.DamagePoints * ScepterBladeFuryAttackDamageRatio));
         }
 
         // (b) 先天「剑心犹在」：近战普攻与无敌斩按层数追加等效基础敏捷伤害（每层 +2.5% DEX）
@@ -654,6 +717,37 @@ namespace Pathos.DotaHeroes.Heroes
         // 命中切痕：每个被卷入的敌人身上闪一道细刃光（随机角度，0.25 秒衰减）
         DotaVfx.Strike(Engine, HitSquare, BladeFuryCutStrike, 0.25f);
       }
+
+      // 7.42 神杖：剑刃风暴期间即使移动/等待也会自动对相邻随机敌人挥砍一次（75% 攻击伤害，可暴击）
+      bool ManuallyAttacked = BladeFuryManualAttackedThisTurn.Remove(Caster);
+      if (!ManuallyAttacked && AghanimService.HasScepter(Caster))
+      {
+        var AliveTargets = new List<Character>();
+        foreach (var T in Targets)
+        {
+          if (T != null && !T.Deceased && T.Square != null)
+            AliveTargets.Add(T);
+        }
+
+        if (AliveTargets.Count > 0)
+        {
+          var AutoTarget = AliveTargets[Random.Shared.Next(AliveTargets.Count)];
+          var WeaponAsset = DotaCombatHelper.GetEquippedWeapon(Ctx, Caster);
+          var WeaponDice = PathosEngineBridge.GetMeleeDamageDice(Engine, Caster, WeaponAsset);
+          int StatBonus = Math.Max(0, (Math.Max(DotaStats.Str(Caster), DotaStats.Dex(Caster)) - 10) / 2);
+          int BaseRoll = Math.Max(1, DotaCombatHelper.RollDice(WeaponDice) + StatBonus + GetBladeformBonusDamage(Caster));
+          int AutoDmg = Math.Max(1, (int)MathF.Round(BaseRoll * ScepterBladeFuryAttackDamageRatio));
+          var Dir = Caster.Square.AsDirection(AutoTarget.Square);
+          PathosEngineBridge.StoryAttacking(Engine, DotaPresentation.Seconds(0.14f), Caster, Dir);
+          DotaDamage.Strike(
+            Engine,
+            Caster,
+            AutoTarget,
+            Dir,
+            AutoDmg,
+            DotaDamageInfo.Physical(BladeFurySpellName, DotaDamageFlags.Attack | DotaDamageFlags.CanCrit));
+        }
+      }
     }
 
     private void HandleHealingWardCast(DotaHeroContext Ctx, DotaAbilityCast Cast)
@@ -700,7 +794,8 @@ namespace Pathos.DotaHeroes.Heroes
       {
         Owner = Caster,
         RemainingTurns = Duration,
-        HealPercent = HealPct
+        HealPercent = HealPct,
+        ExtraHitsRemaining = AghanimService.HasShard(Caster) ? 1 : 0
       });
       OwnerActiveWard.AddOrUpdate(Caster, new WeakReference<Character>(NewWard));
     }
@@ -1074,9 +1169,11 @@ namespace Pathos.DotaHeroes.Heroes
     private static int GetHealingWardDuration(Character Caster, int Tier)
       => GetHealingWardDurationByTier(Tier) + GetHealingWardExtraTurns(Caster);
 
-    /// <summary>治疗守卫每回合回复最大生命百分比（熟练度 + 升星每星 +0.5%）。</summary>
+    /// <summary>治疗守卫每回合回复最大生命百分比（熟练度 + 升星每星 +0.5% + 魔晶 +0.75%）。</summary>
     private static float GetHealingWardHealPct(Character Caster, int Tier)
-      => GetHealingWardHealPctByTier(Tier) + GetHealingWardExtraHealPct(Caster);
+      => GetHealingWardHealPctByTier(Tier)
+         + GetHealingWardExtraHealPct(Caster)
+         + (AghanimService.HasShard(Caster) ? ShardHealingWardBonusHealPerTurn : 0.0f);
 
     /// <summary>无敌斩基础斩数（熟练度 + 敏捷，5~12）。</summary>
     private static int GetOmnislashBaseSlashes(int Tier, int Dex)

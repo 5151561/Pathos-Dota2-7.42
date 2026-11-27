@@ -40,6 +40,7 @@ Framework/
 ├── Hooks/                    # HookBootstrap（Harmony 引导）、DotaHookBus（事件总线）、HookEventArgs、PathosEngineBridge（引擎反射）
 ├── Skills/                   # HeroSkillBuild / DotaSkillSlot / HeroSkillRegistry / HeroSkillService（Q/W/E/R/黄点加点）
 ├── Talents/                  # HeroTalentTree / TalentNode / TalentRegistry / TalentService / TalentTreeUiBridge（「技能与天赋」面板）
+├── Aghanim/                  # AghanimDefinitions / AghanimRegistry / AghanimService（神杖/福佑/魔晶物品与升级）
 ├── Presentation/             # DotaPresentation（演出时间轴）/ DotaVfx（VFX 样式与播放）
 ├── Targeting/                # DotaRangeTargetingBridge（全射程选格，DotaAbility 自动接入）
 ├── Localization/             # DotaLocalization（运行时 UI 文本，读 Resources/Localization/ui.<lang>.json）

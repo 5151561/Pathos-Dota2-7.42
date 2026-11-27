@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Inv;
 using Pathos.DotaHeroes.Framework;
+using Pathos.DotaHeroes.Framework.Aghanim;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Localization;
 using Pathos.DotaHeroes.Framework.Presentation;
@@ -177,6 +178,42 @@ namespace Pathos.DotaHeroes.Heroes
       // 4. 技能加点与天赋树
       RegisterSkillBuild(Ctx);
       RegisterTalentTree(Ctx);
+
+      // 5. DOTA2 7.42 阿哈利姆神杖（腐烂）与魔晶（肉钩）升级
+      RegisterAghanimUpgrades();
+    }
+
+    private void RegisterAghanimUpgrades()
+    {
+      AghanimRegistry.Register(new HeroAghanimSpec
+      {
+        ClassName = PudgeClassName,
+        Scepter = new AghanimUpgradeSpec
+        {
+          AffectedSpellName = RotSpellName,
+          IconGlyph = RotGlyph,
+          TitleResolver = () => DotaLocalization.T("pudge.aghanim.scepter.title"),
+          SummaryResolver = () => DotaLocalization.T("pudge.aghanim.scepter.summary"),
+          BuildDetailBullets = _ => new[]
+          {
+            DotaLocalization.Format("pudge.aghanim.scepter.b1", DotaHelpColor.Control(DotaHelpFormat.Tiles(2))),
+            DotaLocalization.Format("pudge.aghanim.scepter.b2", DotaHelpColor.Magic("+3")),
+            DotaLocalization.Format("pudge.aghanim.scepter.b3", DotaHelpColor.Control("-20%"))
+          }
+        },
+        Shard = new AghanimUpgradeSpec
+        {
+          AffectedSpellName = MeatHookSpellName,
+          IconGlyph = MeatHookGlyph,
+          TitleResolver = () => DotaLocalization.T("pudge.aghanim.shard.title"),
+          SummaryResolver = () => DotaLocalization.T("pudge.aghanim.shard.summary"),
+          BuildDetailBullets = _ => new[]
+          {
+            DotaLocalization.Format("pudge.aghanim.shard.b1", DotaHelpColor.Control(DotaHelpFormat.Tiles(HookRangeTiles + 1))),
+            DotaLocalization.Format("pudge.aghanim.shard.b2", DotaHelpColor.Skill("+2"))
+          }
+        }
+      });
     }
 
     public void RegisterHooks(DotaHeroContext Ctx)
@@ -258,7 +295,42 @@ namespace Pathos.DotaHeroes.Heroes
         if (Pudge.Life != null && Pudge.Life.Points < Pudge.Life.Total)
           PathosEngineBridge.HealCharacter(Args.Engine, Pudge, Pudge, Direction.Self, Heal);
       });
+
+      // 7.42 神杖（腐烂）：处于开启腐烂的神杖帕吉 2 格范围内的敌方单位受到治疗减少 20%
+      DotaHookBus.RegisterBeforeHeal("pudge.rot_scepter_heal_reduction", Args =>
+      {
+        var Target = Args.Target;
+        if (Target?.Square == null || Target.Deceased || Args.Amount <= 0)
+          return;
+
+        foreach (var Sq in Target.Square.GetAroundSquares(ScepterRotRadius))
+        {
+          var Unit = Sq?.Character;
+          if (Unit != null && !Unit.Deceased && IsPudge(Unit) &&
+              RotActive.Contains(Unit) && AghanimService.HasScepter(Unit) &&
+              DotaCombatHelper.IsHostile(Unit, Target))
+          {
+            Args.Amount = Math.Max(0, (int)MathF.Round(Args.Amount * (1.0f - ScepterRotHealReduction)));
+            return;
+          }
+        }
+      });
     }
+
+    private const int ScepterRotRadius = 2;
+    private const float ScepterRotBonusDotaDps = 90.0f;
+    private const float ScepterRotHealReduction = 0.20f;
+    private const int ShardHookBonusRange = 1;
+    private const int ShardHookPureDamagePerTile = 2;
+
+    private static int GetRotRadius(Character Pudge)
+      => Pudge != null && AghanimService.HasScepter(Pudge) ? ScepterRotRadius : RotRadius;
+
+    private static float GetRotDotaDps(Character Pudge, int Level)
+      => RotDotaDps[Clamp(Level, 4) - 1] + (Pudge != null && AghanimService.HasScepter(Pudge) ? ScepterRotBonusDotaDps : 0.0f);
+
+    private static int GetEffectiveRotDamagePerTurn(Character Pudge, int Level)
+      => Math.Max(1, (int)MathF.Round(GetRotDotaDps(Pudge, Level) / DotaMechanicsMapper.TurnsPerSecond / DotaMechanicsMapper.DamageScale));
 
     // ---------------------------------------------------------------- 注册
 
@@ -277,6 +349,7 @@ namespace Pathos.DotaHeroes.Heroes
         ManaCost = MeatHookManaCost,
         Targeting = DotaAbilityTargeting.PointAny,
         Range = DotaTable.Uniform(HookRangeTiles),
+        RangeBonus = Ch => AghanimService.HasShard(Ch) ? ShardHookBonusRange : 0,
         SkillSlotId = SkillHookId,
         OnCast = HandleMeatHookCast
       });
@@ -737,6 +810,16 @@ namespace Pathos.DotaHeroes.Heroes
       PathosEngineBridge.DashCharacter(Engine, Victim, Land);
       PathosEngineBridge.StoryFlinging(Engine, DotaPresentation.Seconds(ReturnSeconds), From, Land, Victim);
 
+      // 7.42 魔晶：肉钩击中敌人后根据拖行距离追加纯粹伤害（每拖行 1 格 +2 纯伤，保底 +1）
+      if (Hostile && !Victim.Deceased && AghanimService.HasShard(Caster))
+      {
+        int DragTiles = Math.Max(1, From.AsRange(Land));
+        int ExtraPure = Math.Max(1, DragTiles * ShardHookPureDamagePerTile);
+        DotaDamage.Strike(Engine, Caster, Victim, Caster.Square.AsDirection(Land), ExtraPure, DotaDamageInfo.Pure(MeatHookSpellName));
+        PathosEngineBridge.StoryCaption(Engine, Land, Colour.Crimson, $"+{ExtraPure}", Delayed: false);
+        PathosEngineBridge.WriteInternalLog(Engine, Caster, MeatHookGlyph, DotaLocalization.Format("pudge.log.hook_shard_drag", VictimName, DragTiles, ExtraPure));
+      }
+
       if (Friendly)
         PathosEngineBridge.WriteInternalLog(Engine, Caster, MeatHookGlyph, DotaLocalization.Format("pudge.log.hook_ally", VictimName));
     }
@@ -759,10 +842,29 @@ namespace Pathos.DotaHeroes.Heroes
       RotActive.Add(Caster);
       Cast.Log(DotaLocalization.T("pudge.log.rot_on"));
 
-      // 持续毒雾：按真实时间循环播放（不冻结世界），腐烂关闭或帕吉死亡即停止
+      // 持续毒雾：按真实时间循环播放（不冻结世界），腐烂关闭或帕吉死亡即停止；神杖 5×5 时覆盖外圈四角
       DotaPresentation.Loop(Cast.Engine, Caster, RotLoopKey, 0.5f,
         Ch => Ch != null && !Ch.Deceased && RotActive.Contains(Ch),
-        (Engine, Ch) => DotaVfx.Explode(Engine, Ch.Square, RotCloudExplosion, 0.75f));
+        (Engine, Ch) =>
+        {
+          if (Ch.Square == null)
+            return;
+          DotaVfx.Explode(Engine, Ch.Square, RotCloudExplosion, 0.75f);
+          if (AghanimService.HasScepter(Ch))
+          {
+            var Map = Ch.Square.Map;
+            int Cx = Ch.Square.X, Cy = Ch.Square.Y;
+            int[] Offsets = { -1, 1 };
+            foreach (int Dx in Offsets)
+            {
+              foreach (int Dy in Offsets)
+              {
+                if (Map != null && Map.IsValid(Cx + Dx, Cy + Dy))
+                  DotaVfx.Explode(Engine, Map[Cx + Dx, Cy + Dy], RotCloudExplosion, 0.75f);
+              }
+            }
+          }
+        });
     }
 
     private void TickRot(object Engine, Character Pudge)
@@ -777,11 +879,12 @@ namespace Pathos.DotaHeroes.Heroes
         return;
       }
 
-      int Damage = GetRotDamagePerTurn(Level);
+      int Radius = GetRotRadius(Pudge);
+      int Damage = GetEffectiveRotDamagePerTurn(Pudge, Level);
       float Slow = GetRotSlow(Pudge, Level);
       var Info = DotaDamageInfo.Magical(RotSpellName, DotaDamageFlags.Spell | DotaDamageFlags.DoT);
 
-      foreach (var Enemy in DotaCombatHelper.FindHostilesInRadius(Pudge, Pudge.Square, RotRadius))
+      foreach (var Enemy in DotaCombatHelper.FindHostilesInRadius(Pudge, Pudge.Square, Radius))
       {
         if (Enemy.Deceased || Enemy.Square == null)
           continue;
@@ -803,7 +906,7 @@ namespace Pathos.DotaHeroes.Heroes
     /// </summary>
     private float ComputeRotSelfDamage(Character Pudge, int Level)
     {
-      float TickDota = RotDotaDps[Clamp(Level, 4) - 1] * RotTickSeconds;
+      float TickDota = GetRotDotaDps(Pudge, Level) * RotTickSeconds;
       float BlockDota = DotaModifierService.Get(Pudge, MeatShieldModifier)?.DamageBlock * DotaMechanicsMapper.DamageScale ?? 0.0f;
       float TicksPerTurn = 1.0f / DotaMechanicsMapper.TurnsPerSecond / RotTickSeconds;
       return TicksPerTurn * MathF.Max(0.0f, TickDota - BlockDota) / DotaMechanicsMapper.DamageScale;
@@ -945,13 +1048,14 @@ namespace Pathos.DotaHeroes.Heroes
         return;
 
       Character Pudge = null;
+      var DeathSquare = Args.DefenderSquare ?? Victim.Square;
       if (Args.Attacker != null && Args.Attacker != Victim && IsPudge(Args.Attacker) && !Args.Attacker.Deceased)
       {
         Pudge = Args.Attacker;
       }
-      else if (Victim.Square != null)
+      else if (DeathSquare != null)
       {
-        foreach (var Sq in Victim.Square.GetAroundSquares(FleshHeapRadius))
+        foreach (var Sq in DeathSquare.GetAroundSquares(FleshHeapRadius))
         {
           var Cand = Sq?.Character;
           if (Cand != null && Cand != Victim && !Cand.Deceased && IsPudge(Cand))

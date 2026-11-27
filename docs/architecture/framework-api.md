@@ -14,6 +14,7 @@
 | 技能加点表（Q/W/E/R/黄点） | `HeroSkillBuild.CreateStandard` + `DotaSkillSlot.CreateActive/CreateActiveGroup/CreatePassive` + `HeroSkillRegistry.Register` | 本文 §3 |
 | 被动技能当前等级 | `HeroSkillService.GetSkillLevel(ch, slotId)` | 本文 §3 |
 | 天赋树 | `HeroTalentTree.CreateStandard` + `TalentNode` + `TalentRegistry.Register`；运行时 `TalentService.HasTalent(ch, id)` | [talents-and-skills.md §1](talents-and-skills.md) |
+| 阿哈利姆神杖 / 福佑 / 魔晶升级 | `AghanimRegistry.Register(new HeroAghanimSpec { ... })`；运行时 `AghanimService.HasScepter(ch)` / `HasShard(ch)` | [aghanim-system.md](aghanim-system.md) |
 | 「+N 属性」天赋 | `TalentNode { StatBonus = PathosStatLimits.Bonus(...) }` | [hook-system.md §9.3](hook-system.md) |
 | 减冷却天赋 | `TalentNode.ManaReductions` + `SpellManaReductionRule` | [talents-and-skills.md §1.3](talents-and-skills.md) |
 | 造成伤害 | `DotaDamage.Strike/Harm` + `DotaDamageInfo.Physical/Magical/Pure` | [hook-system.md §7](hook-system.md) |

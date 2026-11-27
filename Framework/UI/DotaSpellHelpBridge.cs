@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using Inv;
+using Pathos.DotaHeroes.Framework.Aghanim;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Localization;
 
@@ -94,6 +95,8 @@ namespace Pathos.DotaHeroes.Framework.UI
     public static string Mana(string Text) => DotaSpellHelpBridge.Colorize("mana", Text);
     /// <summary>控制时长 / 持续回合 / 射程与范围 / 防御减伤（浅金黄）</summary>
     public static string Control(string Text) => DotaSpellHelpBridge.Colorize("cc", Text);
+    /// <summary>阿哈利姆神杖 / 魔晶升级效果（阿哈利姆蓝）</summary>
+    public static string Aghanim(string Text) => DotaSpellHelpBridge.Colorize("agha", Text);
   }
 
   /// <summary>
@@ -151,7 +154,8 @@ namespace Pathos.DotaHeroes.Framework.UI
       ["passive"] = Colour.Orange,
       ["heal"] = Colour.SpringGreen,
       ["mana"] = Colour.LightSkyBlue,
-      ["cc"] = Colour.Khaki
+      ["cc"] = Colour.Khaki,
+      ["agha"] = Colour.CornflowerBlue
     };
 
     private static readonly ConcurrentDictionary<string, DotaSpellHelpSpec> Specs =
@@ -763,6 +767,10 @@ namespace Pathos.DotaHeroes.Framework.UI
           }
         }
 
+        // 2.6 自动追加关联的阿哈利姆神杖 / 魔晶升级说明
+        var (ScepterSpec, ShardSpec) = AghanimRegistry.FindBySpell(Spell.Name);
+        AppendAghanimUpgrades(__result, Character, ScepterSpec, ShardSpec);
+
         // 3. 渲染 5 阶熟练度完整数值明细
         var Tiers = Spec.BuildTiers?.Invoke(HelpCtx);
         if (Tiers == null || Tiers.Count == 0)
@@ -846,6 +854,14 @@ namespace Pathos.DotaHeroes.Framework.UI
         }
       }
 
+      // 2.5 自动追加关联的阿哈利姆神杖 / 魔晶升级说明
+      if (!string.Equals(Spec.Id, AghanimService.ScepterPassiveHelpId, StringComparison.OrdinalIgnoreCase) &&
+          !string.Equals(Spec.Id, AghanimService.ShardPassiveHelpId, StringComparison.OrdinalIgnoreCase))
+      {
+        var (ScepterSpec, ShardSpec) = AghanimRegistry.FindByPassive(Spec.Id);
+        AppendAghanimUpgrades(Entry, HelpCtx.Character, ScepterSpec, ShardSpec);
+      }
+
       // 3. 按技能等级的数值明细（当前等级橙色高亮）
       var Levels = Spec.BuildLevels?.Invoke(HelpCtx);
       if (Levels == null || Levels.Count == 0)
@@ -881,6 +897,61 @@ namespace Pathos.DotaHeroes.Framework.UI
           {
             if (!string.IsNullOrWhiteSpace(Bullet))
               InvokeInformation(Entry, $"{LayoutBulletPrefix}· {Bullet}");
+          }
+        }
+      }
+    }
+
+    private static void AppendAghanimUpgrades(object Entry, Character Character, AghanimUpgradeSpec ScepterSpec, AghanimUpgradeSpec ShardSpec)
+    {
+      if (ScepterSpec != null)
+      {
+        bool Active = Character != null && AghanimService.HasScepter(Character);
+        string Tag = Active
+          ? DotaLocalization.T("aghanim.help.tag_active")
+          : DotaLocalization.T("aghanim.help.tag_inactive");
+        string Header = DotaLocalization.Format("aghanim.help.section_scepter", Tag);
+        if (Active)
+          InvokeHighlight(Entry, LayoutSectionPrefix + Header, Colour.CornflowerBlue);
+        else
+          InvokeProperty(Entry, LayoutTierHdrPrefix + DotaLocalization.T("aghanim.help.scepter.title"), Tag);
+
+        if (!string.IsNullOrWhiteSpace(ScepterSpec.Summary))
+          InvokeInformation(Entry, $"{LayoutBulletPrefix}· {ScepterSpec.Summary}");
+
+        var Bullets = ScepterSpec.BuildDetailBullets?.Invoke(Character);
+        if (Bullets != null)
+        {
+          foreach (var B in Bullets)
+          {
+            if (!string.IsNullOrWhiteSpace(B))
+              InvokeInformation(Entry, $"{LayoutBulletPrefix}· {B}");
+          }
+        }
+      }
+
+      if (ShardSpec != null)
+      {
+        bool Active = Character != null && AghanimService.HasShard(Character);
+        string Tag = Active
+          ? DotaLocalization.T("aghanim.help.tag_active")
+          : DotaLocalization.T("aghanim.help.tag_inactive");
+        string Header = DotaLocalization.Format("aghanim.help.section_shard", Tag);
+        if (Active)
+          InvokeHighlight(Entry, LayoutSectionPrefix + Header, Colour.DeepSkyBlue);
+        else
+          InvokeProperty(Entry, LayoutTierHdrPrefix + DotaLocalization.T("aghanim.help.shard.title"), Tag);
+
+        if (!string.IsNullOrWhiteSpace(ShardSpec.Summary))
+          InvokeInformation(Entry, $"{LayoutBulletPrefix}· {ShardSpec.Summary}");
+
+        var Bullets = ShardSpec.BuildDetailBullets?.Invoke(Character);
+        if (Bullets != null)
+        {
+          foreach (var B in Bullets)
+          {
+            if (!string.IsNullOrWhiteSpace(B))
+              InvokeInformation(Entry, $"{LayoutBulletPrefix}· {B}");
           }
         }
       }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Inv;
 using Pathos.DotaHeroes.Framework;
+using Pathos.DotaHeroes.Framework.Aghanim;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Localization;
 using Pathos.DotaHeroes.Framework.Presentation;
@@ -78,6 +79,22 @@ namespace Pathos.DotaHeroes.Heroes
     private const float WaveformTalentCdr = 0.40f; // -40% 波浪形态冷却
 
     private static readonly ConditionalWeakTable<Character, Square> WaveformOriginSquares = new();
+    private const string ScepterEchoSequenceKey = "morphling.scepter_echo";
+    private const float ScepterEchoDelaySeconds = 0.2f;
+    private const int ScepterEchoRetargetRadius = 3; // 7.42: 450 码 ≈ 3 格
+    private static readonly float[] ScepterEchoDamageRatios = { 0.50f, 0.25f }; // 7.42: 50% / 25%
+
+    [ThreadStatic]
+    private static bool IsInsideScepterEcho;
+
+    private sealed class MorphSpellEchoCapture
+    {
+      public Spell Spell;
+      public Character PrimaryTarget;
+      public int CapturedDamage;
+    }
+
+    private static readonly ConditionalWeakTable<Character, MorphSpellEchoCapture> MorphEchoCaptures = new();
 
     private static DotaAbility WaveformAbility;
     private static DotaAbility AdaptiveStrikeAbility;
@@ -175,6 +192,41 @@ namespace Pathos.DotaHeroes.Heroes
 
       // 10. 注册变体精灵 4 层双修天赋树（DOTA2 7.42 Lv 10/15/20/25 + Lv 27~30 双修）
       RegisterTalentTree(Ctx, MorphlingGlyph);
+
+      // 11. 注册变体精灵 DOTA2 7.42 阿哈利姆神杖（变形水影回响）与魔晶（属性转换免蓝+硬控可用）
+      RegisterAghanimUpgrades(MorphAgilityGlyph);
+    }
+
+    private void RegisterAghanimUpgrades(Glyph AttributeShiftGlyph)
+    {
+      AghanimRegistry.Register(new HeroAghanimSpec
+      {
+        ClassName = MorphlingClassName,
+        Scepter = new AghanimUpgradeSpec
+        {
+          AffectedSpellName = MorphSpellName,
+          IconGlyph = MorphGlyph,
+          TitleResolver = () => DotaLocalization.T("morph.aghanim.scepter.title"),
+          SummaryResolver = () => DotaLocalization.T("morph.aghanim.scepter.summary"),
+          BuildDetailBullets = _ => new[]
+          {
+            DotaLocalization.Format("morph.aghanim.scepter.b1", DotaHelpColor.Magic("50%"), DotaHelpColor.Magic("25%")),
+            DotaLocalization.Format("morph.aghanim.scepter.b2", DotaHelpColor.Control(DotaHelpFormat.Tiles(ScepterEchoRetargetRadius)))
+          }
+        },
+        Shard = new AghanimUpgradeSpec
+        {
+          AffectedSpellName = MorphAgilitySpellName,
+          IconGlyph = AttributeShiftGlyph,
+          TitleResolver = () => DotaLocalization.T("morph.aghanim.shard.title"),
+          SummaryResolver = () => DotaLocalization.T("morph.aghanim.shard.summary"),
+          BuildDetailBullets = _ => new[]
+          {
+            DotaLocalization.T("morph.aghanim.shard.b1"),
+            DotaLocalization.Format("morph.aghanim.shard.b2", DotaHelpColor.Mana("0"))
+          }
+        }
+      });
     }
 
     private static void RegisterSkillBuild(
@@ -470,6 +522,152 @@ namespace Pathos.DotaHeroes.Heroes
       // T1 右天赋（+15% 魔法抗性）：魔法/未知来源伤害减免 15%（走 DotaDamage 魔抗管线，与其他魔抗乘算叠加，不减免纯粹/物理伤害）
       DotaDamage.RegisterMagicResist("morphling.talent_magic_resist", Args =>
         IsMorphling(Args.Defender) && TalentService.HasTalent(Args.Defender, TalentT1MagicResist) ? 0.15f : 0.0f);
+
+      // 7.42 魔晶：属性转换（E1/E2）蓝耗降至 0，且在眩晕/硬控状态仍可施放
+      DotaHookBus.RegisterSpellCostQuery("morphling.shard_shift_mana", Args =>
+      {
+        if (Args.Character == null || Args.Spell == null || !IsMorphling(Args.Character) || !AghanimService.HasShard(Args.Character))
+          return;
+
+        if (string.Equals(Args.Spell.Name, MorphAgilitySpellName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(Args.Spell.Name, MorphStrengthSpellName, StringComparison.OrdinalIgnoreCase))
+        {
+          Args.ManaCost = 0;
+        }
+      });
+
+      DotaHookBus.RegisterForceAllowCastQuery("morphling.shard_shift_stunned", (Ch, Spell) =>
+      {
+        if (Ch == null || !IsMorphling(Ch) || !AghanimService.HasShard(Ch))
+          return false;
+
+        if (Spell == null)
+          return true;
+
+        return string.Equals(Spell.Name, MorphAgilitySpellName, StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(Spell.Name, MorphStrengthSpellName, StringComparison.OrdinalIgnoreCase);
+      });
+
+      // 7.42 神杖（变形）：变形期间施放任意指向性伤害法术，捕获其主目标与伤害并召唤 2 个水影复制体（0.2s 间隔，50% / 25% 伤害）
+      DotaHookBus.RegisterAfterDamage("morphling.scepter_echo_capture", Args =>
+      {
+        if (IsInsideScepterEcho || Args.Attacker == null || Args.Defender == null || Args.Defender == Args.Attacker || Args.DamagePoints <= 0)
+          return;
+
+        var ActiveCast = DotaHookBus.ActiveSpellCast;
+        if (ActiveCast == null || ActiveCast.Character != Args.Attacker || ActiveCast.Spell == null)
+          return;
+
+        if (!IsMorphling(Args.Attacker) || !PathosEngineBridge.IsPolymorphed(Args.Attacker) || !AghanimService.HasScepter(Args.Attacker))
+          return;
+
+        string SpellName = ActiveCast.Spell.Name;
+        if (string.Equals(SpellName, WaveformSpellName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(SpellName, MorphAgilitySpellName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(SpellName, MorphStrengthSpellName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(SpellName, MorphSpellName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(SpellName, MorphRevertSpellName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(SpellName, AdaptiveStrikeSpellName, StringComparison.OrdinalIgnoreCase))
+          return;
+
+        if (!DotaCombatHelper.IsHostile(Args.Attacker, Args.Defender))
+          return;
+
+        var Capture = MorphEchoCaptures.GetOrCreateValue(Args.Attacker);
+        if (Capture.Spell != ActiveCast.Spell)
+        {
+          Capture.Spell = ActiveCast.Spell;
+          Capture.PrimaryTarget = Args.Defender;
+          Capture.CapturedDamage = Args.DamagePoints;
+        }
+      });
+
+      DotaHookBus.RegisterAfterCastSpell("morphling.scepter_echo_trigger", Args =>
+      {
+        if (IsInsideScepterEcho || Args.Character == null || Args.Spell == null)
+          return;
+
+        if (!MorphEchoCaptures.TryGetValue(Args.Character, out var Capture) || Capture.Spell != Args.Spell)
+          return;
+
+        var Primary = Capture.PrimaryTarget;
+        int BaseDamage = Capture.CapturedDamage;
+        Capture.Spell = null;
+        Capture.PrimaryTarget = null;
+        Capture.CapturedDamage = 0;
+
+        if (Primary == null || BaseDamage <= 0 || !PathosEngineBridge.IsPolymorphed(Args.Character) || !AghanimService.HasScepter(Args.Character))
+          return;
+
+        ScheduleMorphScepterEchoes(Ctx, Args.Engine, Args.Character, Primary, BaseDamage, Args.Spell.Name, StunTurns: 0);
+      });
+    }
+
+    private void ScheduleMorphScepterEchoes(
+      DotaHeroContext Ctx,
+      object Engine,
+      Character Caster,
+      Character PrimaryTarget,
+      int BaseDamage,
+      string SourceSpellName,
+      int StunTurns)
+    {
+      if (Engine == null || Caster == null || PrimaryTarget == null || BaseDamage <= 0)
+        return;
+
+      var AnchorSquare = PrimaryTarget.Square ?? Caster.Square;
+      var Seq = DotaPresentation.Sequence(Engine, Caster, ScepterEchoSequenceKey);
+      for (int i = 0; i < ScepterEchoDamageRatios.Length; i++)
+      {
+        float Ratio = ScepterEchoDamageRatios[i];
+        int EchoIndex = i + 1;
+        Seq.At(ScepterEchoDelaySeconds * EchoIndex, SeqCtx =>
+        {
+          if (Caster.Deceased || Caster.Square == null)
+            return;
+
+          var RefSq = !PrimaryTarget.Deceased && PrimaryTarget.Square != null ? PrimaryTarget.Square : AnchorSquare;
+          if (RefSq == null)
+            return;
+
+          // 优先选原目标 3 格内的其他随机敌人；无其他敌人时回退对原目标再次施放
+          var Candidates = DotaCombatHelper.FindHostilesInRadius(Caster, RefSq, ScepterEchoRetargetRadius);
+          var Others = new List<Character>();
+          foreach (var C in Candidates)
+          {
+            if (C != null && !C.Deceased && C != PrimaryTarget)
+              Others.Add(C);
+          }
+
+          Character EchoTarget = Others.Count > 0
+            ? Others[Random.Shared.Next(Others.Count)]
+            : (!PrimaryTarget.Deceased ? PrimaryTarget : (Candidates.Count > 0 ? Candidates[0] : null));
+
+          if (EchoTarget == null || EchoTarget.Deceased || EchoTarget.Square == null)
+            return;
+
+          int EchoDmg = Math.Max(1, (int)MathF.Round(BaseDamage * Ratio));
+          var HitDir = Caster.Square.AsDirection(EchoTarget.Square);
+
+          IsInsideScepterEcho = true;
+          try
+          {
+            DotaVfx.Strike(SeqCtx.Engine, EchoTarget.Square, AdaptiveStrikeImpactStrike ?? Ctx.Strikes.frost, 0.35f);
+            PathosEngineBridge.StoryCaption(SeqCtx.Engine, EchoTarget.Square, Colour.DeepSkyBlue, DotaLocalization.T("morph.caption.scepter_echo"), Delayed: false);
+            DotaDamage.Harm(SeqCtx.Engine, Caster, EchoTarget, HitDir, Ctx.Elements.water, Dice.Fixed(EchoDmg), DotaDamageInfo.Magical(SourceSpellName));
+            if (StunTurns > 0 && !EchoTarget.Deceased)
+            {
+              int EchoStun = Math.Max(1, (int)MathF.Round(StunTurns * Ratio));
+              PathosEngineBridge.ApplyTransient(SeqCtx.Engine, Caster, EchoTarget, Ctx.Properties.stunned, Dice.Fixed(EchoStun));
+            }
+          }
+          finally
+          {
+            IsInsideScepterEcho = false;
+          }
+        });
+      }
+      Seq.Play();
     }
 
     private void ExecuteWaveform(DotaHeroContext Ctx, DotaAbilityCast Cast)
@@ -705,6 +903,10 @@ namespace Pathos.DotaHeroes.Heroes
           break;
         PathosEngineBridge.DashCharacter(Args.Engine, Target, NextSq);
       }
+
+      // 4. 7.42 神杖：变形期间施放变体打击，召唤 2 个水影复制体依次回响（50% / 25%）
+      if (!IsInsideScepterEcho && PathosEngineBridge.IsPolymorphed(Caster) && AghanimService.HasScepter(Caster))
+        ScheduleMorphScepterEchoes(Ctx, Args.Engine, Caster, Target, TotalDamage, AdaptiveStrikeSpellName, StrikeStats.FinalStun);
     }
 
     private void ExecuteMorph(DotaHeroContext Ctx, DotaAbilityCast Cast)

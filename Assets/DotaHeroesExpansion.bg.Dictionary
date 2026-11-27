@@ -31,6 +31,12 @@ ExplosionName,counter helix spin,Завъртане на Контраспира�
 ExplosionName,pudge rot cloud,
 ExplosionName,waveform splash,Водна експлозия на Вълнова форма
 ItemDescription,A condensed sphere of living tidewater launched as infinite ranged ammunition from a sling.,"Сгъстена сфера от жива приливна вода, изстрелвана като безкраен далекобоен боеприпас от прашка."
+ItemDescription,"An arcane synthesis scroll. Reading it consumes an Aghanim's Scepter you wield or carry, permanently granting its hero ability upgrade while freeing your weapon slot (without the scepter's raw stats).",
+ItemDescription,"The scepter of a wizard with demigod-like powers. Wielding it in a weapon hand grants +2 to all attributes, +12 max life, +9 max mana, and upgrades a DOTA2 hero's signature ability.",
+ItemDescription,"With origins known only to a single wizard, fragments of this impossible crystal are nearly as coveted as the renowned scepter itself. Rubbing it permanently consumes the shard to unlock a DOTA2 hero's Aghanim's Shard upgrade.",
+ItemName,aghanims blessing,
+ItemName,aghanims scepter,
+ItemName,aghanims shard,
 ItemName,tidal orb,сфера на прилива
 RaceName,waterkin//female,воден дух
 RaceName,waterkin//male,воден дух

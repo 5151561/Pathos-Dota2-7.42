@@ -193,6 +193,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         var CastSpellCmdType = EngineAsm.GetType("Pathos.CastSpellCommand");
         var CommandType = EngineAsm.GetType("Pathos.Command");
         var AttackCmdType = EngineAsm.GetType("Pathos.AttackCommand");
+        var UseAssetCmdType = EngineAsm.GetType("Pathos.UseAssetCommand");
         var CharacterType = EngineAsm.GetType("Pathos.Character");
         var ActorType = EngineAsm.GetType("Pathos.Actor");
         var ElectType = EngineAsm.GetType("Pathos.Elect");
@@ -229,6 +230,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           EngineType,
           "KillCharacter",
           new[] { CharacterType, CharacterType, typeof(string) },
+          prefix: nameof(KillCharacterPrefix),
           postfix: nameof(KillCharacterPostfix));
 
         // 4. 复活钩子：Engine.ResurrectCharacter(Character, Square)
@@ -388,6 +390,26 @@ namespace Pathos.DotaHeroes.Framework.Hooks
             prefix: nameof(ApplyEffectsPrefix));
         }
 
+        // 14.6 物品使用钩子：Director.UseAsset(Character, UseAssetCommand)（用于阿哈利姆魔晶吸收与福佑融合）
+        if (UseAssetCmdType != null)
+        {
+          PatchMethod(
+            Harmony,
+            DirectorType,
+            "UseAsset",
+            new[] { CharacterType, UseAssetCmdType },
+            prefix: nameof(UseAssetPrefix),
+            postfix: nameof(UseAssetPostfix));
+        }
+
+        // 14.7 治疗结算钩子：Engine.HealCharacter(Character, Character, Direction, int)（用于帕吉神杖腐烂减疗等）
+        PatchMethod(
+          Harmony,
+          EngineType,
+          "HealCharacter",
+          new[] { CharacterType, CharacterType, typeof(Direction), typeof(int) },
+          prefix: nameof(HealCharacterPrefix));
+
         // 15. 天赋树独立面板 UI 补丁（仅在游戏客户端存在 Pathos.dll 时挂载）
         Talents.TalentTreeUiBridge.ApplyUiPatches(Harmony);
 
@@ -449,7 +471,7 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         if (Character == null || Spell == null)
           return true;
 
-        if (DotaHookBus.QuerySilenced(Character))
+        if (DotaHookBus.QuerySilenced(Character) && !DotaHookBus.QueryForceAllowCast(Character, Spell))
           return false;
 
         var Args = new SpellCastEventArgs(
@@ -530,12 +552,17 @@ namespace Pathos.DotaHeroes.Framework.Hooks
         DotaHookBus.DispatchAfterDamage(__state);
       }
 
-      private static void KillCharacterPostfix(object __instance, Character Attacker, Character Defender, string Cause)
+      private static void KillCharacterPrefix(Character Defender, out Square __state)
+      {
+        __state = Defender?.Square;
+      }
+
+      private static void KillCharacterPostfix(object __instance, Character Attacker, Character Defender, string Cause, Square __state)
       {
         if (Defender == null)
           return;
 
-        DotaHookBus.DispatchAfterKill(new KillEventArgs(__instance, Attacker, Defender, Cause));
+        DotaHookBus.DispatchAfterKill(new KillEventArgs(__instance, Attacker, Defender, Cause, __state ?? Defender.Square));
       }
 
       private static void ResurrectCharacterPostfix(object __instance, Character Character)
@@ -604,8 +631,13 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
       private static void CanCastPostfix(Character Character, ref bool __result)
       {
-        if (__result && Character != null && DotaHookBus.QuerySilenced(Character))
+        if (Character == null)
+          return;
+
+        if (__result && DotaHookBus.QuerySilenced(Character))
           __result = false;
+        else if (!__result && DotaHookBus.QueryForceAllowCast(Character, null))
+          __result = true;
       }
 
       private static void CastEffectsPostfix(CastRangeState __state)
@@ -832,6 +864,51 @@ namespace Pathos.DotaHeroes.Framework.Hooks
           return true;
 
         return false;
+      }
+
+      private static bool UseAssetPrefix(object __instance, Character Character, object Command, out AssetUseEventArgs __state)
+      {
+        __state = null;
+        if (Character == null || Command == null)
+          return true;
+
+        var Asset = PathosEngineBridge.GetUseAssetCommandAsset(Command);
+        if (Asset == null)
+          return true;
+
+        var Engine = PathosEngineBridge.GetDirectorEngine(__instance);
+        var Motion = PathosEngineBridge.GetUseAssetCommandMotion(Command);
+        var Args = new AssetUseEventArgs(Engine, __instance, Character, Asset, Motion);
+        __state = Args;
+
+        DotaHookBus.DispatchBeforeUseAsset(Args);
+        return !Args.Cancel;
+      }
+
+      private static void UseAssetPostfix(AssetUseEventArgs __state)
+      {
+        if (__state == null || __state.Cancel)
+          return;
+
+        DotaHookBus.DispatchAfterUseAsset(__state);
+      }
+
+      private static bool HealCharacterPrefix(
+        object __instance,
+        Character SourceCharacter,
+        Character TargetCharacter,
+        ref int LifePoints)
+      {
+        if (TargetCharacter == null || LifePoints <= 0)
+          return true;
+
+        var Args = new HealEventArgs(__instance, SourceCharacter, TargetCharacter, LifePoints);
+        DotaHookBus.DispatchBeforeHeal(Args);
+        if (Args.Cancel || Args.Amount <= 0)
+          return false;
+
+        LifePoints = Args.Amount;
+        return true;
       }
     }
   }

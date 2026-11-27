@@ -59,6 +59,10 @@ namespace Pathos.DotaHeroes.Framework.Hooks
     private static readonly DotaHookHandlerList<Action<ActiveFormQueryEventArgs>> ActiveFormQueryHandlers = new();
     private static readonly DotaHookHandlerList<Func<Character, bool>> InvulnerableQueries = new();
     private static readonly DotaHookHandlerList<Func<Character, bool>> SilenceQueries = new();
+    private static readonly DotaHookHandlerList<Action<AssetUseEventArgs>> BeforeUseAssetHandlers = new();
+    private static readonly DotaHookHandlerList<Action<AssetUseEventArgs>> AfterUseAssetHandlers = new();
+    private static readonly DotaHookHandlerList<Action<HealEventArgs>> BeforeHealHandlers = new();
+    private static readonly DotaHookHandlerList<Func<Character, Spell, bool>> ForceAllowCastQueries = new();
 
     public static void RegisterBeforeCastSpell(string Key, Action<SpellCastEventArgs> Handler, int Priority = DotaHookPriority.Normal)
       => BeforeCastSpellHandlers.Register(Key, Handler, Priority);
@@ -119,6 +123,39 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     public static void RegisterActiveFormQuery(string Key, Action<ActiveFormQueryEventArgs> Handler, int Priority = DotaHookPriority.Normal)
       => ActiveFormQueryHandlers.Register(Key, Handler, Priority);
+
+    public static void RegisterBeforeUseAsset(string Key, Action<AssetUseEventArgs> Handler, int Priority = DotaHookPriority.Normal)
+      => BeforeUseAssetHandlers.Register(Key, Handler, Priority);
+
+    public static void RegisterAfterUseAsset(string Key, Action<AssetUseEventArgs> Handler, int Priority = DotaHookPriority.Normal)
+      => AfterUseAssetHandlers.Register(Key, Handler, Priority);
+
+    public static void RegisterBeforeHeal(string Key, Action<HealEventArgs> Handler, int Priority = DotaHookPriority.Normal)
+      => BeforeHealHandlers.Register(Key, Handler, Priority);
+
+    public static void RegisterForceAllowCastQuery(string Key, Func<Character, Spell, bool> Predicate)
+      => ForceAllowCastQueries.Register(Key, Predicate, DotaHookPriority.Normal);
+
+    public static bool QueryForceAllowCast(Character Character, Spell Spell)
+    {
+      if (Character == null || ForceAllowCastQueries.IsEmpty)
+        return false;
+
+      foreach (var Pair in ForceAllowCastQueries.GetSnapshot())
+      {
+        try
+        {
+          if (Pair.Handler(Character, Spell))
+            return true;
+        }
+        catch (Exception Ex)
+        {
+          HookBootstrap.WriteError($"Handler '{Pair.Key}' failed in ForceAllowCastQueries: {Ex}");
+        }
+      }
+
+      return false;
+    }
 
     internal static bool HasActiveFormQueryHandlers => !ActiveFormQueryHandlers.IsEmpty;
 
@@ -237,6 +274,15 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
     internal static void DispatchActiveFormQuery(ActiveFormQueryEventArgs Args)
       => Dispatch(ActiveFormQueryHandlers, Args, nameof(ActiveFormQueryHandlers));
+
+    internal static void DispatchBeforeUseAsset(AssetUseEventArgs Args)
+      => Dispatch(BeforeUseAssetHandlers, Args, nameof(BeforeUseAssetHandlers), A => A.Cancel);
+
+    internal static void DispatchAfterUseAsset(AssetUseEventArgs Args)
+      => Dispatch(AfterUseAssetHandlers, Args, nameof(AfterUseAssetHandlers));
+
+    internal static void DispatchBeforeHeal(HealEventArgs Args)
+      => Dispatch(BeforeHealHandlers, Args, nameof(BeforeHealHandlers), A => A.Cancel);
 
     private static void Dispatch<TArgs>(
       DotaHookHandlerList<Action<TArgs>> Handlers,

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
+using Pathos.DotaHeroes.Framework.Aghanim;
 using Pathos.DotaHeroes.Framework.Hooks;
 using Pathos.DotaHeroes.Framework.Localization;
 using Pathos.DotaHeroes.Framework.Skills;
@@ -500,6 +501,10 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
       private static readonly Inv.Colour TooltipBgColour = Inv.Colour.FromArgb(252, 20, 23, 28);
       private static readonly Inv.Colour TooltipBorderColour = Inv.Colour.FromArgb(255, 70, 78, 90);
+      private static readonly Inv.Colour AghanimActiveBgColour = Inv.Colour.FromArgb(255, 22, 42, 72);
+      private static readonly Inv.Colour AghanimActiveHoverBgColour = Inv.Colour.FromArgb(255, 30, 56, 94);
+      private static readonly Inv.Colour AghanimActiveBorderColour = Inv.Colour.FromArgb(255, 96, 178, 255);
+      private static readonly Inv.Colour AghanimTextColour = Inv.Colour.FromArgb(255, 165, 218, 255);
 
       private const int AbilityIconSize = 54;
       private const int AbilityColumnWidth = 64;
@@ -863,6 +868,14 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
           ContentStack.AddPanel(BuildAbilityBar(Character, SkillBuild));
         }
+
+        if (AghanimRegistry.TryGetSpec(Character, out var AghSpec) &&
+            (AghSpec.Scepter != null || AghSpec.Shard != null))
+        {
+          ContentStack.AddPanel(BuildDivider());
+          ContentStack.AddPanel(BuildSectionCaption(DotaLocalization.T("ui.panel.section.aghanim")));
+          ContentStack.AddPanel(BuildAghanimBar(Character, AghSpec));
+        }
       }
 
       // DOTA2 风格分节标题：── 天赋树 ──
@@ -1193,6 +1206,205 @@ namespace Pathos.DotaHeroes.Framework.Talents
           Pips.AddPanel(Pip);
         }
         return Pips;
+      }
+
+      // ───────────────────────── 阿哈利姆神杖与魔晶 ─────────────────────────
+
+      private Inv.Panel BuildAghanimBar(Character Character, HeroAghanimSpec Spec)
+      {
+        var Table = Surface.NewTable();
+        Table.Margin.Set(0, 0, 0, 8);
+        var ColL = Table.AddStarColumn(1);
+        var ColGap = Table.AddFixedColumn(8);
+        var ColR = Table.AddStarColumn(1);
+        var Row = Table.AddAutoRow();
+
+        if (Spec.Scepter != null)
+          Table.GetCell(ColL, Row).Content = BuildAghanimTile(Character, Spec.Scepter, IsScepter: true);
+        if (Spec.Shard != null)
+          Table.GetCell(ColR, Row).Content = BuildAghanimTile(Character, Spec.Shard, IsScepter: false);
+
+        return Table;
+      }
+
+      private Inv.Panel BuildAghanimTile(Character Character, AghanimUpgradeSpec Upgrade, bool IsScepter)
+      {
+        bool Active = IsScepter ? AghanimService.HasScepter(Character) : AghanimService.HasShard(Character);
+        bool IsBlessing = IsScepter && AghanimService.HasScepterBlessing(Character);
+        bool IsEquipped = IsScepter && AghanimService.HasEquippedScepter(Character);
+
+        string HeaderName = IsScepter
+          ? DotaLocalization.T("aghanim.help.scepter.title")
+          : DotaLocalization.T("aghanim.help.shard.title");
+
+        string StateTag = IsScepter
+          ? (IsBlessing && IsEquipped ? DotaLocalization.T("aghanim.badge.blessing")
+            : IsBlessing ? DotaLocalization.T("aghanim.badge.blessing")
+            : IsEquipped ? DotaLocalization.T("aghanim.badge.equipped")
+            : DotaLocalization.T("aghanim.state.inactive"))
+          : (Active ? DotaLocalization.T("aghanim.badge.absorbed") : DotaLocalization.T("aghanim.state.inactive"));
+
+        Glyph Icon = IsScepter
+          ? (IsBlessing && !IsEquipped ? (AghanimService.BlessingGlyph ?? AghanimService.ScepterGlyph) : AghanimService.ScepterGlyph)
+          : AghanimService.ShardGlyph;
+
+        var Bg = Active ? AghanimActiveBgColour : TileDimBgColour;
+        var HoverBg = Active ? AghanimActiveHoverBgColour : TileHoverBgColour;
+        var Border = Active ? (IsBlessing ? GoldBorderColour : AghanimActiveBorderColour) : TileBorderColour;
+        var HoverBorder = Active ? GoldBrightColour : TileHoverBorderColour;
+
+        var Row = Surface.NewHorizontalStack();
+        Row.Alignment.CenterLeft();
+
+        var IconOverlay = Surface.NewOverlay();
+        IconOverlay.Size.Set(34, 34);
+        IconOverlay.Margin.Set(0, 0, 8, 0);
+        var Img = Icon != null ? GetGlyphImage(Icon) : null;
+        if (Img != null)
+        {
+          var Graphic = Surface.NewGraphic();
+          Graphic.Image = Img;
+          Graphic.Size.Set(32, 32);
+          Graphic.Alignment.Center();
+          IconOverlay.AddPanel(Graphic);
+        }
+        if (!Active)
+        {
+          var Shade = Surface.NewFrame();
+          Shade.Alignment.Stretch();
+          Shade.Background.Colour = UnlearnedShadeColour;
+          IconOverlay.AddPanel(Shade);
+        }
+        Row.AddPanel(IconOverlay);
+
+        var TextStack = Surface.NewVerticalStack();
+        TextStack.Alignment.CenterLeft();
+
+        var TitleLbl = CreateLabel(Active ? AghanimTextColour : TextSecondaryColour, FontSize: 13);
+        TitleLbl.Text = HeaderName;
+        TextStack.AddPanel(TitleLbl);
+
+        var StatusLbl = CreateLabel(Active ? (IsBlessing ? GoldBrightColour : UpgradeGreenColour) : TextMutedColour, FontSize: 11);
+        StatusLbl.Text = StateTag;
+        TextStack.AddPanel(StatusLbl);
+
+        Row.AddPanel(TextStack);
+
+        var Btn = Surface.NewFlatButton();
+        Btn.Alignment.Stretch();
+        Btn.Size.SetMinimumHeight(46);
+        Btn.Border.Set(1);
+        Btn.Corner.Set(2);
+        Btn.Padding.Set(8, 5);
+        AttachHover(Btn, Bg, Border, HoverBg, HoverBorder);
+        Btn.Tooltip.Content = BuildAghanimTooltip(Character, Upgrade, IsScepter, Active, IsBlessing, IsEquipped);
+        Btn.Content = Row;
+        Btn.SingleTapEvent += () => { };
+        return Btn;
+      }
+
+      private Inv.Panel BuildAghanimTooltip(
+        Character Character,
+        AghanimUpgradeSpec Upgrade,
+        bool IsScepter,
+        bool Active,
+        bool IsBlessing,
+        bool IsEquipped)
+      {
+        var Card = NewTooltipCard(out var Body);
+
+        string Subtitle = IsScepter
+          ? DotaLocalization.T("aghanim.help.scepter.title")
+          : DotaLocalization.T("aghanim.help.shard.title");
+        Body.AddPanel(BuildTooltipTitle(Upgrade.Title, Subtitle));
+
+        if (!string.IsNullOrWhiteSpace(Upgrade.Summary))
+        {
+          var Summary = CreateLabel(AghanimTextColour, FontSize: 13);
+          Summary.Text = Upgrade.Summary;
+          Summary.LineWrapping = true;
+          Summary.Margin.Set(10, 8, 10, 0);
+          Body.AddPanel(Summary);
+        }
+
+        var Bullets = Upgrade.BuildDetailBullets?.Invoke(Character);
+        if (Bullets != null && Bullets.Count > 0)
+        {
+          var BulletStack = Surface.NewVerticalStack();
+          BulletStack.Margin.Set(10, 6, 10, 0);
+          foreach (var B in Bullets)
+          {
+            if (string.IsNullOrWhiteSpace(B))
+              continue;
+            var Lbl = CreateLabel(TextSecondaryColour, FontSize: 12);
+            Lbl.Text = $"· {StripHelpColorTags(B)}";
+            Lbl.LineWrapping = true;
+            Lbl.Margin.Set(0, 0, 0, 3);
+            BulletStack.AddPanel(Lbl);
+          }
+          Body.AddPanel(BulletStack);
+        }
+
+        string FooterText;
+        Inv.Colour FooterColour;
+        if (IsScepter)
+        {
+          if (IsBlessing && IsEquipped)
+          {
+            FooterText = DotaLocalization.T("aghanim.state.both");
+            FooterColour = GoldBrightColour;
+          }
+          else if (IsBlessing)
+          {
+            FooterText = DotaLocalization.T("aghanim.state.blessing");
+            FooterColour = GoldBrightColour;
+          }
+          else if (IsEquipped)
+          {
+            FooterText = DotaLocalization.T("aghanim.state.equipped");
+            FooterColour = UpgradeGreenColour;
+          }
+          else
+          {
+            FooterText = DotaLocalization.T("aghanim.help.scepter.acquire");
+            FooterColour = TextMutedColour;
+          }
+        }
+        else
+        {
+          FooterText = Active
+            ? DotaLocalization.T("aghanim.state.absorbed")
+            : DotaLocalization.T("aghanim.help.shard.acquire");
+          FooterColour = Active ? UpgradeGreenColour : TextMutedColour;
+        }
+
+        Body.AddPanel(BuildTooltipFooter(FooterText, FooterColour));
+        return Card;
+      }
+
+      private static string StripHelpColorTags(string Text)
+      {
+        if (string.IsNullOrEmpty(Text) || Text.IndexOf('\u27E6') < 0)
+          return Text;
+
+        var Sb = new System.Text.StringBuilder(Text.Length);
+        int i = 0;
+        while (i < Text.Length)
+        {
+          if (Text[i] == '\u27E6')
+          {
+            int Colon = Text.IndexOf(':', i + 1);
+            int Close = Text.IndexOf('\u27E7', i + 1);
+            if (Colon > i && Close > Colon)
+            {
+              Sb.Append(Text, Colon + 1, Close - Colon - 1);
+              i = Close + 1;
+              continue;
+            }
+          }
+          Sb.Append(Text[i++]);
+        }
+        return Sb.ToString();
       }
 
       // ───────────────────────── 悬停技能卡片（DOTA2 风格） ─────────────────────────
