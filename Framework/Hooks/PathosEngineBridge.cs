@@ -43,6 +43,10 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       TranslationType?.GetMethod("GetName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Entity) }, null);
 
+    private static readonly MethodInfo TranslationGetSpellNameMethod =
+      TranslationType?.GetMethod("GetName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
+        new[] { typeof(Spell) }, null);
+
     private static readonly MethodInfo TranslationGetSpellDescriptionMethod =
       TranslationType?.GetMethod("GetDescription", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
         new[] { typeof(Spell) }, null);
@@ -1380,6 +1384,22 @@ namespace Pathos.DotaHeroes.Framework.Hooks
       catch { }
 
       return Entity.Name ?? string.Empty;
+    }
+
+    public static string GetLocalizedName(Spell Spell)
+    {
+      if (Spell == null)
+        return string.Empty;
+
+      try
+      {
+        if (TranslationGetSpellNameMethod?.Invoke(null, new object[] { Spell }) is string Localized &&
+            !string.IsNullOrEmpty(Localized))
+          return Localized;
+      }
+      catch { }
+
+      return Spell.Name ?? string.Empty;
     }
 
     /// <summary>法术描述的当前语言译文（Codex 字典 SpellDescription），取不到时回退英文原文。</summary>

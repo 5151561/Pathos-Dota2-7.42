@@ -741,15 +741,28 @@ namespace Pathos.DotaHeroes.Framework.UI
         if (Character != null && Spec.BuildLiveStats != null)
         {
           var LiveRows = Spec.BuildLiveStats(HelpCtx);
-          if (LiveRows != null && LiveRows.Count > 0)
+          var CooldownRow = BuildLiveCooldownRow(Character, Spell);
+          if ((LiveRows != null && LiveRows.Count > 0) || CooldownRow.HasValue)
           {
             InvokeHighlight(__result, LayoutSectionPrefix + DotaLocalization.T("help.section.live_stats"), Colour.Gold);
-            foreach (var (Key, Value) in LiveRows)
+            if (CooldownRow.HasValue)
+              InvokeProperty(__result, LayoutLiveRowPrefix + CooldownRow.Value.Key, CooldownRow.Value.Value);
+
+            if (LiveRows != null)
             {
-              if (!string.IsNullOrEmpty(Key) && !string.IsNullOrEmpty(Value))
-                InvokeProperty(__result, LayoutLiveRowPrefix + Key, Value);
+              foreach (var (Key, Value) in LiveRows)
+              {
+                if (!string.IsNullOrEmpty(Key) && !string.IsNullOrEmpty(Value))
+                  InvokeProperty(__result, LayoutLiveRowPrefix + Key, Value);
+              }
             }
           }
+        }
+        else if (Character == null)
+        {
+          var EncycCooldownRow = BuildEncyclopediaCooldownRow(Spell);
+          if (EncycCooldownRow.HasValue)
+            InvokeProperty(__result, LayoutLiveRowPrefix + EncycCooldownRow.Value.Key, EncycCooldownRow.Value.Value);
         }
 
         // 2.5 渲染跨阶共享的「技能机制」区块（避免在 5 阶熟练度中重复刷屏长句）
@@ -984,6 +997,64 @@ namespace Pathos.DotaHeroes.Framework.UI
       }
 
       return null;
+    }
+
+    private static (string Key, string Value)? BuildLiveCooldownRow(Character Character, Spell Spell)
+    {
+      if (Character == null || Spell == null || !DotaAbility.TryGet(Spell, out var Ability) || !Ability.HasCooldown)
+        return null;
+
+      int ActualTurns = Ability.CooldownTurns(Character);
+      if (ActualTurns <= 0)
+        return null;
+
+      int BaseTurns = Ability.BaseCooldownTurns(Math.Max(1, Ability.Level(Character)));
+      string CdText = ActualTurns < BaseTurns
+        ? DotaHelpColor.Talent(DotaHelpFormat.Turns(ActualTurns))
+        : DotaHelpColor.Control(DotaHelpFormat.Turns(ActualTurns));
+
+      int Remaining = Ability.RemainingCooldown(Character);
+      string Value = Remaining > 0
+        ? DotaLocalization.Format("ui.help.cooldown_active", CdText, DotaHelpColor.Physical(DotaHelpFormat.Turns(Remaining)))
+        : CdText;
+
+      return (DotaLocalization.T("ui.help.key_cooldown"), Value);
+    }
+
+    private static (string Key, string Value)? BuildEncyclopediaCooldownRow(Spell Spell)
+    {
+      if (Spell == null || !DotaAbility.TryGet(Spell, out var Ability) || !Ability.HasCooldown)
+        return null;
+
+      var Table = Ability.Spec.CooldownSeconds;
+      if (Table == null || Table.Count == 0)
+        return null;
+
+      bool AllSame = true;
+      int FirstTurns = DotaMechanicsMapper.MapCooldownTurns(Table[1]);
+      for (int I = 2; I <= Table.Count; I++)
+      {
+        if (DotaMechanicsMapper.MapCooldownTurns(Table[I]) != FirstTurns)
+        {
+          AllSame = false;
+          break;
+        }
+      }
+
+      string Text;
+      if (AllSame)
+      {
+        Text = DotaHelpFormat.Turns(FirstTurns);
+      }
+      else
+      {
+        var Parts = new string[Table.Count];
+        for (int I = 1; I <= Table.Count; I++)
+          Parts[I - 1] = DotaMechanicsMapper.MapCooldownTurns(Table[I]).ToString();
+        Text = DotaHelpFormat.Turns(string.Join(" / ", Parts));
+      }
+
+      return (DotaLocalization.T("ui.help.key_cooldown"), DotaHelpColor.Control(Text));
     }
 
     private static int ComputeHeaderKeepCount(IList ItemList)

@@ -8,7 +8,8 @@
 | 我要做什么 | 用这个 | 详细说明 |
 | :--- | :--- | :--- |
 | 声明英雄三维 / 初始六维 / 属性上限 / 职业样板 | `DotaHeroProfile` + `Profile.RegisterStats()` + `Profile.ConfigureClass(...)` | [hook-system.md §10](hook-system.md) |
-| 声明一个主动技能（法术外壳、射程、选格、施法回调） | `DotaAbility.Register(Ctx, new DotaAbilitySpec { ... })` | [hook-system.md §8](hook-system.md) |
+| 声明一个主动技能（法术外壳、射程、冷却、选格、施法回调） | `DotaAbility.Register(Ctx, new DotaAbilitySpec { ..., CooldownSeconds = DotaTable.Of(...) })` | [hook-system.md §8](hook-system.md) |
+| 技能冷却查询 / 重置 / 跳过本次冷却 | `Ability.CooldownTurns/RemainingCooldown/ResetCooldown` / `Cast.SkipCooldown()` / `DotaCooldownService` | 本文 §2.1 |
 | 施法时找目标 / 落点 / 空放返蓝 | `Cast.TryResolveHostileTarget` / `Cast.ResolveOpenPointTarget` / `Cast.Refund` | [hook-system.md §8.2](hook-system.md) |
 | 按熟练度阶 / 技能等级取数值 | `Ability.Tier/Level/StarMultiplier/Range/RangeAt` + `DotaTable.Of(...)[n]` | [hook-system.md §8.3–8.4](hook-system.md) |
 | 技能加点表（Q/W/E/R/黄点） | `HeroSkillBuild.CreateStandard` + `DotaSkillSlot.CreateActive/CreateActiveGroup/CreatePassive` + `HeroSkillRegistry.Register` | 本文 §3 |
@@ -16,7 +17,8 @@
 | 天赋树 | `HeroTalentTree.CreateStandard` + `TalentNode` + `TalentRegistry.Register`；运行时 `TalentService.HasTalent(ch, id)` | [talents-and-skills.md §1](talents-and-skills.md) |
 | 阿哈利姆神杖 / 福佑 / 魔晶升级 | `AghanimRegistry.Register(new HeroAghanimSpec { ... })`；运行时 `AghanimService.HasScepter(ch)` / `HasShard(ch)` | [aghanim-system.md](aghanim-system.md) |
 | 「+N 属性」天赋 | `TalentNode { StatBonus = PathosStatLimits.Bonus(...) }` | [hook-system.md §9.3](hook-system.md) |
-| 减冷却天赋 | `TalentNode.ManaReductions` + `SpellManaReductionRule` | [talents-and-skills.md §1.3](talents-and-skills.md) |
+| 减冷却天赋 | `TalentNode.CooldownReductions` + `SpellCooldownReductionRule.Flat/Percent` | [design-guidelines.md §6](design-guidelines.md) |
+| 覆盖率补偿减蓝耗天赋 | `TalentNode.ManaReductions` + `SpellManaReductionRule` | [talents-and-skills.md §1.3](talents-and-skills.md) |
 | 造成伤害 | `DotaDamage.Strike/Harm` + `DotaDamageInfo.Physical/Magical/Pure` | [hook-system.md §7](hook-system.md) |
 | 暴击 / 魔抗 | `DotaDamage.RegisterCritSource` / `RegisterMagicResist` | [hook-system.md §7.2](hook-system.md) |
 | 带回合数的增益/减益（护甲、移速、攻速、DoT、伤害格挡、徽章） | `DotaModifierService.Define` + `Apply` | [hook-system.md §6](hook-system.md) |

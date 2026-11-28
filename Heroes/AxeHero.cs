@@ -839,7 +839,8 @@ namespace Pathos.DotaHeroes.Heroes
           DotaDamage.Strike(Args.Engine, Caster, Target, StrikeDir, Math.Max(999, CurrentHp + 50), DotaDamageInfo.Pure(CullingBladeSpellName));
         }
 
-        // 100% 返还法力（对应 DOTA2 斩杀刷新冷却，支持连斩！）
+        // 斩杀成功立即重置冷却并 100% 返还法力，支持连斩！
+        Cast.SkipCooldown();
         DotaCombatHelper.RefundSpellCost(Args);
 
         // 给予斧王及周围 4 格友军战吼增益（+25% 移速 + 护甲）
@@ -1267,6 +1268,7 @@ namespace Pathos.DotaHeroes.Heroes
         ManaCost = BerserkersCallManaCost,
         Targeting = DotaAbilityTargeting.Self,
         SkillSlotId = SkillCallId,
+        CooldownSeconds = DotaTable.Of(18.0f, 16.0f, 14.0f, 12.0f),
         OnCast = Cast => HandleBerserkersCallCast(Ctx, Cast)
       });
 
@@ -1285,6 +1287,7 @@ namespace Pathos.DotaHeroes.Heroes
         Targeting = DotaAbilityTargeting.UnitHostile,
         Range = DotaTable.Of(4, 5, 5, 6, 7),
         SkillSlotId = SkillHungerId,
+        CooldownSeconds = DotaTable.Of(20.0f, 15.0f, 10.0f, 5.0f),
         OnCast = Cast => HandleBattleHungerCast(Cast)
       });
 
@@ -1303,6 +1306,7 @@ namespace Pathos.DotaHeroes.Heroes
         Targeting = DotaAbilityTargeting.UnitHostile,
         Range = DotaTable.Uniform(2),
         SkillSlotId = SkillCullingId,
+        CooldownSeconds = DotaTable.Of(80.0f, 75.0f, 70.0f),
         OnCast = Cast => HandleCullingBladeCast(Cast)
       });
     }

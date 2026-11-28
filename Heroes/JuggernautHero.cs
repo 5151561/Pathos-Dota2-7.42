@@ -50,8 +50,10 @@ namespace Pathos.DotaHeroes.Heroes
     private const string TalentT4BladeDanceLifesteal = "jugg.t4.blade_dance_lifesteal";
     private const string TalentT4OmnislashSlashes = "jugg.t4.omnislash_slashes";
 
-    private static readonly float HealingWardTalentCdr = DotaMechanicsMapper.ComputeCooldownReductionRatio(12.0f, 60.0f); // -12s / 60s = 20%
-    private static readonly float OmnislashTalentCdr = DotaMechanicsMapper.ComputeCooldownReductionRatio(15.0f, 120.0f);  // -15s / 120s = 12.5%
+    private const float HealingWardBaseCooldownSeconds = 60.0f;
+    private const float OmnislashBaseCooldownSeconds = 120.0f;
+    private const float HealingWardTalentCdrSeconds = 12.0f; // -12s (120 -> 96 回合)
+    private const float OmnislashTalentCdrSeconds = 15.0f;   // -15s (240 -> 210 回合)
 
     private const int BladeformMaxStacks = 12; // DOTA2 7.42a max_stacks
     private static readonly int BladeformIntervalTurns = DotaMechanicsMapper.MapDurationTurns(2.0f); // 2 秒 = 4 回合
@@ -112,7 +114,10 @@ namespace Pathos.DotaHeroes.Heroes
     private static readonly DotaCharacterFlagSet SkipNextBladeFuryTick = new();
     private static readonly DotaCharacterFlagSet BladeFuryManualAttackedThisTurn = new();
     private const float ScepterBladeFuryAttackDamageRatio = 0.75f;
-    private const float ShardHealingWardBonusHealPerTurn = 0.0075f; // 7.42 魔晶 +1.5%/秒 -> +0.75%/回合
+    private static readonly float ShardHealingWardBonusHealPerTurn = 0.015f / DotaMechanicsMapper.TurnsPerSecond; // 7.42 魔晶 +1.5%/秒
+    private static readonly int BladeFuryMaxLevelExtraTurns = DotaMechanicsMapper.MapDurationTurns(1.0f);
+    private static readonly int HealingWardStarExtraTurns = DotaMechanicsMapper.MapDurationTurns(2.0f);
+    private static readonly float HealingWardStarExtraHealPct = 0.01f / DotaMechanicsMapper.TurnsPerSecond;
 
     private static DotaAbility BladeFuryAbility;
     private static DotaAbility HealingWardAbility;
@@ -299,7 +304,7 @@ namespace Pathos.DotaHeroes.Heroes
           Stats: new[]
           {
             DotaSkillStat.Of("ui.stat.damage_mult", Lv => Lv > 0 ? $"×{HeroSkillService.GetStarMultiplierForLevel(Lv):0.00}" : null),
-            DotaSkillStat.Of("ui.stat.bonus_duration", Lv => Lv > 0 ? "+" + DotaHelpFormat.Turns(Lv >= 4 ? 2 : 0) : null)
+            DotaSkillStat.Of("ui.stat.bonus_duration", Lv => Lv > 0 ? "+" + DotaHelpFormat.Turns(Lv >= 4 ? BladeFuryMaxLevelExtraTurns : 0) : null)
           }),
         SlotW: DotaSkillSlot.CreateActive(
           Id: SkillHealingWardId,
@@ -311,14 +316,14 @@ namespace Pathos.DotaHeroes.Heroes
             ? DotaLocalization.T("jugg.skill.w.desc_0")
             : DotaLocalization.Format(
                 "jugg.skill.w.desc_lv",
-                $"{(Lv - 1) * 0.5f:0.#}",
-                (Lv - 1) * 4,
+                $"{(Lv - 1) * HealingWardStarExtraHealPct * 100.0f:0.#}",
+                (Lv - 1) * HealingWardStarExtraTurns,
                 Lv < 4 ? DotaLocalization.T("ui.skill.desc_next_star_suffix") : string.Empty),
           TitleResolver: () => DotaLocalization.T("jugg.skill.w.title"),
           Stats: new[]
           {
-            DotaSkillStat.Of("ui.stat.bonus_heal_per_turn", Lv => Lv > 0 ? $"+{(Lv - 1) * 0.5f:0.#}%" : null),
-            DotaSkillStat.Of("ui.stat.bonus_duration", Lv => Lv > 0 ? "+" + DotaHelpFormat.Turns((Lv - 1) * 4) : null)
+            DotaSkillStat.Of("ui.stat.bonus_heal_per_turn", Lv => Lv > 0 ? $"+{(Lv - 1) * HealingWardStarExtraHealPct * 100.0f:0.#}%" : null),
+            DotaSkillStat.Of("ui.stat.bonus_duration", Lv => Lv > 0 ? "+" + DotaHelpFormat.Turns((Lv - 1) * HealingWardStarExtraTurns) : null)
           }),
         SlotE: DotaSkillSlot.CreatePassive(
           Id: SkillBladeDanceId,
@@ -368,8 +373,10 @@ namespace Pathos.DotaHeroes.Heroes
 
     private static void RegisterTalentTree(DotaHeroContext Ctx, Glyph IconGlyph)
     {
-      int ReducedWardMana = DotaMechanicsMapper.MapCooldownReductionToManaCost(HealingWardManaCost, HealingWardTalentCdr);
-      int ReducedOmniMana = DotaMechanicsMapper.MapCooldownReductionToManaCost(OmnislashManaCost, OmnislashTalentCdr);
+      int WardBaseCdTurns = DotaMechanicsMapper.MapCooldownTurns(HealingWardBaseCooldownSeconds);
+      int WardReducedCdTurns = DotaMechanicsMapper.MapCooldownTurns(HealingWardBaseCooldownSeconds - HealingWardTalentCdrSeconds);
+      int OmniBaseCdTurns = DotaMechanicsMapper.MapCooldownTurns(OmnislashBaseCooldownSeconds);
+      int OmniReducedCdTurns = DotaMechanicsMapper.MapCooldownTurns(OmnislashBaseCooldownSeconds - OmnislashTalentCdrSeconds);
 
       var Tree = HeroTalentTree.CreateStandard(
         ClassName: JuggernautClassName,
@@ -382,16 +389,20 @@ namespace Pathos.DotaHeroes.Heroes
         T1Right: new TalentNode(
           Id: TalentT1HealingWardMana,
           TitleResolver: () => DotaLocalization.T("jugg.talent.t1r.title"),
-          DescriptionResolver: () => DotaLocalization.Format("jugg.talent.t1r.desc", HealingWardManaCost, ReducedWardMana),
-          ManaReductions: new[] { new SpellManaReductionRule(HealingWardSpellName, HealingWardTalentCdr) }),
+          DescriptionResolver: () => DotaLocalization.Format("jugg.talent.t1r.desc", WardBaseCdTurns, WardReducedCdTurns))
+        {
+          CooldownReductions = new[] { SpellCooldownReductionRule.Flat(HealingWardSpellName, HealingWardTalentCdrSeconds) }
+        },
         T2Left: new TalentNode(
           Id: TalentT2BladeFurySpeed,
           TitleResolver: () => DotaLocalization.T("jugg.talent.t2l.title")),
         T2Right: new TalentNode(
           Id: TalentT2OmnislashMana,
           TitleResolver: () => DotaLocalization.T("jugg.talent.t2r.title"),
-          DescriptionResolver: () => DotaLocalization.Format("jugg.talent.t2r.desc", OmnislashManaCost, ReducedOmniMana),
-          ManaReductions: new[] { new SpellManaReductionRule(OmnislashSpellName, OmnislashTalentCdr) }),
+          DescriptionResolver: () => DotaLocalization.Format("jugg.talent.t2r.desc", OmniBaseCdTurns, OmniReducedCdTurns))
+        {
+          CooldownReductions = new[] { SpellCooldownReductionRule.Flat(OmnislashSpellName, OmnislashTalentCdrSeconds) }
+        },
         T3Left: new TalentNode(
           Id: TalentT3BladeFuryDamage,
           TitleResolver: () => DotaLocalization.T("jugg.talent.t3l.title"),
@@ -1098,13 +1109,13 @@ namespace Pathos.DotaHeroes.Heroes
       => BladeFuryAbility.StarMultiplier(Character);
 
     private static int GetBladeFuryExtraTurns(Character Character)
-      => BladeFuryAbility.Level(Character) >= 4 ? 2 : 0;
+      => BladeFuryAbility.Level(Character) >= 4 ? BladeFuryMaxLevelExtraTurns : 0;
 
     private static int GetHealingWardExtraTurns(Character Character)
-      => HealingWardAbility.StarSteps(Character) * 4;
+      => HealingWardAbility.StarSteps(Character) * HealingWardStarExtraTurns;
 
     private static float GetHealingWardExtraHealPct(Character Character)
-      => HealingWardAbility.StarSteps(Character) * 0.005f;
+      => HealingWardAbility.StarSteps(Character) * HealingWardStarExtraHealPct;
 
     private static int GetOmnislashExtraSlashes(Character Character)
       => OmnislashAbility.StarSteps(Character) * 2;
@@ -1650,6 +1661,7 @@ namespace Pathos.DotaHeroes.Heroes
         ManaCost = BladeFuryManaCost,
         Targeting = DotaAbilityTargeting.Self,
         SkillSlotId = SkillBladeFuryId,
+        CooldownSeconds = DotaTable.Of(30.0f, 26.0f, 22.0f, 18.0f),
         OnCast = Cast => HandleBladeFuryCast(Ctx, Cast)
       });
 
@@ -1669,6 +1681,7 @@ namespace Pathos.DotaHeroes.Heroes
         Range = DotaTable.Of(3, 3, 4, 4, 5),
         AllowSelfTarget = true,
         SkillSlotId = SkillHealingWardId,
+        CooldownSeconds = DotaTable.Uniform(HealingWardBaseCooldownSeconds),
         OnCast = Cast => HandleHealingWardCast(Ctx, Cast)
       });
 
@@ -1687,6 +1700,7 @@ namespace Pathos.DotaHeroes.Heroes
         Targeting = DotaAbilityTargeting.UnitHostile,
         Range = DotaTable.Of(4, 5, 5, 6, 7),
         SkillSlotId = SkillOmnislashId,
+        CooldownSeconds = DotaTable.Uniform(OmnislashBaseCooldownSeconds),
         OnCast = Cast => HandleOmnislashCast(Ctx, Cast)
       });
     }

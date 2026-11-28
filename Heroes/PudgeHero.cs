@@ -79,7 +79,7 @@ namespace Pathos.DotaHeroes.Heroes
     private const int HookRangeTiles = 7;                     // 1300 ÷ 175 ≈ 7.4
     private const float HookCastPointSeconds = 0.3f;
     private const float HookSecondsPerTile = DotaUnitsPerTile / 1600.0f;
-    private static readonly float HookTalentCdr = DotaMechanicsMapper.ComputeCooldownReductionRatio(4.0f, 12.0f); // 33%
+    private const float HookTalentCdrSeconds = 4.0f; // -4s 肉钩冷却 (-8 回合)
 
     // W：腐烂（7.42：30/60/90/120 DPS，每 0.2s 一跳，半径 250，减速 14/20/26/32%，T1 左 +10%）
     private static readonly float[] RotDotaDps = { 30.0f, 60.0f, 90.0f, 120.0f };
@@ -351,6 +351,7 @@ namespace Pathos.DotaHeroes.Heroes
         Range = DotaTable.Uniform(HookRangeTiles),
         RangeBonus = Ch => AghanimService.HasShard(Ch) ? ShardHookBonusRange : 0,
         SkillSlotId = SkillHookId,
+        CooldownSeconds = DotaTable.Of(18.0f, 16.0f, 14.0f, 12.0f),
         OnCast = HandleMeatHookCast
       });
 
@@ -379,6 +380,7 @@ namespace Pathos.DotaHeroes.Heroes
         ManaCost = MeatShieldManaCost,
         Targeting = DotaAbilityTargeting.Self,
         SkillSlotId = SkillShieldId,
+        CooldownSeconds = DotaTable.Of(20.0f, 19.0f, 18.0f, 17.0f),
         OnCast = HandleMeatShieldCast
       });
 
@@ -396,6 +398,7 @@ namespace Pathos.DotaHeroes.Heroes
         Targeting = DotaAbilityTargeting.UnitHostile,
         Range = DotaTable.Uniform(1),
         SkillSlotId = SkillDismemberId,
+        CooldownSeconds = DotaTable.Of(30.0f, 25.0f, 20.0f),
         OnCast = HandleDismemberCast
       });
     }
@@ -542,7 +545,7 @@ namespace Pathos.DotaHeroes.Heroes
 
     private void RegisterTalentTree(DotaHeroContext Ctx)
     {
-      int ReducedHookMana = DotaMechanicsMapper.MapCooldownReductionToManaCost(MeatHookManaCost, HookTalentCdr);
+      int HookCdDeltaTurns = DotaMechanicsMapper.MapCooldownTurns(HookTalentCdrSeconds);
 
       var Tree = HeroTalentTree.CreateStandard(
         ClassName: PudgeClassName,
@@ -567,8 +570,10 @@ namespace Pathos.DotaHeroes.Heroes
         T3Left: new TalentNode(
           Id: TalentT3HookCooldown,
           TitleResolver: () => DotaLocalization.T("pudge.talent.t3l.title"),
-          DescriptionResolver: () => DotaLocalization.Format("pudge.talent.t3l.desc", MeatHookManaCost, ReducedHookMana),
-          ManaReductions: new[] { new SpellManaReductionRule(MeatHookSpellName, HookTalentCdr) }),
+          DescriptionResolver: () => DotaLocalization.Format("pudge.talent.t3l.desc", HookCdDeltaTurns))
+        {
+          CooldownReductions = new[] { SpellCooldownReductionRule.Flat(MeatHookSpellName, HookTalentCdrSeconds) }
+        },
         T3Right: new TalentNode(
           Id: TalentT3DismemberDuration,
           TitleResolver: () => DotaLocalization.T("pudge.talent.t3r.title"),
