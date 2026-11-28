@@ -1,0 +1,168 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version tag (e.g. v0.1.4). Leave empty to use commit SHA."
+        required: false
+        default: ""
+      publish_release:
+        description: "Publish a GitHub Release (requires version input)"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Package (Windows)
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
+    env:
+      PATHOS_INSTALL_DIR: C:\PathosCI
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Download & extract official Pathos (for engine DLLs & PathosMaker)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installer = Join-Path $env:RUNNER_TEMP "PathosSetup.exe"
+          $urls = @(
+            "https://www.dropbox.com/scl/fi/egs7ezth08jz2xsn9afju/PathosSetup.exe?rlkey=dlxojgmf7vbl29284c5kguqdi&dl=1",
+            "https://2-1256858229.file.myqcloud.com/PathosSetup.exe"
+          )
+
+          $downloaded = $false
+          foreach ($url in $urls) {
+            Write-Host "Downloading official PathosSetup.exe from $url ..."
+            try {
+              & curl.exe -fsSL --retry 3 --retry-delay 5 -o $installer $url
+              if ($LASTEXITCODE -eq 0 -and (Test-Path $installer) -and (Get-Item $installer).Length -gt 10MB) {
+                $downloaded = $true
+                break
+              }
+            } catch {
+              Write-Warning "Failed from $url : $_"
+            }
+          }
+
+          if (-not $downloaded) {
+            throw "Failed to download official PathosSetup.exe from all official mirrors."
+          }
+
+          $hash = (Get-FileHash -Path $installer -Algorithm SHA256).Hash
+          Write-Host "Official PathosSetup.exe SHA256: $hash"
+
+          # Inno Setup silent install into isolated CI directory
+          $proc = Start-Process -FilePath $installer `
+            -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/NOICONS", "/SP-", "/DIR=$env:PATHOS_INSTALL_DIR" `
+            -Wait -PassThru
+          if ($proc.ExitCode -ne 0) {
+            throw "PathosSetup.exe failed with exit code $($proc.ExitCode)"
+          }
+
+          $expDir = Join-Path $env:PATHOS_INSTALL_DIR "Expansions"
+          New-Item -ItemType Directory -Path $expDir -Force | Out-Null
+
+          $required = @(
+            "PathosMaker.exe",
+            "Inv.Library.dll",
+            "Inv.Platform.dll",
+            "PathosLibrary.dll",
+            "PathosEngine.dll",
+            "PathosOfficial.dll"
+          )
+          foreach ($file in $required) {
+            $full = Join-Path $env:PATHOS_INSTALL_DIR $file
+            if (-not (Test-Path $full)) {
+              throw "Expected official Pathos file not found: $full"
+            }
+          }
+          Write-Host "Verified all required official Pathos build dependencies in $env:PATHOS_INSTALL_DIR"
+
+      - name: Determine package version
+        id: meta
+        shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_PUBLISH_RELEASE: ${{ inputs.publish_release }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ($env:GITHUB_REF_TYPE -eq "tag") {
+            $ver = $env:GITHUB_REF_NAME
+            $shouldRelease = "true"
+          } elseif (-not [string]::IsNullOrWhiteSpace($env:INPUT_VERSION)) {
+            $ver = $env:INPUT_VERSION.Trim()
+            $shouldRelease = if ($env:INPUT_PUBLISH_RELEASE -eq "true") { "true" } else { "false" }
+          } else {
+            $shortSha = $env:GITHUB_SHA.Substring(0, 7)
+            $ver = "ci-$shortSha"
+            $shouldRelease = "false"
+          }
+
+          "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "should_release=$shouldRelease" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "zip_path=dist/DotaHeroesExpansion-$ver.zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Package version: $ver (publish_release=$shouldRelease)"
+
+      - name: Build & Package Release Zip
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & .\scripts\package-release.ps1 -Version "${{ steps.meta.outputs.version }}" -PathosDir "$env:PATHOS_INSTALL_DIR"
+
+      - name: Generate SHA-256 Checksum
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $zip = "${{ steps.meta.outputs.zip_path }}"
+          $hash = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $fileName = Split-Path -Leaf $zip
+          "$hash  $fileName" | Out-File -FilePath "dist/SHA256SUMS.txt" -Encoding ascii -NoNewline
+          Write-Host "SHA256: $hash  $fileName"
+
+      - name: Attest Build Provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ steps.meta.outputs.zip_path }}
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DotaHeroesExpansion-${{ steps.meta.outputs.version }}
+          path: |
+            ${{ steps.meta.outputs.zip_path }}
+            dist/SHA256SUMS.txt
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: steps.meta.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.version }}
+          name: DotaHeroesExpansion ${{ steps.meta.outputs.version }}
+          generate_release_notes: true
+          files: |
+            ${{ steps.meta.outputs.zip_path }}
+            dist/SHA256SUMS.txt
