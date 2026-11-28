@@ -72,17 +72,6 @@ namespace Pathos.DotaHeroes.Framework
     public string SkillSlotId { get; init; }
 
     /// <summary>
-    /// 按技能等级（1 起始）的 DOTA2 7.42 原版冷却秒数表（经 <c>DotaMechanicsMapper.MapCooldownTurns</c> 按 1 秒 = 1 回合换算）；
-    /// 为 null 表示无冷却（如开关技能、0 CD 技能）。
-    /// </summary>
-    public DotaTable<float> CooldownSeconds { get; init; }
-
-    /// <summary>
-    /// 可选动态冷却秒数解析器（参数：施法者、技能等级），用于神杖等会改动基础冷却的场景；为 null 时使用 <see cref="CooldownSeconds"/>。
-    /// </summary>
-    public Func<Character, int, float> CooldownSecondsResolver { get; init; }
-
-    /// <summary>
     /// 自定义声明式效果（参数：熟练度阶数 1~5、ApplyEditor）；为 null 时写入 <c>Apply.Nothing()</c>，全部效果由 <see cref="OnCast"/> 结算。
     /// </summary>
     public Action<int, ApplyEditor> ConfigureApply { get; init; }
@@ -230,51 +219,17 @@ namespace Pathos.DotaHeroes.Framework
     public int RangeAt(Character Character, int Tier)
       => BaseRange(Tier) + (Character != null && Spec.RangeBonus != null ? Spec.RangeBonus(Character) : 0);
 
-    /// <summary>该技能是否配置了冷却机制。</summary>
-    public bool HasCooldown => Spec.CooldownSeconds != null || Spec.CooldownSecondsResolver != null;
-
-    /// <summary>指定技能等级的基础冷却回合数（不含天赋缩减）。</summary>
-    public int BaseCooldownTurns(int Level)
-    {
-      if (Spec.CooldownSeconds == null)
-        return 0;
-
-      return DotaMechanicsMapper.MapCooldownTurns(Spec.CooldownSeconds[Level]);
-    }
-
-    /// <summary>施法者当前（或指定技能等级）的实际冷却回合数（含已学减冷却天赋）。</summary>
-    public int CooldownTurns(Character Character, int? OverrideLevel = null)
-      => DotaCooldownService.ComputeCooldownTurns(Character, this, OverrideLevel);
-
-    /// <summary>查询施法者该技能当前的剩余冷却回合数（0 表示已就绪）。</summary>
-    public int RemainingCooldown(Character Character)
-      => DotaCooldownService.GetRemaining(Character, Spec.SpellName);
-
-    /// <summary>启动该技能冷却（默认按当前角色实际冷却回合数）。</summary>
-    public void StartCooldown(Character Character, int? OverrideTurns = null)
-      => DotaCooldownService.Start(Character, Spec.SpellName, OverrideTurns ?? CooldownTurns(Character));
-
-    /// <summary>立即重置该技能冷却（归零）。</summary>
-    public void ResetCooldown(Character Character)
-      => DotaCooldownService.Reset(Character, Spec.SpellName);
-
     private static void EnsureDispatch()
     {
       if (Interlocked.Exchange(ref DispatchInitialized, 1) != 0)
         return;
 
-      DotaCooldownService.EnsureInitialized();
-
       DotaHookBus.RegisterAfterCastSpell("dota.abilities.cast", Args =>
       {
-        if (Args?.Character == null || !TryGet(Args.Spell, out var Ability))
+        if (Args?.Character == null || !TryGet(Args.Spell, out var Ability) || Ability.Spec.OnCast == null)
           return;
 
-        var Cast = new DotaAbilityCast(Ability, Args);
-        Ability.Spec.OnCast?.Invoke(Cast);
-
-        if (!Cast.CooldownCancelled && Ability.HasCooldown)
-          Ability.StartCooldown(Args.Character);
+        Ability.Spec.OnCast(new DotaAbilityCast(Ability, Args));
       });
     }
   }
@@ -339,21 +294,8 @@ namespace Pathos.DotaHeroes.Framework
     public Square ResolveOpenPointTarget()
       => DotaCombatHelper.ResolveOpenPointTarget(Caster, Direction, ConsumePendingTarget());
 
-    internal bool CooldownCancelled { get; private set; }
-
-    /// <summary>取消本次施法进入冷却（并重置当前冷却，用于空放退还或斩杀刷新）。</summary>
-    public void SkipCooldown()
-    {
-      CooldownCancelled = true;
-      Ability.ResetCooldown(Caster);
-    }
-
-    /// <summary>按本次实际扣蓝全额返还，并取消本次施法的冷却。</summary>
-    public void Refund()
-    {
-      SkipCooldown();
-      DotaCombatHelper.RefundSpellCost(Args);
-    }
+    /// <summary>按本次实际扣蓝全额返还。</summary>
+    public void Refund() => DotaCombatHelper.RefundSpellCost(Args);
 
     /// <summary>返还法力并写一条带技能图标的日志。</summary>
     public void RefundAndLog(string LogKey)

@@ -1463,31 +1463,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
         return Host;
       }
 
-      private static DotaSkillStat BuildAutoCooldownStat(Character Character, DotaSkillSlot Slot)
-      {
-        if (Slot?.Spells == null || Slot.Spells.Count == 0)
-          return null;
-
-        DotaAbility TargetAbility = null;
-        foreach (var Spell in Slot.Spells)
-        {
-          if (DotaAbility.TryGet(Spell, out var Ability) && Ability.HasCooldown)
-          {
-            TargetAbility = Ability;
-            break;
-          }
-        }
-
-        if (TargetAbility == null)
-          return null;
-
-        return DotaSkillStat.Of("ui.stat.cooldown", Lv =>
-        {
-          int Turns = TargetAbility.CooldownTurns(Character, Lv);
-          return Turns > 0 ? DotaHelpFormat.Turns(Turns) : null;
-        });
-      }
-
       private Inv.Panel BuildSkillTooltip(Character Character, DotaSkillSlot Slot, int CurrentLv, DotaSkillUpgradeState State, int RequiredHeroLv)
       {
         var Card = NewTooltipCard(out var Body);
@@ -1529,26 +1504,15 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
         // DOTA2 式逐级数值：100 / 150 / 200 / 250，当前等级金色高亮；可升级时下一级绿色高亮（即升级预览）
         bool CanUpgrade = State == DotaSkillUpgradeState.Available;
-        var CooldownStat = BuildAutoCooldownStat(Character, Slot);
-        bool HasStats = (Slot.Stats != null && Slot.Stats.Count > 0) || CooldownStat != null;
-        if (HasStats)
+        if (Slot.Stats != null && Slot.Stats.Count > 0)
         {
           var StatStack = Surface.NewVerticalStack();
           StatStack.Margin.Set(10, 8, 10, 0);
-          if (Slot.Stats != null)
+          foreach (var Stat in Slot.Stats)
           {
-            foreach (var Stat in Slot.Stats)
-            {
-              var Line = BuildPerLevelStatLine(Stat, CurrentLv, CanUpgrade ? CurrentLv + 1 : 0, Slot.MaxLevel);
-              if (Line != null)
-                StatStack.AddPanel(Line);
-            }
-          }
-          if (CooldownStat != null)
-          {
-            var CdLine = BuildPerLevelStatLine(CooldownStat, CurrentLv, CanUpgrade ? CurrentLv + 1 : 0, Slot.MaxLevel);
-            if (CdLine != null)
-              StatStack.AddPanel(CdLine);
+            var Line = BuildPerLevelStatLine(Stat, CurrentLv, CanUpgrade ? CurrentLv + 1 : 0, Slot.MaxLevel);
+            if (Line != null)
+              StatStack.AddPanel(Line);
           }
           Body.AddPanel(StatStack);
         }

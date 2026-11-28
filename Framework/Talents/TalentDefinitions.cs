@@ -18,7 +18,7 @@ namespace Pathos.DotaHeroes.Framework.Talents
   }
 
   /// <summary>
-  /// 声明式法术蓝耗缩减规则（如无持续时间的覆盖率补偿天赋）。
+  /// 声明式「减冷却 → 减蓝耗」规则。
   /// 当 SpellName 为 null 或空字符串时表示对全部法术生效；否则仅对指定法术生效（忽略大小写）。
   /// </summary>
   public readonly struct SpellManaReductionRule
@@ -31,39 +31,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
 
     public string SpellName { get; }
     public float CdrRatio { get; }
-
-    public bool Matches(Spell Spell)
-    {
-      if (Spell == null)
-        return false;
-
-      if (string.IsNullOrWhiteSpace(SpellName))
-        return true;
-
-      return string.Equals(Spell.Name, SpellName, StringComparison.OrdinalIgnoreCase);
-    }
-  }
-
-  /// <summary>
-  /// 声明式法术冷却缩减规则：支持固定减少 DOTA2 秒数（如 -12s 治疗守卫）或按比例缩减（如 -40% 波浪形态）。
-  /// 计算顺序与 DOTA2 一致：先扣固定秒数，再乘百分比缩减，最后经 <c>DotaMechanicsMapper.MapCooldownTurns</c> 换算为回合数。
-  /// 当 SpellName 为 null 或空字符串时表示对全部法术生效；否则仅对指定法术生效（忽略大小写）。
-  /// </summary>
-  public readonly struct SpellCooldownReductionRule
-  {
-    public SpellCooldownReductionRule(string SpellName, float FlatSeconds, float PercentRatio)
-    {
-      this.SpellName = SpellName;
-      this.FlatSeconds = Math.Max(0.0f, FlatSeconds);
-      this.PercentRatio = Math.Clamp(PercentRatio, 0.0f, 0.95f);
-    }
-
-    public string SpellName { get; }
-    public float FlatSeconds { get; }
-    public float PercentRatio { get; }
-
-    public static SpellCooldownReductionRule Flat(string SpellName, float Seconds) => new(SpellName, Seconds, 0.0f);
-    public static SpellCooldownReductionRule Percent(string SpellName, float Ratio) => new(SpellName, 0.0f, Ratio);
 
     public bool Matches(Spell Spell)
     {
@@ -127,7 +94,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
     public string Title => TitleResolver?.Invoke() ?? StaticTitle;
     public string Description => DescriptionResolver?.Invoke() ?? StaticDescription;
     public IReadOnlyList<SpellManaReductionRule> ManaReductions { get; }
-    public IReadOnlyList<SpellCooldownReductionRule> CooldownReductions { get; init; } = Array.Empty<SpellCooldownReductionRule>();
     public Action<object, Character> OnLearn { get; }
 
     /// <summary>

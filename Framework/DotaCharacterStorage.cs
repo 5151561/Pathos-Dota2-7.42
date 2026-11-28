@@ -36,7 +36,6 @@ namespace Pathos.DotaHeroes.Framework
       public readonly Dictionary<string, int> Skills = new(StringComparer.OrdinalIgnoreCase);
       public readonly HashSet<string> Talents = new(StringComparer.OrdinalIgnoreCase);
       public readonly Dictionary<string, int> CustomInts = new(StringComparer.OrdinalIgnoreCase);
-      public readonly Dictionary<string, int> Cooldowns = new(StringComparer.OrdinalIgnoreCase);
     }
 
     private static readonly ConditionalWeakTable<Character, CachedState> Cache = new();
@@ -125,92 +124,6 @@ namespace Pathos.DotaHeroes.Framework
       return Next;
     }
 
-    /// <summary>
-    /// 读取指定法术的剩余冷却回合数（0 表示已就绪）。
-    /// </summary>
-    public static int GetCooldown(Character Character, string SpellName)
-    {
-      if (Character == null || string.IsNullOrWhiteSpace(SpellName))
-        return 0;
-
-      var State = LoadState(Character);
-      return State.Cooldowns.TryGetValue(SpellName, out int Turns) && Turns > 0 ? Turns : 0;
-    }
-
-    /// <summary>
-    /// 设置指定法术的剩余冷却回合数（≤ 0 时自动清理键），随存档持久化。
-    /// </summary>
-    public static bool SetCooldown(Character Character, string SpellName, int RemainingTurns)
-    {
-      if (Character == null || string.IsNullOrWhiteSpace(SpellName))
-        return false;
-
-      var State = LoadState(Character);
-      if (RemainingTurns <= 0)
-      {
-        if (!State.Cooldowns.Remove(SpellName))
-          return true;
-      }
-      else
-      {
-        if (State.Cooldowns.TryGetValue(SpellName, out int Existing) && Existing == RemainingTurns)
-          return true;
-        State.Cooldowns[SpellName] = RemainingTurns;
-      }
-
-      return SaveState(Character, State);
-    }
-
-    /// <summary>
-    /// 清空角色全部技能冷却。
-    /// </summary>
-    public static bool ClearAllCooldowns(Character Character)
-    {
-      if (Character == null)
-        return false;
-
-      var State = LoadState(Character);
-      if (State.Cooldowns.Count == 0)
-        return true;
-
-      State.Cooldowns.Clear();
-      return SaveState(Character, State);
-    }
-
-    /// <summary>
-    /// 将角色当前所有进行中的技能冷却统一递减 1 回合（跳过 <paramref name="SkipSpellNames"/> 中的法术），
-    /// 到 0 自动移除并仅在有变动时写回一次存档 Tag。
-    /// </summary>
-    public static bool TickAllCooldowns(Character Character, ISet<string> SkipSpellNames = null)
-    {
-      if (Character == null)
-        return false;
-
-      var State = LoadState(Character);
-      if (State.Cooldowns.Count == 0)
-        return false;
-
-      bool Changed = false;
-      var Keys = new List<string>(State.Cooldowns.Keys);
-      foreach (var Key in Keys)
-      {
-        if (SkipSpellNames != null && SkipSpellNames.Contains(Key))
-          continue;
-
-        int Next = State.Cooldowns[Key] - 1;
-        if (Next <= 0)
-          State.Cooldowns.Remove(Key);
-        else
-          State.Cooldowns[Key] = Next;
-        Changed = true;
-      }
-
-      if (Changed)
-        SaveState(Character, State);
-
-      return Changed;
-    }
-
     private static CachedState LoadState(Character Character)
     {
       var Entry = Cache.GetValue(Character, _ => new CachedState());
@@ -223,7 +136,6 @@ namespace Pathos.DotaHeroes.Framework
       Entry.Skills.Clear();
       Entry.Talents.Clear();
       Entry.CustomInts.Clear();
-      Entry.Cooldowns.Clear();
 
       if (!Raw.StartsWith(Prefix, StringComparison.Ordinal))
         return Entry;
@@ -269,20 +181,6 @@ namespace Pathos.DotaHeroes.Framework
               Entry.CustomInts[Key] = Val;
           }
         }
-        else if (Section.StartsWith("c:", StringComparison.Ordinal))
-        {
-          var Pairs = Section.Substring(2).Split(',', StringSplitOptions.RemoveEmptyEntries);
-          foreach (var Pair in Pairs)
-          {
-            int Eq = Pair.IndexOf('=');
-            if (Eq <= 0 || Eq >= Pair.Length - 1)
-              continue;
-
-            string Key = Pair.Substring(0, Eq);
-            if (int.TryParse(Pair.Substring(Eq + 1), out int Turns) && Turns > 0)
-              Entry.Cooldowns[Key] = Turns;
-          }
-        }
       }
 
       return Entry;
@@ -317,18 +215,6 @@ namespace Pathos.DotaHeroes.Framework
         }
         if (MetaPairs.Count > 0)
           Parts.Add("m:" + string.Join(",", MetaPairs));
-      }
-
-      if (State.Cooldowns.Count > 0)
-      {
-        var CdPairs = new List<string>(State.Cooldowns.Count);
-        foreach (var Kv in State.Cooldowns)
-        {
-          if (Kv.Value > 0)
-            CdPairs.Add($"{Kv.Key}={Kv.Value}");
-        }
-        if (CdPairs.Count > 0)
-          Parts.Add("c:" + string.Join(",", CdPairs));
       }
 
       string Raw = Prefix + string.Join(";", Parts);

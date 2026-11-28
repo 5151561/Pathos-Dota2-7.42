@@ -74,7 +74,7 @@ namespace Pathos.DotaHeroes.Framework
   {
     public const float ManaScale = 20.0f;
     public const float DamageScale = 15.0f;   // 15 点 DOTA2 技能伤害 = 1 点 Pathos 技能伤害
-    public const float TurnsPerSecond = 1.0f; // 1 秒 DOTA2 时间 = 1 回合 Pathos
+    public const float TurnsPerSecond = 2.0f; // 1 秒 DOTA2 时间 = 2 回合 Pathos
     public const int DotaBaseMana = 75;
     public const int DotaManaPerInt = 12;
 
@@ -193,7 +193,7 @@ namespace Pathos.DotaHeroes.Framework
     }
 
     /// <summary>
-    /// 将 DOTA2 持续时间（秒）映射为 Pathos 回合数（1 秒 = 1 回合）。
+    /// 将 DOTA2 持续时间（秒）映射为 Pathos 回合数（1 秒 = 2 回合）。
     /// </summary>
     public static int MapDurationTurns(float DotaSeconds, int MinTurns = 1)
     {
@@ -204,18 +204,7 @@ namespace Pathos.DotaHeroes.Framework
     }
 
     /// <summary>
-    /// 将 DOTA2 技能冷却时间（秒）映射为 Pathos 回合数（严格沿用 1 秒 = 1 回合标尺；0 秒冷却保留 0）。
-    /// </summary>
-    public static int MapCooldownTurns(float DotaSeconds, int MinTurns = 1)
-    {
-      if (DotaSeconds <= 0.0f)
-        return 0;
-
-      return Math.Max(MinTurns, (int)MathF.Round(DotaSeconds * TurnsPerSecond));
-    }
-
-    /// <summary>
-    /// 将 DOTA2 持续每秒耗蓝（Toggle）按「1 秒 = 1 回合」折算为每回合 Pathos 蓝耗。
+    /// 将 DOTA2 持续每秒耗蓝（Toggle）按「1 秒 = 2 回合（每回合 0.5 秒）」折算为每回合 Pathos 蓝耗。
     /// </summary>
     public static int MapToggleManaPerTurn(float DotaManaPerSecond)
     {

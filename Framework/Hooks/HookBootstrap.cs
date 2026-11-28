@@ -427,9 +427,6 @@ namespace Pathos.DotaHeroes.Framework.Hooks
 
         // 20. 自定义 VFX 渲染样式（淡入淡出/缩放/旋转/跟随角色，仅在游戏客户端存在 Pathos.dll 时挂载）
         Presentation.DotaVfx.ApplyPatches(Harmony);
-
-        // 21. DOTA2 技能冷却 UI 桥接（法术面板、快捷栏角标与选格前拦截，仅在游戏客户端存在 Pathos.dll 时挂载）
-        UI.DotaCooldownUiBridge.ApplyPatches(Harmony);
       }
 
       private static void PatchMethod(

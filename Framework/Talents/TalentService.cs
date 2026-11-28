@@ -196,51 +196,6 @@ namespace Pathos.DotaHeroes.Framework.Talents
       Args.ManaCost = DotaMechanicsMapper.MapCooldownReductionToManaCost(Args.ManaCost, CombinedCdrRatio);
     }
 
-    /// <summary>
-    /// 汇总角色所有已学天赋对指定法术的冷却缩减（固定减少秒数 + 乘算百分比倍率，百分比缩减封顶 60%）。
-    /// </summary>
-    public static (float FlatSeconds, float PercentMultiplier) GetCooldownReduction(Character Character, Spell Spell)
-    {
-      if (Character == null || Spell == null || !TalentRegistry.TryGetTree(Character, out var Tree))
-        return (0.0f, 1.0f);
-
-      float FlatSeconds = 0.0f;
-      float RemainingMultiplier = 1.0f;
-
-      foreach (var Tier in Tree.Tiers)
-      {
-        AccumulateNodeCooldownReduction(Character, Tier.Left, Spell, ref FlatSeconds, ref RemainingMultiplier);
-        AccumulateNodeCooldownReduction(Character, Tier.Right, Spell, ref FlatSeconds, ref RemainingMultiplier);
-      }
-
-      return (FlatSeconds, Math.Max(0.40f, RemainingMultiplier));
-    }
-
-    private static void AccumulateNodeCooldownReduction(
-      Character Character,
-      TalentNode Node,
-      Spell Spell,
-      ref float FlatSeconds,
-      ref float RemainingMultiplier)
-    {
-      if (Node == null || Node.CooldownReductions == null || Node.CooldownReductions.Count == 0)
-        return;
-
-      if (!HasTalent(Character, Node.Id))
-        return;
-
-      foreach (var Rule in Node.CooldownReductions)
-      {
-        if (!Rule.Matches(Spell))
-          continue;
-
-        if (Rule.FlatSeconds > 0.0f)
-          FlatSeconds += Rule.FlatSeconds;
-        if (Rule.PercentRatio > 0.0f)
-          RemainingMultiplier *= (1.0f - Rule.PercentRatio);
-      }
-    }
-
     private static void AccumulateNodeManaReduction(
       Character Character,
       TalentNode Node,

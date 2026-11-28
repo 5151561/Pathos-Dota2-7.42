@@ -59,7 +59,7 @@ $$\text{Limit} = \max\Big(\text{Starting} + 3,\ \text{Clamp}\big(\text{Round}(25
 3. **主动技能蓝耗**：
    - 常规主动：`DotaMechanicsMapper.MapSkillManaCost(dotaMana)` → $\max(1, \text{Round}(\text{DotaMana} / 20))$；**0 蓝耗技能忠实返回 `0`**（如水人解除变形）；按秒持续耗蓝的技能（如 7.42a 水人属性转换每秒 10 蓝）用 `MapToggleManaPerTurn`。
    - 多等级变蓝耗技能：取中位等级或 1 级蓝耗作为基准。
-   - 持续每秒耗蓝（Toggle）：`DotaMechanicsMapper.MapToggleManaPerTurn(manaPerSec)`（按 **1 秒 = 1 回合**折算）。
+   - 持续每秒耗蓝（Toggle）：`DotaMechanicsMapper.MapToggleManaPerTurn(manaPerSec)`（按 **1 秒 = 2 回合** 即每回合 0.5 秒折算）。
    - Pathos 超模机制技能（如 `ImpersonateEntity` / 永久召唤）：可在等效蓝耗上乘以强度修正系数。
 4. **法术等级对齐**：`S.Level = DotaMechanicsMapper.MapSpellLevel(S.Mana)`（对齐 Pathos 原生 `5 / 10 / 15 ... 35` 阶梯），且必须在职业 `Startup.SetSkill` 中给予对应学派至少 `Proficient`（避免生疏 ×2 蓝耗惩罚）。
 
@@ -74,8 +74,8 @@ $$\text{Limit} = \max\Big(\text{Starting} + 3,\ \text{Clamp}\big(\text{Round}(25
    - 需要骰子波动时调用 `MapSkillDamageDice(dotaDamage, dieFaces)` 自动生成期望贴合 $\text{TargetDmg}$ 的 `NdF + Bonus` 伤害骰（默认 `d6`）。
    - 例：水人波浪形态 `75 / 150 / 225 / 300` → 期望 `5 / 10 / 15 / 20`（`1d6+2 / 2d6+3 / 4d6+1 / 5d6+3`）；主宰无敌斩附加攻击力 `25 / 30 / 35` → `+2 / +2 / +2`（满熟练 `+3`）。
 2. **持续伤害 / 高频跳伤（DPS）**（`MapDotDamagePerTurn` / `MapDotDamageDicePerTurn`）：
-   - 按 **1 秒 = 1 回合**合并为**每回合结算 1 次**，避免高频 0.2s 跳伤刷屏与小数截断：
-     $$\text{BaseDmg}_{\text{turn}} = \frac{\text{DotaDPS}}{15}$$
+   - 按 **1 秒 = 2 回合（每回合 0.5 秒）** 合并为**每回合结算 1 次**，避免高频 0.2s 跳伤刷屏与小数截断：
+     $$\text{BaseDmg}_{\text{turn}} = \frac{\text{DotaDPS} \times 0.5}{15}$$
    - 若 DOTA2 原版机制支持**攻速缩放跳伤频率**（如 7.36+/7.42 剑刃风暴），则将每回合基准伤害再乘以角色敏捷/攻速倍率，兼顾还原度与中后期输出节奏。
 3. **游戏内与文档双可见**：
    - 凡通过 Hook 结算伤害（声明式壳子无 `HarmEntity`）的技能，**必须在法术 `Description` 中明确写出每级/每回合伤害骰与倍率**，并在 `docs/heroes/<hero_id>.md` 的溯源表中列出原版与映射后的伤害数值。
@@ -84,10 +84,10 @@ $$\text{Limit} = \max\Big(\text{Starting} + 3,\ \text{Clamp}\big(\text{Round}(25
 
 ## 4. 持续时间、治疗 / 吸血与召唤物生命周期规范
 
-1. **时间换算标尺：1 秒 DOTA2 时间 = 1 回合 Pathos**（`DotaMechanicsMapper.MapDurationTurns(seconds)` / `MapCooldownTurns(seconds)`）：
-   - 持续时间、冷却时间、每秒持续伤害/治疗统一按 **1 秒 = 1 回合** 换算（5 秒剑刃风暴 = `5` 回合，18~24 秒治疗守卫 = `18~24` 回合，12 秒冷却 = `12` 回合，120 秒无敌斩 = `120` 回合），保持总伤/总奶量与冷却覆盖率与原版 100% 一致。
+1. **时间换算标尺：1 秒 DOTA2 时间 = 2 回合 Pathos**（`DotaMechanicsMapper.MapDurationTurns(seconds)`）：
+   - Pathos 走位与回合流逝极快，1 秒 = 1 回合会导致 4~5 秒的技能走两步就结束；按 **1 秒 = 2 回合** 换算后，5 秒剑刃风暴为 `10` 回合，18~24 秒治疗守卫为 `36~48` 回合，1.5~3 秒控制为 `3~6` 回合；同时每秒持续伤害/治疗按每回合 `0.5 秒` 折算（保持总伤/总奶量与原版一致）。
 2. **治疗、光环回复与吸血规范**：
-   - **百分比持续治疗（HoT / 光环）**：将 DOTA2 每秒回复比例除以 `TurnsPerSecond`（`1.0`）折算为每回合回复比例（如治疗守卫每秒 `2%~5%`、魔晶 `6.5%` → 每回合 `2%~5%`、Champion `6.5%`），单次保底回复 `1 HP`；在 `AfterExecuteCommand` 中遍历友军（`DotaCombatHelper.IsFriendly`），仅对不满血目标调用 `PathosEngineBridge.HealCharacter`，并可配合 `StoryDetecting` + `StoryStriking` 给出治疗反馈。
+   - **百分比持续治疗（HoT / 光环）**：将 DOTA2 每秒回复比例除以 `TurnsPerSecond`（`2.0`）折算为每回合回复比例（如治疗守卫每秒 `2%~5%`、魔晶 `6.5%` → 每回合 `1.0%~2.5%`、Champion `3.25%`），单次保底回复 `1 HP`；在 `AfterExecuteCommand` 中遍历友军（`DotaCombatHelper.IsFriendly`），仅对不满血目标调用 `PathosEngineBridge.HealCharacter`，并可配合 `StoryDetecting` + `StoryStriking` 给出治疗反馈。
    - **暴击吸血 / 伤害吸血（Lifesteal）**：在 `BeforeDamage` 最终伤害确定后（或 `AfterDamage`）按实际伤害乘以吸血比例（保底 `1 HP`）调用 `PathosEngineBridge.HealCharacter(engine, attacker, attacker, selfDir, healAmt)`（仅当不满血时触发）。
    - **直接生命上限联动（如水人属性转换）**：涉及最大生命与当前生命同步增减时使用 `PathosEngineBridge.SetMeter(Life, newPoints, newTotal)`（而非 `HealCharacter`），保证转敏时只截断上限不扣残血、最低保底 `1 HP`。
    - **生态/道具交互回复**：可在声明式 `AddReaction` / `AddObviousUse` 中直接使用 `HealEntity` / `EnergiseEntity`（如变体水灵遇水/水药水/喷泉回血回蓝）。
@@ -110,21 +110,20 @@ Pathos 的怪物攻击常附带**解离、酸蚀、撤销、吸能、麻痹**等
 
 ---
 
-## 6. 天赋树系统与技能冷却规范
+## 6. 天赋树系统与「减冷却 → 减蓝耗」映射规范
 
 所有 DOTA2 英雄共享 `Framework/Talents/` 通用天赋框架与独立原生风格侧边面板（左下角「休息」按钮右侧的原生 `MenuButton` 或快捷键 `F2` 打开；完整架构详见 [天赋树与长/短期技能状态体系](talents-and-skills.md)）：
 
 1. **DOTA2 原版节奏解锁阶梯（选定不可重置）**：
    - **四层二选一**：`Lv 10 / 15 / 20 / 25` 依次解锁 T1 ~ T4。
    - **双修补点**：`Lv 27 / 28 / 29 / 30` 依次解锁 T1 ~ T4 另一侧分支。
-2. **主动技能冷却与减冷却天赋**（`DotaCooldownService` + `DotaAbilitySpec.CooldownSeconds` + `SpellCooldownReductionRule`）：
-   - **统一时间标尺（1 秒 = 1 回合）**：所有带冷却的主动技能在 `DotaAbilitySpec.CooldownSeconds` 声明 DOTA2 7.42 原版按技能等级的冷却秒数，经 `DotaMechanicsMapper.MapCooldownTurns` 按 `1 秒 = 1 回合` 换算为 Pathos 回合数（0 冷却开关技能留空）。
-   - **回合递减与跨存档持久化**：施放成功后进入冷却（空放调用 `Cast.Refund()` 或斩杀刷新调用 `Cast.SkipCooldown()` 不进冷却），随角色行动回合（`AfterExecuteCommand`）统一递减；剩余回合写入 `DotaCharacterStorage`（`c:` 段），零 `Codex.Properties` 占用，读档后保留。
-   - **UI 与拦截**：`DotaCooldownUiBridge` 在选格前拦截冷却中的施法并给出浮字/日志提示，在法术面板尾标与快捷栏角标显示剩余回合，并在技能帮助面板与 `F2` 加点悬停卡片自动展示冷却时间。
-   - **减冷却天赋**：通过 `TalentNode.CooldownReductions` 声明 `SpellCooldownReductionRule.Flat(spell, seconds)`（固定减秒）或 `SpellCooldownReductionRule.Percent(spell, ratio)`（百分比缩减，乘算封顶 60%），先减固定秒数再乘百分比缩减，保底 1 回合。
-   - **非冷却覆盖率补偿**（如无持续时间限制的变形持续时间天赋）：仍可通过 `TalentNode.ManaReductions`（`SpellManaReductionRule`）折算为减蓝耗。
+2. **减冷却（CDR）→ 减蓝耗统一换算**（`DotaMechanicsMapper.ComputeCooldownReductionRatio` + `MapCooldownReductionToManaCost`）：
+   - Pathos 无技能冷却机制，凡 DOTA2 原版为**减冷却**的天赋，统一按减冷却百分比折算为**减蓝耗**：
+     $$\text{CDR\%} = \frac{\Delta T}{T_{\text{ref}}},\qquad \text{FinalMana} = \max\Big(1,\ \text{Round}\big(\text{BaseMana} \times (1 - \text{CDR\%})\big)\Big)$$
+   - **保护规则**：0 蓝耗技能保持 `0`；正蓝耗技能保底为 `1`；若原蓝耗 $> 1$ 且 $\text{CDR\%} > 0$，保证**至少减少 `1` 点蓝耗**；多来源乘算叠加封顶 `60%`。
+   - 英雄只需在 `TalentNode.ManaReductions` 上声明 `SpellManaReductionRule`，`TalentService` 会通过 `DotaHookBus.RegisterSpellCostQuery` 自动接管 `Character.SpellCost`，施法扣蓝与 UI 显示蓝耗自动同步。
 3. **存档持久化**：
-   - 已学天赋、技能加点等级与主动技能剩余冷却统一由 [DotaCharacterStorage](../../Framework/DotaCharacterStorage.cs) 以紧凑文本写入 `Character.Dialogue.Tag`，100% 跟随 Pathos 原生存档保存与加载，**零 `Codex.Properties` 占用**。
+   - 已学天赋与技能加点等级统一由 [DotaCharacterStorage](../../Framework/DotaCharacterStorage.cs) 以紧凑文本写入 `Character.Dialogue.Tag`，100% 跟随 Pathos 原生存档保存与加载，**零 `Codex.Properties` 占用**。
 
 ---
 

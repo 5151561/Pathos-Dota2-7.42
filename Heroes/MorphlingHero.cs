@@ -75,7 +75,7 @@ namespace Pathos.DotaHeroes.Heroes
 
     // 7.42 减冷却 / 覆盖率天赋 -> 减蓝耗换算系数
     private static readonly float MorphDurationTalentCdr = DotaMechanicsMapper.ComputeCooldownReductionRatio(12.0f, 36.0f); // 24s -> 36s (+50% 覆盖率 = 33.3% 蓝耗折减)
-    private const float AdaptiveStrikeTalentCdrSeconds = 3.0f; // -3s 变体打击冷却 (-6 回合)
+    private static readonly float AdaptiveStrikeTalentCdr = DotaMechanicsMapper.ComputeCooldownReductionRatio(3.0f, 8.0f);  // -3s / 8s 满级冷却 = 37.5%
     private const float WaveformTalentCdr = 0.40f; // -40% 波浪形态冷却
 
     private static readonly ConditionalWeakTable<Character, Square> WaveformOriginSquares = new();
@@ -330,7 +330,8 @@ namespace Pathos.DotaHeroes.Heroes
     private static void RegisterTalentTree(DotaHeroContext Ctx, Glyph IconGlyph)
     {
       int ReducedMorphMana = DotaMechanicsMapper.MapCooldownReductionToManaCost(MorphManaCost, MorphDurationTalentCdr);
-      int AdaptiveCdDeltaTurns = DotaMechanicsMapper.MapCooldownTurns(AdaptiveStrikeTalentCdrSeconds);
+      int ReducedAdaptiveMana = DotaMechanicsMapper.MapCooldownReductionToManaCost(AdaptiveStrikeManaCost, AdaptiveStrikeTalentCdr);
+      int ReducedWaveformMana = DotaMechanicsMapper.MapCooldownReductionToManaCost(WaveformManaCost, WaveformTalentCdr);
 
       var Tree = HeroTalentTree.CreateStandard(
         ClassName: MorphlingClassName,
@@ -363,10 +364,8 @@ namespace Pathos.DotaHeroes.Heroes
         T3Right: new TalentNode(
           Id: TalentT3AdaptiveStrikeMana,
           TitleResolver: () => DotaLocalization.T("morph.talent.t3r.title"),
-          DescriptionResolver: () => DotaLocalization.Format("morph.talent.t3r.desc", AdaptiveCdDeltaTurns))
-        {
-          CooldownReductions = new[] { SpellCooldownReductionRule.Flat(AdaptiveStrikeSpellName, AdaptiveStrikeTalentCdrSeconds) }
-        },
+          DescriptionResolver: () => DotaLocalization.Format("morph.talent.t3r.desc", AdaptiveStrikeManaCost, ReducedAdaptiveMana),
+          ManaReductions: new[] { new SpellManaReductionRule(AdaptiveStrikeSpellName, AdaptiveStrikeTalentCdr) }),
         T4Left: new TalentNode(
           Id: TalentT4Strength,
           TitleResolver: () => DotaLocalization.T("morph.talent.t4l.title"),
@@ -378,10 +377,8 @@ namespace Pathos.DotaHeroes.Heroes
         T4Right: new TalentNode(
           Id: TalentT4WaveformMana,
           TitleResolver: () => DotaLocalization.T("morph.talent.t4r.title"),
-          DescriptionResolver: () => DotaLocalization.T("morph.talent.t4r.desc"))
-        {
-          CooldownReductions = new[] { SpellCooldownReductionRule.Percent(WaveformSpellName, WaveformTalentCdr) }
-        });
+          DescriptionResolver: () => DotaLocalization.Format("morph.talent.t4r.desc", WaveformManaCost, ReducedWaveformMana),
+          ManaReductions: new[] { new SpellManaReductionRule(WaveformSpellName, WaveformTalentCdr) }));
 
       TalentRegistry.Register(Ctx, Tree);
     }
@@ -1599,7 +1596,6 @@ namespace Pathos.DotaHeroes.Heroes
         Range = DotaTable.Of(4, 5, 6, 8, 10), // 初始射程按 DOTA2 7.42a 700 码 ÷ 175 码/格 = 4 格，随熟练度成长
         RangeBonus = Ch => GetStrRangeBonus(Ch) + GetWaveformExtraRange(Ch) + GetWaveformTalentRangeBonus(Ch),
         SkillSlotId = SkillWaveformId,
-        CooldownSeconds = DotaTable.Of(21.0f, 18.0f, 15.0f, 12.0f),
         OnCast = Cast => ExecuteWaveform(Ctx, Cast)
       });
 
@@ -1619,7 +1615,6 @@ namespace Pathos.DotaHeroes.Heroes
         Range = DotaTable.Of(5, 6, 7, 8, 9),
         RangeBonus = GetStrRangeBonus,
         SkillSlotId = SkillAdaptiveStrikeId,
-        CooldownSeconds = DotaTable.Of(17.0f, 14.0f, 11.0f, 8.0f),
         OnCast = Cast => ExecuteAdaptiveStrike(Ctx, Cast)
       });
 
@@ -1668,7 +1663,6 @@ namespace Pathos.DotaHeroes.Heroes
         Range = DotaTable.Of(5, 6, 7, 8, 10),
         RangeBonus = Ch => GetStrRangeBonus(Ch) + MorphAbility.StarSteps(Ch),
         SkillSlotId = SkillMorphId,
-        CooldownSeconds = DotaTable.Of(125.0f, 90.0f, 55.0f),
         OnCast = Cast => ExecuteMorph(Ctx, Cast)
       });
 

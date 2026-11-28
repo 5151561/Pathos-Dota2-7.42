@@ -29,8 +29,7 @@ Framework/
 ├── DotaHeroContext.cs        # Codex 封装：贴图、Property、VFX 注册、预设英雄
 ├── DotaHeroProfile.cs        # DOTA2 Base/Gain 三维 → 初始六维 / 属性上限 / 职业样板
 ├── DotaMechanicsMapper.cs    # DOTA2 → Pathos 数值换算
-├── DotaAbility.cs / DotaTable.cs   # 主动技能一次性声明（含冷却） + 1 起始数值表
-├── DotaCooldownService.cs    # 主动技能冷却（跨存档持久化、回合递减、施法拦截）
+├── DotaAbility.cs / DotaTable.cs   # 主动技能一次性声明 + 1 起始数值表
 ├── DotaDamage.cs             # 伤害类型/来源、暴击、魔抗管线
 ├── DotaModifierService.cs    # 带回合数的增益/减益（零 Property）
 ├── DotaTauntService.cs       # 嘲讽
@@ -45,7 +44,7 @@ Framework/
 ├── Presentation/             # DotaPresentation（演出时间轴）/ DotaVfx（VFX 样式与播放）
 ├── Targeting/                # DotaRangeTargetingBridge（全射程选格，DotaAbility 自动接入）
 ├── Localization/             # DotaLocalization（运行时 UI 文本，读 Resources/Localization/ui.<lang>.json）
-└── UI/                       # DotaSpellHelpBridge（帮助面板）、DotaStatusBarBridge（状态栏徽章）、DotaCooldownUiBridge（冷却 UI）、DotaPropertyVisibility、PathosClientReflection
+└── UI/                       # DotaSpellHelpBridge（帮助面板）、DotaStatusBarBridge（状态栏徽章）、DotaPropertyVisibility、PathosClientReflection
 Heroes/                       # AxeHero.cs / JuggernautHero.cs / MorphlingHero.cs / PudgeHero.cs
 Resources/Heroes/<hero_id>/   # 单份 128x128 透明 PNG
 Resources/Localization/       # ui.<lang>.json 运行时词表（嵌入 DLL）
@@ -81,7 +80,7 @@ docs/                         # 架构、指南、英雄溯源文档
 所有基础属性、成长、蓝耗、伤害、持续时间、概率、天赋与机制**必须对照 DOTA2 7.42 官方 Wiki / 刀塔百科核实**，不得凭记忆或混用旧版本；不确定先查。英雄文档 `docs/heroes/<hero_id>.md` 必须列 7.42 溯源表。
 
 换算统一走 `DotaMechanicsMapper`（详见 [design-guidelines.md](docs/architecture/design-guidelines.md)）：
-- 蓝量/蓝耗 $K_{\text{mana}} = 20$（0 蓝耗保留 0），伤害 $K_{\text{dmg}} = 15$，`1 秒 = 1 回合`（持续时间与冷却时间统一标尺，`MapDurationTurns` / `MapCooldownTurns`），护甲 `MapArmorToDefence`（±8 封顶），减冷却天赋走 `TalentNode.CooldownReductions`（`SpellCooldownReductionRule`），非冷却覆盖率补偿走 `SpellManaReductionRule`。
+- 蓝量/蓝耗 $K_{\text{mana}} = 20$（0 蓝耗保留 0），伤害 $K_{\text{dmg}} = 15$，`1 秒 = 2 回合`，护甲 `MapArmorToDefence`（±8 封顶），减冷却 → 减蓝耗（`SpellManaReductionRule`）。
 - 技能加点：1 级自带 1 点；小技能 Lv 1/3/5/7、大招 Lv 6/12/18、7 级黄点；主动技能 0→1 学会、之后原生升星；被动由独立技能等级 0→4 驱动。
 - 天赋树：`Lv 10/15/20/25` 四层二选一，`Lv 27/28/29/30` 依次补点另一侧。
 
